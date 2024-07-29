@@ -1,20 +1,25 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel
-from PyQt5.QtGui import QPixmap
-from PyQt5.QtCore import Qt, QPoint
+from PyQt5.QtWidgets import *
+from PyQt5.QtGui import *
+from PyQt5.QtCore import *
 
 import Path
 
-class ChessPiece(QLabel):
-    def posToNotation(self, x, y):
-        rank = ['1', '2', '3', '4', '5', '6', '7', '8']
-        file = ['h', 'g', 'f', 'e', 'd', 'c', 'b', 'a']
-        return file[x] + rank[y]
+def posToNotation(x, y):
+    if x == -1 and y == -1:
+        return 'None'
+    rank = ['1', '2', '3', '4', '5', '6', '7', '8']
+    file = ['h', 'g', 'f', 'e', 'd', 'c', 'b', 'a']
+    return file[x] + rank[y]
 
-    def __init__(self, image_path, parent, x, y):
+
+
+class ChessPiece(QLabel):
+    def __init__(self, image_path, parent, x, y, Type):
         super().__init__(parent)
         self.pos_x = x
         self.pos_y = y
+        self.type = Type
 
         self.default_size = 60
         self.setPixmap(QPixmap(image_path))
@@ -22,7 +27,6 @@ class ChessPiece(QLabel):
         self.setScaledContents(True)
         self.setMouseTracking(True)
         self.moving = False
-        self.offset = QPoint()
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
@@ -32,7 +36,6 @@ class ChessPiece(QLabel):
             center_offset = QPoint(self.width() // 2, self.height() // 2)
             new_pos = self.mapToParent(event.pos() - center_offset)
             self.move(new_pos)
-            self.offset = event.pos() - center_offset
 
             self.boundaryCheck()
 
@@ -41,8 +44,7 @@ class ChessPiece(QLabel):
             center_offset = QPoint(self.width() // 2, self.height() // 2)
             new_pos = self.mapToParent(event.pos() - center_offset)
             self.move(new_pos)
-            self.offset = event.pos() - center_offset
-            
+
             self.boundaryCheck()
 
     def mouseReleaseEvent(self, event):
@@ -53,7 +55,6 @@ class ChessPiece(QLabel):
     def boundaryCheck(self):
         parent = self.parent()
         
-        # 기물의 현재 위치를 부모 위젯의 좌표계로 변환한 직사각형 영역을 가져옵니다
         piece_rect = self.rect().translated(self.mapToParent(QPoint(0, 0)))
         parent_rect = parent.rect()
 
@@ -69,21 +70,34 @@ class ChessPiece(QLabel):
             self.move(self.x(), parent_rect.height() - self.height() + 30) 
 
     def snap_to_grid(self, mousePos):
+        parent = self.parent()
+
         grid_size = 60  
-        new_x = mousePos.x() // grid_size
-        new_y = mousePos.y() // grid_size
-        new_x = max(0, min(new_x, 7))
-        new_y = max(0, min(new_y, 7))
-        self.move(new_x * grid_size, new_y * grid_size)
+        next_x = mousePos.x() // grid_size
+        next_y = mousePos.y() // grid_size
+        next_x = max(0, min(next_x, 7))
+        next_y = max(0, min(next_y, 7))
 
-        print(f'Move {self.posToNotation(self.pos_x, self.pos_y)} -> {self.posToNotation(new_x, new_y)}')
-        
-        self.pos_x = new_x
-        self.pos_y = new_y
+        selected = parent.isSelected(self.pos_x, self.pos_y, next_x, next_y)
+        if selected:
+            print('selected !')
+            self.move(next_x * grid_size, next_y * grid_size)
+        else:
+            parent.move(self.pos_x, self.pos_y, next_x, next_y)
+
+        self.pos_x = next_x
+        self.pos_y = next_y
 
 
 
-class ChessBoard(QMainWindow):
+class ChessBoard(QWidget):
+
+    def update_selectedPiece(self, x, y):
+        self.line_selected.setText(posToNotation(x, y))
+        templist = list(self.selected_piece)
+        templist[0] = x
+        templist[1] = y
+        self.selected_piece = tuple(templist)
 
     def load_img(self):
         self.img_board = Path.getImgFolder() + 'Ground.png'
@@ -117,22 +131,47 @@ class ChessBoard(QMainWindow):
             'wp': self.img_wp,
         }
 
+    def load_findChildren(self):
+        self.line_selected = self.findChildren(QLineEdit)[0]
+
     def __init__(self):
         super().__init__()
-        self.load_img()
-        self.setFixedSize(480, 480)  # Set size of the chessboard
 
-        self.lbl_board = QLabel(self)
-        self.lbl_board.setPixmap(QPixmap(self.img_board))
-        self.lbl_board.setFixedSize(480, 480)
-        self.lbl_board.setScaledContents(True)
+        self.load_img()
+        self.selected_piece = (-1, -1)
+
+        self.UIinit()
+        self.load_findChildren()
 
         # Initialize pieces
         self.pieces = [[None for _ in range(8)] for _ in range(8)]  # 2D list to keep track of pieces
         self.init_pieces()
 
-    def create_piece(self, st, x, y):
-        lbl_piece = ChessPiece(self.piece_images[st], self, x, y)
+
+    def UIinit(self):
+        self.setFixedSize(480, 500)  # Set size of the chessboard
+        vbox = QVBoxLayout()
+
+        lbl_board = QLabel(self)
+        lbl_board.setPixmap(QPixmap(self.img_board))
+        lbl_board.setFixedSize(480, 480)
+        lbl_board.setScaledContents(True)
+
+        hbox = QHBoxLayout()
+        lbl_selected = QLabel('<b>[Selected Piece]</b>', self)
+        line_selected = QLineEdit('None', self)
+        line_selected.setReadOnly(True)
+        hbox.addWidget(lbl_selected)
+        hbox.addWidget(line_selected)
+
+        vbox.addWidget(lbl_board)
+        vbox.addLayout(hbox)
+        vbox.setContentsMargins(0,0,0,0)
+
+        self.setLayout(vbox)
+
+    def create_piece(self, st, x, y, type):
+        lbl_piece = ChessPiece(self.piece_images[st], self, x, y, type)
         lbl_piece.move(x * 60, y * 60)
         self.pieces[y][x] = lbl_piece  # Update the 2D list with the new piece
         return lbl_piece
@@ -140,12 +179,51 @@ class ChessBoard(QMainWindow):
     def init_pieces(self):
         white_initPos = [ 'wr', 'wn', 'wb', 'wk', 'wq', 'wb', 'wn', 'wr']
         black_initPos = [ 'br', 'bn', 'bb', 'bk', 'bq', 'bb', 'bn', 'br']
+        typeList = [ 'R', 'N', 'B', 'K', 'Q', 'B', 'N', 'R']
 
-        for col in range(8):
-            self.create_piece('wp', col, 1)  # White pawns
-            self.create_piece(white_initPos[col], col, 0)  # White other pieces
-            self.create_piece('bp', col, 6)  # Black pawns
-            self.create_piece(black_initPos[col], col, 7)  # Black other pieces
+        for i in range(8):
+            self.create_piece('wp', i, 1, 'P')  # White pawns
+            self.create_piece(white_initPos[i], i, 0, typeList[i])  # White other pieces
+            self.create_piece('bp', i, 6, 'P')  # Black pawns
+            self.create_piece(black_initPos[i], i, 7, typeList[i])  # Black other pieces
+
+    def isSelected(self, now_x, now_y, next_x, next_y):
+        if now_x == next_x and now_y == next_y:
+            self.update_selectedPiece(now_x, now_y)
+            return True
+        else:
+            self.update_selectedPiece(-1, -1)
+            return False
+
+    def move(self, now_x, now_y, next_x, next_y):
+        print(f'Move {posToNotation(now_x, now_y)} -> {posToNotation(next_x, next_y)}')
+        self.pieces[now_y][now_x].move(next_x * 60, next_y * 60)
+        self.pieces[next_y][next_x] = self.pieces[now_y][now_x]
+        self.pieces[now_y][now_x] = None
+
+
+    def print2DInfo(self):
+        for i in range(8):
+            for j in range(8):
+                if self.pieces[i][j] != None:
+                    print(self.pieces[i][j].type, end=' ')
+                else:
+                    print('-', end=' ')
+            print()
+
+
+    def mousePressEvent(self, event):
+        grid_size = 60  
+        if event.button() == Qt.LeftButton:
+            mousePos = self.mapFromGlobal(self.mapToGlobal(event.pos()))
+            x = mousePos.x() // grid_size
+            y = mousePos.y() // grid_size
+            print(f'{posToNotation(x, y)} clicked !')
+            if self.selected_piece[0] != -1 or self.selected_piece[1] != -1:
+                self.move(self.selected_piece[0], self.selected_piece[1], x, y)
+                self.update_selectedPiece(-1, -1)
+
+        self.print2DInfo()
 
 
 
