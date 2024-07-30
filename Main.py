@@ -24,8 +24,6 @@ def mousePosToBoardPos(x, y, isPlayerWhite): # low Mouse Position to Board posit
     return x, y
 
 
-
-
 class ChessPiece(QLabel):
 
     def __init__(self, image_path, parent, UIx, UIy, Type, Team): # Get UI Position
