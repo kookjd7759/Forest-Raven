@@ -76,27 +76,53 @@ class ChessPiece(QLabel):
         next_x = max(0, min(mousePos.x() // grid_size, 7))
         next_y = max(0, min(mousePos.y() // grid_size, 7))
 
-        print(f'({self.pos_x},{self.pos_y}) -> ({next_x},{next_y})')
-
         selected = parent.isclick(self.pos_x, self.pos_y, next_x, next_y)
         if selected:
-            print('click !')
+            print(f'{posToNotation(next_x, next_y)} click !')
             self.move(next_x * grid_size, next_y * grid_size)
         else:
-            print('move !')
             parent.move(self.pos_x, self.pos_y, next_x, next_y)
 
         self.pos_x = next_x
         self.pos_y = next_y
 
-    def deleteSelf(self):
+    def die(self):
         self.deleteLater()
+
+
+
+class HighLightSquare(QLabel):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setFixedSize(60, 60)
+        self.setStyleSheet("""
+            background-color: rgba(255, 255, 130, 255);
+            border: 2px solid rgba(240, 240, 240, 130);
+        """)
+        self.hide()
+
+    def highlight(self, x, y):
+        self.move(x * 60, y * 60)
+        self.raise_()
+        if (self.parent().pieces[y][x] != None):    
+            self.parent().pieces[y][x].raise_()
+
+        self.show()
+
+    def clear(self):
+        self.hide()
+
 
 
 class ChessBoard(QWidget):
 
     def update_selectedPiece(self, x, y):
         self.line_selected.setText(posToNotation(x, y))
+
+        if x == -1 or y == -1:
+            self.square_highlight.clear()
+        else:
+            self.square_highlight.highlight(x, y)
         templist = list(self.selected_piece)
         templist[0] = x
         templist[1] = y
@@ -138,12 +164,14 @@ class ChessBoard(QWidget):
 
     def load_findChildren(self):
         self.line_selected = self.findChildren(QLineEdit)[0]
+        self.lbl_board = self.findChildren(QLabel)[0]
 
     def __init__(self):
         super().__init__()
 
         self.load_img()
         self.selected_piece = (-1, -1)
+        self.square_highlight = HighLightSquare(self)  # 강조 표시용 객체 생성
 
         self.UIinit()
         self.load_findChildren()
@@ -151,6 +179,7 @@ class ChessBoard(QWidget):
         # Initialize pieces
         self.pieces = [[None for _ in range(8)] for _ in range(8)]  # 2D list to keep track of pieces
         self.init_pieces()
+
 
 
     def UIinit(self):
@@ -194,9 +223,9 @@ class ChessBoard(QWidget):
 
     def isclick(self, now_x, now_y, next_x, next_y):
         if now_x == next_x and now_y == next_y: # click command
-            if (self.selected_piece[0] == -1 and self.selected_piece[1] == -1): # No selected 
+            if (self.selected_piece[0] != now_x or self.selected_piece[1] != now_y): # No selected / Already selected But click other piece 
                 self.update_selectedPiece(now_x, now_y)
-            else: # Already selected 
+            else: # Same piece two click 
                 self.update_selectedPiece(-1, -1)
             return True
         else: # Move command
@@ -205,7 +234,7 @@ class ChessBoard(QWidget):
 
     def move(self, now_x, now_y, next_x, next_y):
         if self.pieces[next_y][next_x] != None:
-            self.pieces[next_y][next_x].deleteSelf()
+            self.pieces[next_y][next_x].die()
 
         print(f'Move {posToNotation(now_x, now_y)} -> {posToNotation(next_x, next_y)}')
         self.pieces[now_y][now_x].pos_x = next_x
@@ -222,6 +251,7 @@ class ChessBoard(QWidget):
                 else:
                     print('-', end=' ')
             print()
+
 
 
     def mousePressEvent(self, event):
