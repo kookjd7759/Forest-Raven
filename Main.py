@@ -73,21 +73,24 @@ class ChessPiece(QLabel):
         parent = self.parent()
 
         grid_size = 60  
-        next_x = mousePos.x() // grid_size
-        next_y = mousePos.y() // grid_size
-        next_x = max(0, min(next_x, 7))
-        next_y = max(0, min(next_y, 7))
+        next_x = max(0, min(mousePos.x() // grid_size, 7))
+        next_y = max(0, min(mousePos.y() // grid_size, 7))
 
-        selected = parent.isSelected(self.pos_x, self.pos_y, next_x, next_y)
+        print(f'({self.pos_x},{self.pos_y}) -> ({next_x},{next_y})')
+
+        selected = parent.isclick(self.pos_x, self.pos_y, next_x, next_y)
         if selected:
-            print('selected !')
+            print('click !')
             self.move(next_x * grid_size, next_y * grid_size)
         else:
+            print('move !')
             parent.move(self.pos_x, self.pos_y, next_x, next_y)
 
         self.pos_x = next_x
         self.pos_y = next_y
 
+    def deleteSelf(self):
+        self.deleteLater()
 
 
 class ChessBoard(QWidget):
@@ -98,6 +101,8 @@ class ChessBoard(QWidget):
         templist[0] = x
         templist[1] = y
         self.selected_piece = tuple(templist)
+
+
 
     def load_img(self):
         self.img_board = Path.getImgFolder() + 'Ground.png'
@@ -187,20 +192,27 @@ class ChessBoard(QWidget):
             self.create_piece('bp', i, 6, 'P')  # Black pawns
             self.create_piece(black_initPos[i], i, 7, typeList[i])  # Black other pieces
 
-    def isSelected(self, now_x, now_y, next_x, next_y):
-        if now_x == next_x and now_y == next_y:
-            self.update_selectedPiece(now_x, now_y)
+    def isclick(self, now_x, now_y, next_x, next_y):
+        if now_x == next_x and now_y == next_y: # click command
+            if (self.selected_piece[0] == -1 and self.selected_piece[1] == -1): # No selected 
+                self.update_selectedPiece(now_x, now_y)
+            else: # Already selected 
+                self.update_selectedPiece(-1, -1)
             return True
-        else:
+        else: # Move command
             self.update_selectedPiece(-1, -1)
             return False
 
     def move(self, now_x, now_y, next_x, next_y):
-        print(f'Move {posToNotation(now_x, now_y)} -> {posToNotation(next_x, next_y)}')
-        self.pieces[now_y][now_x].move(next_x * 60, next_y * 60)
-        self.pieces[next_y][next_x] = self.pieces[now_y][now_x]
-        self.pieces[now_y][now_x] = None
+        if self.pieces[next_y][next_x] != None:
+            self.pieces[next_y][next_x].deleteSelf()
 
+        print(f'Move {posToNotation(now_x, now_y)} -> {posToNotation(next_x, next_y)}')
+        self.pieces[now_y][now_x].pos_x = next_x
+        self.pieces[now_y][now_x].pos_y = next_y
+        self.pieces[next_y][next_x] = self.pieces[now_y][now_x]
+        self.pieces[now_y][now_x].move(next_x * 60, next_y * 60)
+        self.pieces[now_y][now_x] = None
 
     def print2DInfo(self):
         for i in range(8):
