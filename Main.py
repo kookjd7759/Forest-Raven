@@ -5,20 +5,36 @@ from PyQt5.QtCore import *
 
 import Path
 
-def posToNotation(x, y):
+def boardPosToNotation(x, y): # Get Board Position
     if x == -1 and y == -1:
         return 'None'
     rank = ['1', '2', '3', '4', '5', '6', '7', '8']
-    file = ['h', 'g', 'f', 'e', 'd', 'c', 'b', 'a']
+    file = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
     return file[x] + rank[y]
+
+def UI_Board_positionConverter(x, y, isPlayerWhite): # UI to Board / Board to UI Converting
+    if isPlayerWhite:
+        return x, 7 - y
+    else:
+        return 7 - x, y
+    
+def mousePosToBoardPos(x, y, isPlayerWhite): # low Mouse Position to Board position
+    grid_size = 60
+    x, y = UI_Board_positionConverter(x // grid_size, y // grid_size, isPlayerWhite)
+    return x, y
+
 
 
 
 class ChessPiece(QLabel):
-    def __init__(self, image_path, parent, x, y, Type):
+
+    def __init__(self, image_path, parent, UIx, UIy, Type): # Get UI Position
+        print(f'Create Piece[{Type}] at ({UIx}, {UIy}) with UI position')
+        print(image_path)
         super().__init__(parent)
-        self.pos_x = x
-        self.pos_y = y
+        self.UIx = UIx # UI Position
+        self.UIy = UIy # UI Position
+        self.move(self.UIx * 60, self.UIy * 60)
         self.type = Type
 
         self.default_size = 60
@@ -27,6 +43,8 @@ class ChessPiece(QLabel):
         self.setScaledContents(True)
         self.setMouseTracking(True)
         self.moving = False
+        self.raise_() 
+        self.show() 
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
@@ -71,20 +89,23 @@ class ChessPiece(QLabel):
 
     def snap_to_grid(self, mousePos):
         parent = self.parent()
+        grid_size = 60 
 
-        grid_size = 60  
-        next_x = max(0, min(mousePos.x() // grid_size, 7))
-        next_y = max(0, min(mousePos.y() // grid_size, 7))
+        next_UIx = max(0, min(mousePos.x() // grid_size, 7)) # UI Position
+        next_UIy = max(0, min(mousePos.y() // grid_size, 7)) # UI Position
 
-        selected = parent.isclick(self.pos_x, self.pos_y, next_x, next_y)
+        selected = parent.isclick(self.UIx, self.UIy, next_UIx, next_UIy)
         if selected:
-            print(f'{posToNotation(next_x, next_y)} click !')
-            self.move(next_x * grid_size, next_y * grid_size)
+            x, y = UI_Board_positionConverter(next_UIx, next_UIy, parent.isPlayerWhite) # UI to Board Position Convert
+            print(f'{boardPosToNotation(x, y)} click !')
+            self.move(next_UIx * grid_size, next_UIy * grid_size)
         else:
-            parent.move(self.pos_x, self.pos_y, next_x, next_y)
+            now_x, now_y = UI_Board_positionConverter(self.UIx, self.UIy, parent.isPlayerWhite)
+            next_x, next_y = UI_Board_positionConverter(next_UIx, next_UIy, parent.isPlayerWhite)
+            parent.move_piece(now_x, now_y, next_x, next_y)
 
-        self.pos_x = next_x
-        self.pos_y = next_y
+        self.UIx = next_UIx
+        self.UIy = next_UIy
 
     def die(self):
         self.deleteLater()
@@ -92,7 +113,7 @@ class ChessPiece(QLabel):
 
 
 class HighLightSquare(QLabel):
-    def __init__(self, parent=None):
+    def __init__(self, parent):
         super().__init__(parent)
         self.setFixedSize(60, 60)
         self.setStyleSheet("""
@@ -101,9 +122,10 @@ class HighLightSquare(QLabel):
         """)
         self.hide()
 
-    def highlight(self, x, y):
-        self.move(x * 60, y * 60)
+    def highlight(self, UIx, UIy): # Get UI Position
+        self.move(UIx * 60, UIy * 60)
         self.raise_()
+        x, y = UI_Board_positionConverter(UIx, UIy, self.parent().isPlayerWhite) # UI to Board Position Convert
         if (self.parent().pieces[y][x] != None):    
             self.parent().pieces[y][x].raise_()
 
@@ -115,20 +137,25 @@ class HighLightSquare(QLabel):
 
 
 class ChessBoard(QWidget):
+    
+    def isExistSelectedPiece(self):
+        if self.selected_piece[0] == -1 or self.selected_piece[1] == -1:
+            return False
+        return True
 
-    def update_selectedPiece(self, x, y):
-        self.line_selected.setText(posToNotation(x, y))
+    def update_selectedPiece(self, x, y): # Get Board Position
+        self.line_selected.setText(boardPosToNotation(x, y))
 
         if x == -1 or y == -1:
             self.square_highlight.clear()
         else:
-            self.square_highlight.highlight(x, y)
+            UIx, UIy = UI_Board_positionConverter(x, y, self.isPlayerWhite) # Board to UI Position Convert
+            self.square_highlight.highlight(UIx, UIy)
+
         templist = list(self.selected_piece)
         templist[0] = x
         templist[1] = y
         self.selected_piece = tuple(templist)
-
-
 
     def load_img(self):
         self.img_board = Path.getImgFolder() + 'Ground.png'
@@ -163,68 +190,94 @@ class ChessBoard(QWidget):
         }
 
     def load_findChildren(self):
-        self.line_selected = self.findChildren(QLineEdit)[0]
+        self.line_player = self.findChildren(QLineEdit)[0]
+        self.line_selected = self.findChildren(QLineEdit)[1]
         self.lbl_board = self.findChildren(QLabel)[0]
+
+
 
     def __init__(self):
         super().__init__()
-
-        self.load_img()
         self.selected_piece = (-1, -1)
-        self.square_highlight = HighLightSquare(self)  # 강조 표시용 객체 생성
+        self.isPlayerWhite = True
+        self.load_img()
 
         self.UIinit()
         self.load_findChildren()
 
         # Initialize pieces
-        self.pieces = [[None for _ in range(8)] for _ in range(8)]  # 2D list to keep track of pieces
+        self.pieces = [[None for _ in range(8)] for _ in range(8)]
         self.init_pieces()
 
-
-
     def UIinit(self):
-        self.setFixedSize(480, 500)  # Set size of the chessboard
+        self.square_highlight = HighLightSquare(self)  # 강조 표시용 객체 생성
+        
+        self.setFixedSize(480, 530) # size of the window
         vbox = QVBoxLayout()
 
         lbl_board = QLabel(self)
         lbl_board.setPixmap(QPixmap(self.img_board))
-        lbl_board.setFixedSize(480, 480)
+        lbl_board.setFixedSize(480, 480) # size of the chessboard
         lbl_board.setScaledContents(True)
 
-        hbox = QHBoxLayout()
+        # player
+        hbox_player = QHBoxLayout()
+        lbl_player = QLabel('<b>[Player]</b>', self)
+        line_player = QLineEdit('White', self)
+        line_player.setReadOnly(True)
+        btn_changePlayer = QPushButton('Change my color', self)
+        btn_changePlayer.clicked.connect(self.btn_changePlayer_function)
+        btn_restart = QPushButton('Game Restart', self)
+        btn_restart.clicked.connect(self.btn_gameRestart_function)
+        hbox_player.addWidget(lbl_player)
+        hbox_player.addWidget(line_player)
+        hbox_player.addWidget(btn_changePlayer)
+        hbox_player.addWidget(btn_restart)
+
+        # selected
+        hbox_selected = QHBoxLayout()
         lbl_selected = QLabel('<b>[Selected Piece]</b>', self)
         line_selected = QLineEdit('None', self)
         line_selected.setReadOnly(True)
-        hbox.addWidget(lbl_selected)
-        hbox.addWidget(line_selected)
+        hbox_selected.addWidget(lbl_selected)
+        hbox_selected.addWidget(line_selected)
 
         vbox.addWidget(lbl_board)
-        vbox.addLayout(hbox)
+        vbox.addLayout(hbox_player)
+        vbox.addLayout(hbox_selected)
         vbox.setContentsMargins(0,0,0,0)
 
         self.setLayout(vbox)
 
-    def create_piece(self, st, x, y, type):
-        lbl_piece = ChessPiece(self.piece_images[st], self, x, y, type)
-        lbl_piece.move(x * 60, y * 60)
-        self.pieces[y][x] = lbl_piece  # Update the 2D list with the new piece
-        return lbl_piece
+    def create_piece(self, st, x, y, type): # Get Board Position
+        UIx, UIy = UI_Board_positionConverter(x, y, self.isPlayerWhite) # Board to UI Position Convert
+        lbl_piece = ChessPiece(self.piece_images[st], self, UIx, UIy, type)
+        self.pieces[y][x] = lbl_piece # Update the 2D list with the new piece
     
+        
     def init_pieces(self):
-        white_initPos = [ 'wr', 'wn', 'wb', 'wk', 'wq', 'wb', 'wn', 'wr']
-        black_initPos = [ 'br', 'bn', 'bb', 'bk', 'bq', 'bb', 'bn', 'br']
-        typeList = [ 'R', 'N', 'B', 'K', 'Q', 'B', 'N', 'R']
+        # reset
+        for i in range(8): 
+            for j in range(8): 
+                if self.pieces[i][j] != None:
+                    self.pieces[i][j].die()  # 체스말 삭제
+        self.pieces = [[None for _ in range(8)] for _ in range(8)] # 체스말 리스트 초기화
 
-        for i in range(8):
+        white_initPos = [ 'wr', 'wn', 'wb', 'wq', 'wk', 'wb', 'wn', 'wr']
+        black_initPos = [ 'br', 'bn', 'bb', 'bq', 'bk', 'bb', 'bn', 'br']
+        typeList = [ 'R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
+
+        for i in range(8): 
             self.create_piece('wp', i, 1, 'P')  # White pawns
-            self.create_piece(white_initPos[i], i, 0, typeList[i])  # White other pieces
+            self.create_piece(white_initPos[i], i, 0, typeList[i]) # White other pieces
             self.create_piece('bp', i, 6, 'P')  # Black pawns
-            self.create_piece(black_initPos[i], i, 7, typeList[i])  # Black other pieces
+            self.create_piece(black_initPos[i], i, 7, typeList[i]) # Black other pieces
 
-    def isclick(self, now_x, now_y, next_x, next_y):
+    def isclick(self, now_x, now_y, next_x, next_y): # Get UI Position
         if now_x == next_x and now_y == next_y: # click command
-            if (self.selected_piece[0] != now_x or self.selected_piece[1] != now_y): # No selected / Already selected But click other piece 
-                self.update_selectedPiece(now_x, now_y)
+            x, y = UI_Board_positionConverter(now_x, now_y, self.isPlayerWhite) # UI to Board Position Convert
+            if (self.selected_piece[0] != x or self.selected_piece[1] != y): # No selected / Already selected But click other piece 
+                self.update_selectedPiece(x, y)
             else: # Same piece two click 
                 self.update_selectedPiece(-1, -1)
             return True
@@ -232,40 +285,63 @@ class ChessBoard(QWidget):
             self.update_selectedPiece(-1, -1)
             return False
 
-    def move(self, now_x, now_y, next_x, next_y):
+    def move_piece(self, now_x, now_y, next_x, next_y): # Get Board Position
         if self.pieces[next_y][next_x] != None:
             self.pieces[next_y][next_x].die()
 
-        print(f'Move {posToNotation(now_x, now_y)} -> {posToNotation(next_x, next_y)}')
-        self.pieces[now_y][now_x].pos_x = next_x
-        self.pieces[now_y][now_x].pos_y = next_y
+        print(f'Move {boardPosToNotation(now_x, now_y)} -> {boardPosToNotation(next_x, next_y)}')
+        UIx, UIy = UI_Board_positionConverter(next_x, next_y, self.isPlayerWhite)
+        self.pieces[now_y][now_x].UIx = UIx
+        self.pieces[now_y][now_x].UIy = UIy
         self.pieces[next_y][next_x] = self.pieces[now_y][now_x]
-        self.pieces[now_y][now_x].move(next_x * 60, next_y * 60)
+        self.pieces[now_y][now_x].move(UIx * 60, UIy * 60)
         self.pieces[now_y][now_x] = None
 
     def print2DInfo(self):
-        for i in range(8):
-            for j in range(8):
-                if self.pieces[i][j] != None:
-                    print(self.pieces[i][j].type, end=' ')
-                else:
-                    print('-', end=' ')
-            print()
+        if self.isPlayerWhite:
+            for i in range(7, -1, -1):
+                for j in range(8):
+                    if self.pieces[i][j] != None:
+                        print(self.pieces[i][j].type, end=' ')
+                    else:
+                        print('-', end=' ')
+                print()
+        else:
+            for i in range(8):
+                for j in range(7, -1, -1):
+                    if self.pieces[i][j] != None:
+                        print(self.pieces[i][j].type, end=' ')
+                    else:
+                        print('-', end=' ')
+                print()
 
 
 
     def mousePressEvent(self, event):
-        grid_size = 60  
         if event.button() == Qt.LeftButton:
             mousePos = self.mapFromGlobal(self.mapToGlobal(event.pos()))
-            x = mousePos.x() // grid_size
-            y = mousePos.y() // grid_size
-            print(f'{posToNotation(x, y)} clicked !')
-            if self.selected_piece[0] != -1 or self.selected_piece[1] != -1:
-                self.move(self.selected_piece[0], self.selected_piece[1], x, y)
+            x, y = mousePosToBoardPos(mousePos.x(), mousePos.y(), self.isPlayerWhite)
+            print(f'{boardPosToNotation(x, y)} clicked !')
+            if self.isExistSelectedPiece():
+                self.move_piece(self.selected_piece[0], self.selected_piece[1], x, y)
                 self.update_selectedPiece(-1, -1)
 
         self.print2DInfo()
+
+
+
+    def btn_changePlayer_function(self):
+        if self.isPlayerWhite:
+            self.isPlayerWhite = False
+            self.line_player.setText('Black')
+        else:
+            self.isPlayerWhite = True
+            self.line_player.setText('White')
+            
+        self.init_pieces()
+
+    def btn_gameRestart_function(self):
+        self.init_pieces()
 
 
 
