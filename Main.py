@@ -28,14 +28,13 @@ def mousePosToBoardPos(x, y, isPlayerWhite): # low Mouse Position to Board posit
 
 class ChessPiece(QLabel):
 
-    def __init__(self, image_path, parent, UIx, UIy, Type): # Get UI Position
-        print(f'Create Piece[{Type}] at ({UIx}, {UIy}) with UI position')
-        print(image_path)
+    def __init__(self, image_path, parent, UIx, UIy, Type, Team): # Get UI Position
         super().__init__(parent)
         self.UIx = UIx # UI Position
         self.UIy = UIy # UI Position
         self.move(self.UIx * 60, self.UIy * 60)
         self.type = Type
+        self.team = Team
 
         self.default_size = 60
         self.setPixmap(QPixmap(image_path))
@@ -249,9 +248,9 @@ class ChessBoard(QWidget):
 
         self.setLayout(vbox)
 
-    def create_piece(self, st, x, y, type): # Get Board Position
+    def create_piece(self, st, x, y, type, team): # Get Board Position
         UIx, UIy = UI_Board_positionConverter(x, y, self.isPlayerWhite) # Board to UI Position Convert
-        lbl_piece = ChessPiece(self.piece_images[st], self, UIx, UIy, type)
+        lbl_piece = ChessPiece(self.piece_images[st], self, UIx, UIy, type, team)
         self.pieces[y][x] = lbl_piece # Update the 2D list with the new piece
     
         
@@ -268,10 +267,10 @@ class ChessBoard(QWidget):
         typeList = [ 'R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
 
         for i in range(8): 
-            self.create_piece('wp', i, 1, 'P')  # White pawns
-            self.create_piece(white_initPos[i], i, 0, typeList[i]) # White other pieces
-            self.create_piece('bp', i, 6, 'P')  # Black pawns
-            self.create_piece(black_initPos[i], i, 7, typeList[i]) # Black other pieces
+            self.create_piece('wp', i, 1, 'P', 'w')  # White pawns
+            self.create_piece(white_initPos[i], i, 0, typeList[i], 'w') # White other pieces
+            self.create_piece('bp', i, 6, 'P', 'b')  # Black pawns
+            self.create_piece(black_initPos[i], i, 7, typeList[i], 'b') # Black other pieces
 
     def isclick(self, now_x, now_y, next_x, next_y): # Get UI Position
         if now_x == next_x and now_y == next_y: # click command
@@ -300,21 +299,32 @@ class ChessBoard(QWidget):
     def print2DInfo(self):
         if self.isPlayerWhite:
             for i in range(7, -1, -1):
+                print(i + 1, end='  ')
                 for j in range(8):
                     if self.pieces[i][j] != None:
-                        print(self.pieces[i][j].type, end=' ')
+                        print(self.pieces[i][j].team + self.pieces[i][j].type, end=' ')
                     else:
-                        print('-', end=' ')
+                        print('--', end=' ')
                 print()
+            
+            print('   ', end='')
+            for i in range(ord('a'), ord('h') + 1):
+                print(chr(i), end='  ')
+            print()
         else:
             for i in range(8):
+                print(i + 1, end='  ')
                 for j in range(7, -1, -1):
                     if self.pieces[i][j] != None:
-                        print(self.pieces[i][j].type, end=' ')
+                        print(self.pieces[i][j].team + self.pieces[i][j].type, end=' ')
                     else:
-                        print('-', end=' ')
+                        print('--', end=' ')
                 print()
 
+            print('   ', end='')
+            for i in range(ord('h'), ord('a') - 1, -1):
+                print(chr(i), end='  ')
+            print()
 
 
     def mousePressEvent(self, event):
