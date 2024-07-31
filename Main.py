@@ -221,6 +221,8 @@ class ChessBoard(QWidget):
 
     def __init__(self):
         super().__init__()
+        self.square_highlight = HighLightSquare(self)  # 강조 표시용 객체 생성
+
         self.selected_piece = (-1, -1)
         self.isPlayerWhite = True
         self.isTurnWhite = True
@@ -234,7 +236,6 @@ class ChessBoard(QWidget):
         self.init_pieces()
 
     def UIinit(self):
-        self.square_highlight = HighLightSquare(self)  # 강조 표시용 객체 생성
         
         self.setFixedSize(480, 555) # size of the windows
         self.setWindowTitle('Chess')
@@ -382,7 +383,8 @@ class ChessBoard(QWidget):
             print(f'{boardPosToNotation(x, y)} clicked !')
             if self.isSelected():
                 self.move_piece(self.selected_piece[0], self.selected_piece[1], x, y)
-
+        elif event.button() == Qt.RightButton:
+            self.delSelect()
         self.print2DInfo()
 
 
@@ -390,6 +392,8 @@ class ChessBoard(QWidget):
     def btn_gameRestart_function(self):
         self.init_pieces()
         self.isTurnWhite = True
+        self.delSelect()
+        self.square_highlight.clear()
 
     def btn_changePlayer_function(self):
         if self.isPlayerWhite:
