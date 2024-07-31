@@ -48,12 +48,12 @@ class HighLightSquare(QLabel):
 
 class ChessPiece(QLabel):
 
-    def turnCheck(self):
+    def turnCheck(self, isPress):
         parent = self.parent()
         if (parent.isTurnWhite == True and self.team == 'w') or (parent.isTurnWhite == False and self.team == 'b'):
             return True
         
-        if parent.isSelected():
+        if parent.isSelected() and isPress:
             x, y = UI_Board_positionConverter(self.UIx, self.UIy, parent.isPlayerWhite)
             parent.move_piece(parent.selected_piece[0], parent.selected_piece[1], x, y)
         return False
@@ -102,7 +102,7 @@ class ChessPiece(QLabel):
         self.show() 
 
     def mousePressEvent(self, event):
-        if self.turnCheck() == False: 
+        if self.turnCheck(True) == False: 
             return
         
         # set selected piece
@@ -114,14 +114,14 @@ class ChessPiece(QLabel):
             self.followMouse(event.pos())
 
     def mouseMoveEvent(self, event):
-        if self.turnCheck() == False:
+        if self.turnCheck(False) == False:
             return
         
         if self.moving:
             self.followMouse(event.pos())
 
     def mouseReleaseEvent(self, event):
-        if self.turnCheck() == False:
+        if self.turnCheck(False) == False:
             return
         
         if event.button() == Qt.LeftButton:
