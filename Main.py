@@ -1,9 +1,11 @@
 import sys
+import threading
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 
 import Path
+import connector
 
 def boardPosToNotation(x, y): # Get Board Position
     rank = ['1', '2', '3', '4', '5', '6', '7', '8']
@@ -50,7 +52,7 @@ class ChessPiece(QLabel):
 
     def turnCheck(self, isPress):
         parent = self.parent()
-        if (parent.isTurnWhite == True and self.team == 'w') or (parent.isTurnWhite == False and self.team == 'b'):
+        if parent.isPlayerWhite == self.isTeamWhite and parent.isTurnWhite == parent.isPlayerWhite: # player piece And player turn
             return True
         
         if parent.isSelected() and isPress:
@@ -85,13 +87,13 @@ class ChessPiece(QLabel):
 
 
 
-    def __init__(self, image_path, parent, UIx, UIy, Type, Team): # Get UI Position
+    def __init__(self, image_path, parent, UIx, UIy, Type, IsTeamWhite): # Get UI Position
         super().__init__(parent)
         self.UIx = UIx # UI Position
         self.UIy = UIy # UI Position
         self.move(self.UIx * 60, self.UIy * 60)
         self.type = Type
-        self.team = Team
+        self.isTeamWhite = IsTeamWhite
 
         self.setPixmap(QPixmap(image_path))
         self.setFixedSize(60, 60)
@@ -216,15 +218,6 @@ class ChessBoard(QWidget):
         self.square_highlight.clear()
         self.selected_piece = (-1, -1)
 
-    def changeTurn(self):
-        if self.isTurnWhite:
-            self.isTurnWhite = False
-            self.line_turn.setText('Black')
-        else:
-            self.isTurnWhite = True
-            self.line_turn.setText('White')
-
-
 
     def __init__(self):
         super().__init__()
@@ -291,13 +284,11 @@ class ChessBoard(QWidget):
 
         self.setLayout(vbox)
 
-    def create_piece(self, st, x, y, type, team): # Get Board Position
+    def create_piece(self, st, x, y, type, isTeamWhite): # Get Board Position
         UIx, UIy = UI_Board_positionConverter(x, y, self.isPlayerWhite) # Board to UI Position Convert
-        lbl_piece = ChessPiece(self.piece_images[st], self, UIx, UIy, type, team)
+        lbl_piece = ChessPiece(self.piece_images[st], self, UIx, UIy, type, isTeamWhite)
         self.pieces[y][x] = lbl_piece # Update the 2D list with the new piece
     
-        
-
     def init_pieces(self):
         # reset
         for i in range(8): 
@@ -311,10 +302,10 @@ class ChessBoard(QWidget):
         typeList = [ 'R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
 
         for i in range(8): 
-            self.create_piece('wp', i, 1, 'P', 'w')  # White pawns
-            self.create_piece(white_initPos[i], i, 0, typeList[i], 'w') # White other pieces
-            self.create_piece('bp', i, 6, 'P', 'b')  # Black pawns
-            self.create_piece(black_initPos[i], i, 7, typeList[i], 'b') # Black other pieces
+            self.create_piece('wp', i, 1, 'P', True)  # White pawns
+            self.create_piece(white_initPos[i], i, 0, typeList[i], True) # White other pieces
+            self.create_piece('bp', i, 6, 'P', False)  # Black pawns
+            self.create_piece(black_initPos[i], i, 7, typeList[i], False) # Black other pieces
 
     def move_piece(self, now_x, now_y, next_x, next_y): # Get Board Position
         if self.pieces[next_y][next_x] != None:
@@ -332,12 +323,18 @@ class ChessBoard(QWidget):
         self.changeTurn()
 
     def print2DInfo(self):
+        def team(isTeamWhite):
+            if isTeamWhite:
+                return 'w'
+            else:
+                return 'b'
+            
         if self.isPlayerWhite:
             for i in range(7, -1, -1):
                 print(i + 1, end='  ')
                 for j in range(8):
                     if self.pieces[i][j] != None:
-                        print(self.pieces[i][j].team + self.pieces[i][j].type, end=' ')
+                        print(team(self.pieces[i][j].isTeamWhite) + self.pieces[i][j].type, end=' ')
                     else:
                         print('--', end=' ')
                 print()
@@ -351,7 +348,7 @@ class ChessBoard(QWidget):
                 print(i + 1, end='  ')
                 for j in range(7, -1, -1):
                     if self.pieces[i][j] != None:
-                        print(self.pieces[i][j].team + self.pieces[i][j].type, end=' ')
+                        print(team(self.pieces[i][j].isTeamWhite) + self.pieces[i][j].type, end=' ')
                     else:
                         print('--', end=' ')
                 print()
@@ -360,6 +357,21 @@ class ChessBoard(QWidget):
             for i in range(ord('h'), ord('a') - 1, -1):
                 print(chr(i), end='  ')
             print()
+
+    def changeTurn(self):
+        if self.isTurnWhite:
+            self.isTurnWhite = False
+            self.line_turn.setText('Black')
+        else:
+            self.isTurnWhite = True
+            self.line_turn.setText('White')
+        
+        if self.isPlayerWhite != self.isTurnWhite: # Enemyturn
+            getAImove = threading.Thread(target=connector.getAI_move, args=(self.AI_move_callback,))
+            getAImove.start()
+
+    def AI_move_callback(self, now_x, now_y, next_x, next_y):
+        self.move_piece(now_x, now_y, next_x, next_y)
 
 
 
