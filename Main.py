@@ -24,7 +24,14 @@ def mousePosToBoardPos(x, y, isPlayerWhite): # low Mouse Position to Board posit
     return x, y
 
 
+
 class ChessPiece(QLabel):
+
+    def isMyTurn(self):
+        parent = self.parent()
+        if (parent.isTurnWhite == True and self.team == 'w') or (parent.isTurnWhite == False and self.team == 'b'):
+            return True
+        return False
 
     def __init__(self, image_path, parent, UIx, UIy, Type, Team): # Get UI Position
         super().__init__(parent)
@@ -44,6 +51,9 @@ class ChessPiece(QLabel):
         self.show() 
 
     def mousePressEvent(self, event):
+        if self.isMyTurn() == False:
+            return
+        
         if event.button() == Qt.LeftButton:
             self.moving = True
             self.raise_()  # Bring the piece to the top
@@ -55,6 +65,9 @@ class ChessPiece(QLabel):
             self.boundaryCheck()
 
     def mouseMoveEvent(self, event):
+        if self.isMyTurn() == False:
+            return
+        
         if self.moving:
             center_offset = QPoint(self.width() // 2, self.height() // 2)
             new_pos = self.mapToParent(event.pos() - center_offset)
@@ -63,6 +76,9 @@ class ChessPiece(QLabel):
             self.boundaryCheck()
 
     def mouseReleaseEvent(self, event):
+        if self.isMyTurn() == False:
+            return
+        
         if event.button() == Qt.LeftButton:
             self.moving = False
             self.snap_to_grid(self.parent().mapFromGlobal(self.mapToGlobal(event.pos())))
@@ -134,6 +150,14 @@ class HighLightSquare(QLabel):
 
 
 class ChessBoard(QWidget):
+
+    def changeTurn(self):
+        if self.isTurnWhite:
+            self.isTurnWhite = False
+            self.line_turn.setText('Black')
+        else:
+            self.isTurnWhite = True
+            self.line_turn.setText('White')
     
     def isExistSelectedPiece(self):
         if self.selected_piece[0] == -1 or self.selected_piece[1] == -1:
@@ -189,6 +213,7 @@ class ChessBoard(QWidget):
     def load_findChildren(self):
         self.line_player = self.findChildren(QLineEdit)[0]
         self.line_selected = self.findChildren(QLineEdit)[1]
+        self.line_turn = self.findChildren(QLineEdit)[2]
         self.lbl_board = self.findChildren(QLabel)[0]
 
 
@@ -197,6 +222,7 @@ class ChessBoard(QWidget):
         super().__init__()
         self.selected_piece = (-1, -1)
         self.isPlayerWhite = True
+        self.isTurnWhite = True
         self.load_img()
 
         self.UIinit()
@@ -209,7 +235,8 @@ class ChessBoard(QWidget):
     def UIinit(self):
         self.square_highlight = HighLightSquare(self)  # 강조 표시용 객체 생성
         
-        self.setFixedSize(480, 530) # size of the window
+        self.setFixedSize(480, 555) # size of the windows
+        self.setWindowTitle('Chess')
         vbox = QVBoxLayout()
 
         lbl_board = QLabel(self)
@@ -217,7 +244,7 @@ class ChessBoard(QWidget):
         lbl_board.setFixedSize(480, 480) # size of the chessboard
         lbl_board.setScaledContents(True)
 
-        # player
+        # Player
         hbox_player = QHBoxLayout()
         lbl_player = QLabel('<b>[Player]</b>', self)
         line_player = QLineEdit('White', self)
@@ -231,7 +258,7 @@ class ChessBoard(QWidget):
         hbox_player.addWidget(btn_changePlayer)
         hbox_player.addWidget(btn_restart)
 
-        # selected
+        # Selected
         hbox_selected = QHBoxLayout()
         lbl_selected = QLabel('<b>[Selected Piece]</b>', self)
         line_selected = QLineEdit('None', self)
@@ -239,9 +266,19 @@ class ChessBoard(QWidget):
         hbox_selected.addWidget(lbl_selected)
         hbox_selected.addWidget(line_selected)
 
+        # Turn
+        hbox_turn = QHBoxLayout()
+        lbl_turn = QLabel('<b>[Turn]</b>', self)
+        line_turn = QLineEdit('White', self)
+        line_turn.setReadOnly(True)
+        hbox_turn.addWidget(lbl_turn)
+        hbox_turn.addWidget(line_turn)
+
+
         vbox.addWidget(lbl_board)
         vbox.addLayout(hbox_player)
         vbox.addLayout(hbox_selected)
+        vbox.addLayout(hbox_turn)
         vbox.setContentsMargins(0,0,0,0)
 
         self.setLayout(vbox)
@@ -252,6 +289,7 @@ class ChessBoard(QWidget):
         self.pieces[y][x] = lbl_piece # Update the 2D list with the new piece
     
         
+
     def init_pieces(self):
         # reset
         for i in range(8): 
@@ -293,6 +331,8 @@ class ChessBoard(QWidget):
         self.pieces[next_y][next_x] = self.pieces[now_y][now_x]
         self.pieces[now_y][now_x].move(UIx * 60, UIy * 60)
         self.pieces[now_y][now_x] = None
+
+        self.changeTurn()
 
     def print2DInfo(self):
         if self.isPlayerWhite:
