@@ -48,6 +48,7 @@ class HighLightSquare(QLabel):
         self.hide()
 
 
+
 class ChessPiece(QLabel):
 
     def turnCheck(self, isPress):
@@ -151,7 +152,6 @@ class ChessPiece(QLabel):
 
 
 
-
 class ChessBoard(QWidget):
     
     def load_img(self):
@@ -217,6 +217,7 @@ class ChessBoard(QWidget):
         self.line_selected.setText('None')
         self.square_highlight.clear()
         self.selected_piece = (-1, -1)
+
 
 
     def __init__(self):
@@ -404,7 +405,6 @@ class ChessBoard(QWidget):
             self.line_player.setText('White')
             
         self.btn_gameRestart_function()
-
 
 
 
