@@ -280,7 +280,6 @@ class ChessBoard(QWidget):
         self.legalMove = connector.get_legalMove(notation)
         self.on_legalMove_light()
 
-
     def delSelect(self):
         self.line_selected.setText('None') # change UI
         if self.isSelected():
