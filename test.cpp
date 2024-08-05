@@ -32,10 +32,11 @@ int main(){
     uniform_int_distribution<> dis(1, 3);
 
     while (true) {
+        cout << "test input : ";
         int move[4]; 
         if (!input(move)) continue; // restart
         Sleep(dis(gen) * 100 + 300);
-        cout << moveList[tempIdx][0] << " " << moveList[tempIdx][1] << " " << moveList[tempIdx][2] << " " << moveList[tempIdx][3] << endl;
+        cout << "\nMOVE : " << moveList[tempIdx][0] << " " << moveList[tempIdx][1] << " " << moveList[tempIdx][2] << " " << moveList[tempIdx][3] << endl;
         tempIdx++;
     }
 }

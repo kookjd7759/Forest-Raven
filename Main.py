@@ -376,9 +376,9 @@ class ChessBoard(QWidget):
 
         if self.isTurnWhite == self.isPlayerWhite:
             self.delSelect()
-            print('/[Player] ', end='')
+            print(' / [Player] ', end='')
         else:
-            print('/[AI] ', end='')
+            print(' / [AI] ', end='')
 
         if self.pieces[next_y][next_x] != None:
             self.pieces[next_y][next_x].die()
@@ -403,7 +403,9 @@ class ChessBoard(QWidget):
             self.line_turn.setText('White')
         
         if self.isPlayerWhite != self.isTurnWhite: # AI turn
-            getAImove = threading.Thread(target=connector.getAI_move, args=(self.AI_move_callback, self.prev_move,))
+            nowNotation = boardPosToNotation(self.prev_move[0], self.prev_move[1])
+            nextNotation = boardPosToNotation(self.prev_move[2], self.prev_move[3])
+            getAImove = threading.Thread(target=connector.getAI_move, args=(self.AI_move_callback, nowNotation, nextNotation, ))
             getAImove.start()
 
     def AI_move_callback(self, now_x, now_y, next_x, next_y):
