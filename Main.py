@@ -30,33 +30,21 @@ class HighLightSquare(QLabel):
         self.UIy = UIy
         self.move(UIx * CELL_SIZE, UIy * CELL_SIZE)
         self.setFixedSize(CELL_SIZE, CELL_SIZE)
-        self.setColor_select()
         self.hide()
 
-    def on(self, isSelected): # Get UI Position
+    def on(self, isSelected):
         self.raise_()
         x, y = UI_Board_positionConverter(self.UIx, self.UIy, self.parent().isPlayerWhite) # UI to Board Position Convert
-        if (self.parent().pieces[y][x] != None):    
+        if self.parent().pieces[y][x] != None:
             self.parent().pieces[y][x].raise_()
         if isSelected:
-            self.setColor_select()
+            self.setStyleSheet('background-color: rgba(220, 220, 0, 170); border: 2px solid rgba(240, 240, 240, 130);')
         else:
-            self.setColor_moveable()
+            self.setStyleSheet('background-color: rgba(250, 130, 130, 170);')
         self.show()
 
     def off(self):
         self.hide()
-
-    def setColor_select(self):
-        self.setStyleSheet("""
-            background-color: rgba(220, 220, 0, 170);
-            border: 2px solid rgba(240, 240, 240, 130);
-        """)
-
-    def setColor_moveable(self):
-        self.setStyleSheet("""
-            background-color: rgba(250, 130, 130, 170);
-        """)
 
 
 
