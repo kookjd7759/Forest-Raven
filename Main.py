@@ -23,27 +23,41 @@ def UI_Board_positionConverter(x, y, isPlayerWhite): # UI to Board / Board to UI
 
 
 class HighLightSquare(QLabel):
-    def __init__(self, parent):
+    
+    def __init__(self, parent, UIx, UIy):
         super().__init__(parent)
+        self.UIx = UIx
+        self.UIy = UIy
+        self.move(UIx * CELL_SIZE, UIy * CELL_SIZE)
         self.setFixedSize(CELL_SIZE, CELL_SIZE)
+        self.setColor_select()
+        self.hide()
+
+    def on(self, isSelected): # Get UI Position
+        self.raise_()
+        x, y = UI_Board_positionConverter(self.UIx, self.UIy, self.parent().isPlayerWhite) # UI to Board Position Convert
+        if (self.parent().pieces[y][x] != None):    
+            self.parent().pieces[y][x].raise_()
+        if isSelected:
+            self.setColor_select()
+        else:
+            self.setColor_moveable()
+        self.show()
+
+    def off(self):
+        self.hide()
+
+    def setColor_select(self):
         self.setStyleSheet("""
             background-color: rgba(220, 220, 0, 170);
             border: 2px solid rgba(240, 240, 240, 130);
         """)
-        self.hide()
 
-    def highlight(self, UIx, UIy): # Get UI Position
-        self.move(UIx * CELL_SIZE, UIy * CELL_SIZE)
-        self.raise_()
-        x, y = UI_Board_positionConverter(UIx, UIy, self.parent().isPlayerWhite) # UI to Board Position Convert
-        if (self.parent().pieces[y][x] != None):    
-            self.parent().pieces[y][x].raise_()
-
-        self.show()
-
-    def clear(self):
-        self.hide()
-
+    def setColor_moveable(self):
+        self.setStyleSheet("""
+            background-color: rgba(230, 50, 50, 170);
+            border: 2px solid rgba(240, 240, 240, 130);
+        """)
 
 
 class ChessPiece(QLabel):
@@ -169,7 +183,7 @@ class ChessPiece(QLabel):
 
 
 class ChessBoard(QWidget):
-    
+### Load
     def load_img(self):
         self.img_board = Path.getImgFolder() + 'Ground.png'
         self.img_bq = Path.getImgFolder() + 'bq.png'
@@ -208,19 +222,36 @@ class ChessBoard(QWidget):
         self.line_turn = self.findChildren(QLineEdit)[2]
         self.lbl_board = self.findChildren(QLabel)[0]
 
+### Highlight
+    def off_light(self, x, y):
+        UIx, UIy = UI_Board_positionConverter(x, y, self.isPlayerWhite)
+        self.highlight[UIy][UIx].off()
 
+    def on_light(self, x, y, isSelected):
+        UIx, UIy = UI_Board_positionConverter(x, y, self.isPlayerWhite)
+        self.highlight[UIy][UIx].on(isSelected)
 
+    def clear_light(self):
+        for x in range(8):
+            for y in range(8):
+                self.highlight[y][x].off()
+
+### Select Piece
     def isSelected(self):
         if self.selected_piece[0] == -1 or self.selected_piece[1] == -1:
             return False
         return True
 
     def setSelect(self, x, y): # Get Board Position
+        # turn off prev light
+        if self.isSelected():
+            self.off_light(self.selected_piece[0], self.selected_piece[1])
+
         self.line_selected.setText(boardPosToNotation(x, y)) # change UI
 
         # Create HighLight
         UIx, UIy = UI_Board_positionConverter(x, y, self.isPlayerWhite)
-        self.square_highlight.highlight(UIx, UIy)
+        self.highlight[UIy][UIx].on(True)
 
         # Change Data
         templist = list(self.selected_piece)
@@ -230,15 +261,35 @@ class ChessBoard(QWidget):
 
     def delSelect(self):
         self.line_selected.setText('None') # change UI
-        self.square_highlight.clear() # Delete HighLight
+        self.off_light(self.selected_piece[0], self.selected_piece[1])
         self.selected_piece = (-1, -1) # Change Data
 
+### Piece
+    def create_piece(self, st, x, y, type, isTeamWhite): # Get Board Position
+        UIx, UIy = UI_Board_positionConverter(x, y, self.isPlayerWhite) # Board to UI Position Convert
+        lbl_piece = ChessPiece(self.piece_images[st], self, UIx, UIy, type, isTeamWhite)
+        self.pieces[y][x] = lbl_piece # Update the 2D list with the new piece
+    
+    def init_pieces(self):
+        # reset
+        for i in range(8): 
+            for j in range(8): 
+                if self.pieces[i][j] != None:
+                    self.pieces[i][j].die() # delete Piece
+                    self.pieces[i][j] = None
+        
+        initPos = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r']
+        typeList = ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
 
+        for i in range(8): 
+            self.create_piece('wp', i, 1, 'P', True)  # White pawns
+            self.create_piece('w' + initPos[i], i, 0, typeList[i], True) # White other pieces
+            self.create_piece('bp', i, 6, 'P', False)  # Black pawns
+            self.create_piece('b' + initPos[i], i, 7, typeList[i], False) # Black other pieces
 
+### Window initalize
     def __init__(self):
         super().__init__()
-        self.square_highlight = HighLightSquare(self)  # For Selected Piece HighLight 
-
         self.selected_piece = (-1, -1)
         self.prev_move = (-1, -1, -1, -1)
         self.isPlayerWhite = True
@@ -251,6 +302,12 @@ class ChessBoard(QWidget):
         # Initialize pieces
         self.pieces = [[None for _ in range(8)] for _ in range(8)]
         self.init_pieces()
+        
+        # Initialize Highlight sheet
+        self.highlight = [[None for _ in range(8)] for _ in range(8)]
+        for UIx in range(8):
+            for UIy in range(8):
+                self.highlight[UIy][UIx] = HighLightSquare(self, UIx, UIy)
 
     def UIinit(self):
         
@@ -302,28 +359,7 @@ class ChessBoard(QWidget):
 
         self.setLayout(vbox)
 
-    def create_piece(self, st, x, y, type, isTeamWhite): # Get Board Position
-        UIx, UIy = UI_Board_positionConverter(x, y, self.isPlayerWhite) # Board to UI Position Convert
-        lbl_piece = ChessPiece(self.piece_images[st], self, UIx, UIy, type, isTeamWhite)
-        self.pieces[y][x] = lbl_piece # Update the 2D list with the new piece
-    
-    def init_pieces(self):
-        # reset
-        for i in range(8): 
-            for j in range(8): 
-                if self.pieces[i][j] != None:
-                    self.pieces[i][j].die() # delete Piece
-                    self.pieces[i][j] = None
-        
-        initPos = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r']
-        typeList = ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
-
-        for i in range(8): 
-            self.create_piece('wp', i, 1, 'P', True)  # White pawns
-            self.create_piece('w' + initPos[i], i, 0, typeList[i], True) # White other pieces
-            self.create_piece('bp', i, 6, 'P', False)  # Black pawns
-            self.create_piece('b' + initPos[i], i, 7, typeList[i], False) # Black other pieces
-
+### Move Logic
     def move_piece(self, now_x, now_y, next_x, next_y, smooth): # Get Board Position
         if self.isTurnWhite != self.pieces[now_y][now_x].isTeamWhite: # Opponent Turn
             return 
@@ -350,6 +386,52 @@ class ChessBoard(QWidget):
         self.prev_move = (now_x, now_y, next_x, next_y)
         self.changeTurn()
 
+    def changeTurn(self):
+        if self.isTurnWhite:
+            self.isTurnWhite = False
+            self.line_turn.setText('Black')
+        else:
+            self.isTurnWhite = True
+            self.line_turn.setText('White')
+        
+        if self.isPlayerWhite != self.isTurnWhite: # AI turn
+            getAImove = threading.Thread(target=connector.getAI_move, args=(self.AI_move_callback, self.prev_move,))
+            getAImove.start()
+
+    def AI_move_callback(self, now_x, now_y, next_x, next_y):
+        self.move_piece(now_x, now_y, next_x, next_y, smooth=True)
+
+### Mouse event
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            mousePos = self.mapFromGlobal(self.mapToGlobal(event.pos()))
+            x, y = UI_Board_positionConverter(mousePos.x() // CELL_SIZE, mousePos.y() // CELL_SIZE, self.isPlayerWhite)
+            print(f'{boardPosToNotation(x, y)} clicked !')
+            if self.isSelected():
+                self.move_piece(self.selected_piece[0], self.selected_piece[1], x, y, smooth=True)
+        elif event.button() == Qt.RightButton:
+            self.delSelect()
+
+### button function
+    def btn_gameRestart_function(self):
+        self.init_pieces()
+        self.isTurnWhite = True
+        self.delSelect()
+        self.prev_move = (-1, -1, -1, -1)
+
+        connector.send_restart_event()
+
+    def btn_changeColor_function(self):
+        if self.isPlayerWhite:
+            self.isPlayerWhite = False
+            self.line_player.setText('Black')
+        else:
+            self.isPlayerWhite = True
+            self.line_player.setText('White')
+            
+        self.btn_gameRestart_function()
+
+### Additional function
     def print2DInfo(self):
         def team(isTeamWhite):
             if isTeamWhite:
@@ -385,53 +467,6 @@ class ChessBoard(QWidget):
             for i in range(ord('h'), ord('a') - 1, -1):
                 print(chr(i), end='  ')
             print()
-
-    def changeTurn(self):
-        if self.isTurnWhite:
-            self.isTurnWhite = False
-            self.line_turn.setText('Black')
-        else:
-            self.isTurnWhite = True
-            self.line_turn.setText('White')
-        
-        if self.isPlayerWhite != self.isTurnWhite: # AI turn
-            getAImove = threading.Thread(target=connector.getAI_move, args=(self.AI_move_callback, self.prev_move,))
-            getAImove.start()
-
-    def AI_move_callback(self, now_x, now_y, next_x, next_y):
-        self.move_piece(now_x, now_y, next_x, next_y, smooth=True)
-
-
-
-    def mousePressEvent(self, event):
-        if event.button() == Qt.LeftButton:
-            mousePos = self.mapFromGlobal(self.mapToGlobal(event.pos()))
-            x, y = UI_Board_positionConverter(mousePos.x() // CELL_SIZE, mousePos.y() // CELL_SIZE, self.isPlayerWhite)
-            print(f'{boardPosToNotation(x, y)} clicked !')
-            if self.isSelected():
-                self.move_piece(self.selected_piece[0], self.selected_piece[1], x, y, smooth=True)
-        elif event.button() == Qt.RightButton:
-            self.delSelect()
-
-
-
-    def btn_gameRestart_function(self):
-        self.init_pieces()
-        self.isTurnWhite = True
-        self.delSelect()
-        self.square_highlight.clear()
-        self.prev_move = (-1, -1, -1, -1)
-        connector.send_restart_event()
-
-    def btn_changeColor_function(self):
-        if self.isPlayerWhite:
-            self.isPlayerWhite = False
-            self.line_player.setText('Black')
-        else:
-            self.isPlayerWhite = True
-            self.line_player.setText('White')
-            
-        self.btn_gameRestart_function()
 
 
 
