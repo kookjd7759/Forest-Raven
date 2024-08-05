@@ -77,7 +77,7 @@ class ChessPiece(QLabel):
         self.raise_() # Bring the piece to the top
             
         new_pos = self.mapToParent(mousePos - QPoint(self.width() // 2, self.height() // 2))
-        self.move(new_pos)
+        self.move(new_pos.x(), new_pos.y())
         self.boundaryCheck()
 
     def boundaryCheck(self):
