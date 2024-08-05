@@ -29,5 +29,21 @@ def getAI_move(callback, nowNotation, nextNotation):
     now_x, now_y, next_x, next_y = map(int, output.split())
     callback(now_x, now_y, next_x, next_y)
 
+def get_legalMove(notation):
+    send_input_to_process(f'{notation} LEGALMOVE')
+    while True:
+        output = read_output_from_process()
+        if output.find('LEGALMOVE') != -1:
+            output = output[12:]
+            break
+        print('process.exe :: ' + output)
+    
+    result = list(map(int, output.split()))
+    return result
+
 def send_restart_event():
     send_input_to_process('-1 -1 -1 -1')
+
+if __name__ == '__main__':
+    legalMoveList = get_legalMove('a1')
+    print(legalMoveList)

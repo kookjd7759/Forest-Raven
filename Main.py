@@ -55,8 +55,7 @@ class HighLightSquare(QLabel):
 
     def setColor_moveable(self):
         self.setStyleSheet("""
-            background-color: rgba(230, 50, 50, 170);
-            border: 2px solid rgba(240, 240, 240, 130);
+            background-color: rgba(250, 130, 130, 170);
         """)
 
 
@@ -237,11 +236,19 @@ class ChessBoard(QWidget):
             for y in range(8):
                 self.highlight[y][x].off()
 
-    def moveableLight_on(self):
-        print('on light selected moveable place')
+    def on_legalMove_light(self):
+        it = iter(self.legalMove)
+        for x, y in zip(it, it):
+            self.on_light(x, y, False)
+            print(x, y)
     
-    def moveableLight_off(self):
-        print('off light moveable place')
+    def off_legalMove_light(self):
+        it = iter(self.legalMove)
+        for x, y in zip(it, it):
+            self.off_light(x, y)
+            print(x, y)
+
+
 
 ### Select Piece
     def isSelected(self):
@@ -250,11 +257,13 @@ class ChessBoard(QWidget):
         return True
 
     def setSelect(self, x, y): # Get Board Position
+        notation = boardPosToNotation(x, y)
         # turn off prev light
         if self.isSelected():
             self.off_light(self.selected_piece[0], self.selected_piece[1])
 
-        self.line_selected.setText(boardPosToNotation(x, y)) # change UI
+        # change UI
+        self.line_selected.setText(notation)
 
         # Create HighLight
         UIx, UIy = UI_Board_positionConverter(x, y, self.isPlayerWhite)
@@ -266,9 +275,17 @@ class ChessBoard(QWidget):
         templist[1] = y
         self.selected_piece = tuple(templist)
 
+        # set legal move list
+        self.off_legalMove_light()
+        self.legalMove = connector.get_legalMove(notation)
+        self.on_legalMove_light()
+
+
     def delSelect(self):
         self.line_selected.setText('None') # change UI
-        self.off_light(self.selected_piece[0], self.selected_piece[1])
+        if self.isSelected():
+            self.off_light(self.selected_piece[0], self.selected_piece[1])
+            self.off_legalMove_light()
         self.selected_piece = (-1, -1) # Change Data
 
 ### Piece
@@ -392,6 +409,7 @@ class ChessBoard(QWidget):
         self.pieces[now_y][now_x] = None
 
         self.prev_move = (now_x, now_y, next_x, next_y)
+        self.off_legalMove_light()
         self.changeTurn()
 
     def changeTurn(self):

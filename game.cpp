@@ -455,15 +455,31 @@ public:
         move(now, dest);
     }
 
+    void returnLegalMove(vector<Position>* vec) {
+        cout << "LEGALMOVE : ";
+        for (const Position iter : *vec)
+            cout << iter.x << " " << iter.y << " ";
+        cout << "\n";
+    }
+
     void command() {
         cout << (isWhiteTurn ? "[White move]" : "[Black move]") << "\n";
 
         string now, next; 
         while (true) { // For Legal move
+            int command(-1); // 0 : move, 1 : return legal move list
             while (true) { // For Correct Input
-                cout << "enter the move command >> "; cin >> now >> next;
-                if (notationCheck(now) && notationCheck(next)) break;
-                else cout << "move()::Notation Error\n";
+                cout << "enter the command >> "; cin >> now >> next;
+
+                if (notationCheck(now) && next == "LEGALMOVE") {
+                    command = 1;
+                    break;
+                }
+                else if (notationCheck(now) && notationCheck(next)) {
+                    command = 0;
+                    break;
+                }
+                else cout << "move()::Command Error\n";
             }
 
             Position selected = convertPos(now);
@@ -484,6 +500,11 @@ public:
                 case QUEEN: vec_legalMove = move_queen(selected); break;
                 case KING: vec_legalMove = move_king(selected); break;
                 default: cout << "I don't know, Enter position again\n"; continue;
+            }
+
+            if (command == 1) {
+                returnLegalMove(&vec_legalMove);
+                return;
             }
 
             cout << "Legal move [ ";
