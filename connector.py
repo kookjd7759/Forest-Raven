@@ -22,3 +22,6 @@ def getAI_move(callback, prev_move):
     output = read_output_from_process()
     now_x, now_y, next_x, next_y = map(int, output.split())
     callback(now_x, now_y, next_x, next_y)
+
+def send_restart_event():
+    send_input_to_process('-1 -1 -1 -1')

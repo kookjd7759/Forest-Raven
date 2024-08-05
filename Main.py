@@ -421,6 +421,7 @@ class ChessBoard(QWidget):
         self.delSelect()
         self.square_highlight.clear()
         self.prev_move = (-1, -1, -1, -1)
+        connector.send_restart_event()
 
     def btn_changeColor_function(self):
         if self.isPlayerWhite:
