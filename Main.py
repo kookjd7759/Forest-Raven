@@ -23,7 +23,7 @@ def UI_Board_positionConverter(x, y, isPlayerWhite): # UI to Board / Board to UI
 
 
 class HighLightSquare(QLabel):
-    
+
     def __init__(self, parent, UIx, UIy):
         super().__init__(parent)
         self.UIx = UIx
@@ -60,9 +60,10 @@ class HighLightSquare(QLabel):
         """)
 
 
+
 class ChessPiece(QLabel):
 
-    def check(self, isPress):
+    def touchCheck(self, isPress):
         parent = self.parent()
         if parent.isPlayerWhite == self.isTeamWhite: # player piece
             return True
@@ -138,7 +139,7 @@ class ChessPiece(QLabel):
         self.show()
 
     def mousePressEvent(self, event):
-        if self.check(True) == False: 
+        if self.touchCheck(True) == False: 
             return
         
         # set selected piece
@@ -150,14 +151,14 @@ class ChessPiece(QLabel):
             self.followMouse(event.pos())
 
     def mouseMoveEvent(self, event):
-        if self.check(False) == False:
+        if self.touchCheck(False) == False:
             return
         
         if self.moving:
             self.followMouse(event.pos())
 
     def mouseReleaseEvent(self, event):
-        if self.check(False) == False:
+        if self.touchCheck(False) == False:
             return
         
         if event.button() == Qt.LeftButton:
@@ -236,6 +237,12 @@ class ChessBoard(QWidget):
             for y in range(8):
                 self.highlight[y][x].off()
 
+    def moveableLight_on(self):
+        print('on light selected moveable place')
+    
+    def moveableLight_off(self):
+        print('off light moveable place')
+
 ### Select Piece
     def isSelected(self):
         if self.selected_piece[0] == -1 or self.selected_piece[1] == -1:
@@ -294,6 +301,7 @@ class ChessBoard(QWidget):
         self.prev_move = (-1, -1, -1, -1)
         self.isPlayerWhite = True
         self.isTurnWhite = True
+        self.legalMove = []
 
         self.load_img()
         self.UIinit()
@@ -400,6 +408,9 @@ class ChessBoard(QWidget):
 
     def AI_move_callback(self, now_x, now_y, next_x, next_y):
         self.move_piece(now_x, now_y, next_x, next_y, smooth=True)
+
+    def update_legalMoveList(self):
+        print('TODO: update legalMove')
 
 ### Mouse event
     def mousePressEvent(self, event):

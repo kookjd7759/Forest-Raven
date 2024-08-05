@@ -34,7 +34,7 @@ int main(){
     while (true) {
         int move[4]; 
         if (!input(move)) continue; // restart
-        Sleep(dis(gen) * 400);
+        Sleep(dis(gen) * 100 + 300);
         cout << moveList[tempIdx][0] << " " << moveList[tempIdx][1] << " " << moveList[tempIdx][2] << " " << moveList[tempIdx][3] << endl;
         tempIdx++;
     }
