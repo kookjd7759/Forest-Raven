@@ -51,12 +51,6 @@ class HighLightSquare(QLabel):
 
 class ChessPiece(QLabel):
 
-    def touchCheck(self):
-        parent = self.parent()
-        if parent.isPlayerWhite == self.isTeamWhite: # player piece
-            return True
-        return False # NOT player piece
-
     def boundaryCheck(self):
         piece_rect = self.rect().translated(self.mapToParent(QPoint(0, 0)))
 
@@ -97,6 +91,12 @@ class ChessPiece(QLabel):
         self.UIx = next_UIx
         self.UIy = next_UIy
 
+    def touchCheck(self):
+        parent = self.parent()
+        if parent.isPlayerWhite == self.isTeamWhite: # player piece
+            return True
+        return False # NOT player piece
+
 
 
     def __init__(self, parent, image_path, UIx, UIy, Type, IsTeamWhite, callback_press, callback_land): # Get UI Position
@@ -125,7 +125,8 @@ class ChessPiece(QLabel):
 
     def mousePressEvent(self, event):
         if self.touchCheck() == False: # NOT player piece
-            self.callback_land(self.UIx, self.UIy)
+            self.callback_land(self.UIx, self.UIy, True)
+            return
         
         # player piece
         self.moving = True
@@ -143,7 +144,7 @@ class ChessPiece(QLabel):
             mousePos = self.parent().mapFromGlobal(self.mapToGlobal(event.pos()))
             land_UIx = max(0, min(mousePos.x() // CELL_SIZE, 7)) # UI Position
             land_UIy = max(0, min(mousePos.y() // CELL_SIZE, 7)) # UI Position
-            self.callback_land(land_UIx, land_UIy)
+            self.callback_land(land_UIx, land_UIy, False)
 
 
 
@@ -275,13 +276,13 @@ class ChessBoard(QWidget):
         x, y = UI_Board_PosConv(UIx, UIy, self.isPlayerWhite)
         self.setSelect(x, y)
 
-    def piece_land_callback(self, UIx, UIy):
+    def piece_land_callback(self, UIx, UIy, smooth):
         if self.isSelected() == False:
             return 
         
         x, y = UI_Board_PosConv(UIx, UIy, self.isPlayerWhite)
         if self.selected_piece[0] != x or self.selected_piece[1] != y: # move
-            self.move_piece(self.selected_piece[0], self.selected_piece[1], x, y, False)
+            self.move_piece(self.selected_piece[0], self.selected_piece[1], x, y, smooth)
         else: # click
             self.pieces[y][x].move_direct(UIx, UIy)
 

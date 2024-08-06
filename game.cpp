@@ -1,6 +1,7 @@
 #include <iostream>
-#include <random>
 #include <windows.h>
+#include <random>
+#include <set>
 
 using namespace std;
 
@@ -15,14 +16,12 @@ using namespace std;
 
 struct Position {
     int x, y;
+    bool operator<(const Position& other) const {
+        if (x < other.x) return true;
+        if (x > other.x) return false;
+        return y < other.y;
+    }
 };
-
-const bool PosVecFind(vector<Position>* vec, Position pos) {
-    for (const auto iter : *vec)
-        if (iter.x == pos.x && iter.y == pos.y)
-            return true;
-    return false;
-}
 
 class Game {
 private:
@@ -106,61 +105,61 @@ private:
     }
     
 
-    vector<Position> move_pawn_b(const Position pos) {
+    set<Position> move_pawn_b(const Position pos) {
         cout << "pawn_b !\n";
-        vector<Position> vec;
+        set<Position> s;
 
         // Plain move
         if (isEmpty({ pos.x, pos.y - 1 })) {
-            vec.push_back({ pos.x, pos.y - 1 });
+            s.insert({ pos.x, pos.y - 1 });
             // First move
-            if (pos.y == 6) vec.push_back({ pos.x, pos.y - 2 });
+            if (pos.y == 6) s.insert({ pos.x, pos.y - 2 });
         }
 
         // Attack
         if (boundaryCheck({ pos.x - 1, pos.y - 1 }) && isEnemy(pos, { pos.x - 1, pos.y - 1 }))
-            vec.push_back({ pos.x - 1, pos.y - 1 });
+            s.insert({ pos.x - 1, pos.y - 1 });
 
         if (boundaryCheck({ pos.x + 1, pos.y - 1 }) && isEnemy(pos, { pos.x + 1, pos.y - 1 }))
-            vec.push_back({ pos.x + 1, pos.y - 1 });
+            s.insert({ pos.x + 1, pos.y - 1 });
 
         // en_passant Check
         int en_check = en_passant(&pos, false);
         if (en_check != 0)
-            vec.push_back({ pos.x + en_check, pos.y - 1 });
+            s.insert({ pos.x + en_check, pos.y - 1 });
 
-        return vec;
+        return s;
     }
 
-    vector<Position> move_pawn_w(const Position pos) {
+    set<Position> move_pawn_w(const Position pos) {
         cout << "pawn_w !\n";
-        vector<Position> vec;
+        set<Position> s;
 
         // Plain move
         if (isEmpty({ pos.x, pos.y + 1 })) {
-            vec.push_back({ pos.x, pos.y + 1 });
+            s.insert({ pos.x, pos.y + 1 });
             // First move
-            if (pos.y == 1) vec.push_back({ pos.x, pos.y + 2 });
+            if (pos.y == 1) s.insert({ pos.x, pos.y + 2 });
         }
 
         // Attack
         if (boundaryCheck({ pos.x + 1, pos.y + 1 }) && isEnemy(pos, { pos.x + 1, pos.y + 1 }))
-            vec.push_back({ pos.x + 1, pos.y + 1 });
+            s.insert({ pos.x + 1, pos.y + 1 });
 
         if (boundaryCheck({ pos.x - 1, pos.y + 1 }) && isEnemy(pos, { pos.x - 1, pos.y + 1 }))
-            vec.push_back({ pos.x - 1, pos.y + 1 });
+            s.insert({ pos.x - 1, pos.y + 1 });
 
         // en_passant Check
         int en_check = en_passant(&pos, true);
         if (en_check != 0)
-            vec.push_back({ pos.x + en_check, pos.y + 1 });
+            s.insert({ pos.x + en_check, pos.y + 1 });
 
-        return vec;
+        return s;
     }
 
-    vector<Position> move_knight(const Position pos) {
+    set<Position> move_knight(const Position pos) {
         cout << "knight !\n";
-        vector<Position> vec;
+        set<Position> s;
         Position posList[8] = {
             {pos.x + 1, pos.y + 2},
             {pos.x - 1, pos.y + 2},
@@ -173,18 +172,18 @@ private:
         };
 
         for (int i = 0; i < 8; i++) if (boundaryCheck(posList[i]) && !isAlly(pos, posList[i]))
-                vec.push_back(posList[i]);
+                s.insert(posList[i]);
 
-        return vec;
+        return s;
     }
 
-    vector<Position> move_rook(const Position pos) {
+    set<Position> move_rook(const Position pos) {
         cout << "rook !\n";
-        vector<Position> vec;
+        set<Position> s;
         auto check = [&](Position nextPos) -> bool {
             if (!boundaryCheck(nextPos) || isAlly(pos, nextPos)) return false;
 
-            vec.push_back(nextPos);
+            s.insert(nextPos);
             if (isEmpty(nextPos))
                 return true;
             else return false;
@@ -215,16 +214,16 @@ private:
             if (!check(nextPos)) break;
         }
 
-        return vec;
+        return s;
     }
 
-    vector<Position> move_bishop(const Position pos) {
+    set<Position> move_bishop(const Position pos) {
         cout << "bishop !\n";
-        vector<Position> vec;
+        set<Position> s;
         auto check = [&](Position nextPos) -> bool {
             if (!boundaryCheck(nextPos) || isAlly(pos, nextPos)) return false;
 
-            vec.push_back(nextPos);
+            s.insert(nextPos);
             if (isEmpty(nextPos))
                 return true;
             else return false;
@@ -258,16 +257,16 @@ private:
             if (!check(nextPos)) break;
         }
 
-        return vec;
+        return s;
     }
 
-    vector<Position> move_queen(const Position pos) {
+    set<Position> move_queen(const Position pos) {
         cout << "queen !\n";
-        vector<Position> vec;
+        set<Position> s;
         auto check = [&](Position nextPos) -> bool {
             if (!boundaryCheck(nextPos) || isAlly(pos, nextPos)) return false;
 
-            vec.push_back(nextPos);
+            s.insert(nextPos);
             if (isEmpty(nextPos))
                 return true;
             else return false;
@@ -325,12 +324,12 @@ private:
             if (!check(nextPos)) break;
         }
 
-        return vec;
+        return s;
     }
 
-    vector<Position> move_king(const Position pos) {
+    set<Position> move_king(const Position pos) {
         cout << "king !\n";
-        vector<Position> vec;
+        set<Position> s;
         Position posList[8] = {
             {pos.x, pos.y + 1},
             {pos.x + 1, pos.y + 1},
@@ -343,9 +342,9 @@ private:
         };
 
         for (int i = 0; i < 8; i++) if (boundaryCheck(posList[i]) && !isAlly(pos, posList[i]))
-                vec.push_back(posList[i]);
+                s.insert(posList[i]);
 
-        return vec;
+        return s;
     }
 
 
@@ -376,13 +375,13 @@ private:
 
 public:
     Game() : board(new Square* [8]) {
-        for (int i = 0; i < 8; ++i) 
+        for (int i = 0; i < 8; i++) 
             board[i] = new Square[8];
         init();
     }
 
     ~Game() {
-        for (int i = 0; i < 8; ++i) 
+        for (int i = 0; i < 8; i++) 
             delete[] board[i];
         delete[] board;
     }
@@ -409,34 +408,9 @@ public:
         reset();
     }
 
-    void print_board(bool isW) {
-        if (isW) {
-            for (int i = 7; i >= 0; i--) {
-                for (int j = 0; j < 8; j++) {
-                    cout << teamToChar[board[i][j].team] << typeToChar[board[i][j].type] << " ";
-                }
-                cout << "\n";
-            }
-            for (int i = 0; i < 8; i++)
-                cout << (char)('a' + i) << "  ";
-            cout << "\n\n";
-        }
-        else {
-            for (int i = 0; i < 8; i++) {
-                for (int j = 0; j < 8; j++) {
-                    cout << teamToChar[board[i][j].team] << typeToChar[board[i][j].type] << " ";
-                }
-                cout << "\n";
-            }
-            for (int i = 7; i >= 0; i--)
-                cout << (char)('a' + i) << "  ";
-            cout << "\n\n";
-        }
-    }
-
     void move(const Position* now, const Position* dest) {
-        cout << "Move : " << convertPos(*now) << " -> " << convertPos(*dest) << "\n";
         // cout << "MOVE : " << now->x << " " << now->y << " " << dest->x << " " << dest->y << "\n";
+        cout << "Move : " << convertPos(*now) << " -> " << convertPos(*dest) << "\n";
         board[dest->y][dest->x] = board[now->y][now->x];
         board[now->y][now->x].team = NONE;
         board[now->y][now->x].type = EMPTY;
@@ -444,20 +418,9 @@ public:
         isWhiteTurn = isWhiteTurn ? false : true;
     }
 
-    void AI_move(const Position* now, const Position* dest) {
-        move(now, dest);
-        cout << "MOVE : " << now->x << " " << now->y << " " << dest->x << " " << dest->y << "\n";
-    }
-
-    void capture(const Position* now, const Position* dest) {
-        cout << teamToChar[board[now->y][now->x].team] << typeToChar[board[now->y][now->x].type] << " Take "
-            << teamToChar[board[dest->y][dest->x].team] << typeToChar[board[dest->y][dest->x].type] << "\n";
-        move(now, dest);
-    }
-
-    void returnLegalMove(vector<Position>* vec) {
+    void returnLegalMove(set<Position>* s) {
         cout << "LEGALMOVE : ";
-        for (const Position iter : *vec)
+        for (const Position iter : *s)
             cout << iter.x << " " << iter.y << " ";
         cout << "\n";
     }
@@ -489,47 +452,35 @@ public:
                 continue;
             }
 
-            vector<Position> vec_legalMove;
+            set<Position> s_legalMove;
             switch (board[selected.y][selected.x].type) {
                 case NONE: cout << "There is no piece, Enter position again\n"; continue;
-                case PAWN: vec_legalMove = board[selected.y][selected.x].team == BLACK ?
+                case PAWN: s_legalMove = board[selected.y][selected.x].team == BLACK ?
                     move_pawn_b(selected) : move_pawn_w(selected); break;
-                case KNIGHT: vec_legalMove = move_knight(selected); break;
-                case BISHOP: vec_legalMove = move_bishop(selected); break;
-                case ROOK: vec_legalMove = move_rook(selected); break;
-                case QUEEN: vec_legalMove = move_queen(selected); break;
-                case KING: vec_legalMove = move_king(selected); break;
+                case KNIGHT: s_legalMove = move_knight(selected); break;
+                case BISHOP: s_legalMove = move_bishop(selected); break;
+                case ROOK: s_legalMove = move_rook(selected); break;
+                case QUEEN: s_legalMove = move_queen(selected); break;
+                case KING: s_legalMove = move_king(selected); break;
                 default: cout << "I don't know, Enter position again\n"; continue;
             }
 
             if (command == 1) {
-                returnLegalMove(&vec_legalMove);
+                returnLegalMove(&s_legalMove);
                 return;
             }
 
             cout << "Legal move [ ";
-            for (const auto iter : vec_legalMove)
+            for (const auto iter : s_legalMove)
                 cout << convertPos(iter) << " ";
             cout << "]\n";
 
             Position dest = convertPos(next);
-            if (PosVecFind(&vec_legalMove, dest)) {
-                if (board[dest.y][dest.x].type != EMPTY) { // take the piece
-                    capture(&selected, &dest);
-                }
-                else {
-                    move(&selected, &dest);
-                }
+            if (s_legalMove.find(dest) != s_legalMove.end()) {
+                move(&selected, &dest);
                 break;
             }
             else cout << "It can't move there\n";
-        }
-    }
-
-    void start() {
-        while (true) {
-            print_board(true);
-            command();
         }
     }
 
@@ -550,11 +501,41 @@ public:
             }
             else {
                 Sleep(dis(gen) * 100 + 300);
-                AI_move(&Black_scotch[idx][0], &Black_scotch[idx][1]);
+                move(&Black_scotch[idx][0], &Black_scotch[idx][1]);
+                cout << "MOVE : " << Black_scotch[idx][0].x << " " << Black_scotch[idx][0].y << " "
+                    << Black_scotch[idx][1].x << " " << Black_scotch[idx][1].y << "\n";
                 idx++;
             }
         }
     }
+
+
+    // additional function
+    void print_board(bool isW) {
+        if (isW) {
+            for (int i = 7; i >= 0; i--) {
+                for (int j = 0; j < 8; j++) {
+                    cout << teamToChar[board[i][j].team] << typeToChar[board[i][j].type] << " ";
+                }
+                cout << "\n";
+            }
+            for (int i = 0; i < 8; i++)
+                cout << (char)('a' + i) << "  ";
+            cout << "\n\n";
+        }
+        else {
+            for (int i = 0; i < 8; i++) {
+                for (int j = 0; j < 8; j++) {
+                    cout << teamToChar[board[i][j].team] << typeToChar[board[i][j].type] << " ";
+                }
+                cout << "\n";
+            }
+            for (int i = 7; i >= 0; i--)
+                cout << (char)('a' + i) << "  ";
+            cout << "\n\n";
+        }
+    }
+
 };
 
 int main() {
