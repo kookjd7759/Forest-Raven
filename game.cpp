@@ -16,15 +16,25 @@ using namespace std;
 
 struct Position {
     int x, y;
+
+    Position(int x = 0, int y = 0) : x(x), y(y) {}
+
     bool operator<(const Position& other) const {
         if (x < other.x) return true;
         if (x > other.x) return false;
         return y < other.y;
     }
+
+    Position operator+(const Position& other) const {
+        return Position(x + other.x, y + other.y);
+    }
 };
 
 class Game {
 private:
+    const Position dir_straight[4]{ {0, 1}, {0, -1}, {1, 0}, {-1, 0} };
+    const Position dir_diagonal[4]{ {1, 1}, {1, -1}, {-1, -1}, {-1, 1} };
+
     enum Type {
         EMPTY,
         PAWN,
@@ -42,6 +52,28 @@ private:
         BLACK,
     };
     char teamToChar[3] = { '-', 'w', 'b' };
+
+    bool notationCheck(const string st) {
+        if (st.size() == 2) {
+            if ((st[0] >= 'a' && st[0] <= 'h') &&
+                (st[1] >= '1' && st[1] <= '8')) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    Position convertPos(const string st) {
+        Position pos{ st[0] - 'a', st[1] - '1' };
+        return pos;
+    }
+
+    string convertPos(const Position pos) {
+        string st = "";
+        st += pos.x + 'a';
+        st += pos.y + '1';
+        return st;
+    }
 
     const bool boundaryCheck(const Position pos) {
         return (pos.x < 0 || pos.x > 7 || pos.y < 0 || pos.y > 7) ? false : true;
@@ -65,20 +97,24 @@ private:
     public:
         Type type = EMPTY;
         Team team = NONE;
+        int attack_w = 0, attack_b = 0;
     };
 
     Square** board = new Square *[8];
     Position prevMove[2];
     bool isWhiteTurn = true;
 
+    int score_pieces_w = 0, score_pieces_b = 0;
+    vector<Type> vec_piece_w, vec_piece_b;
+
 
     int en_passant(const Position* pos, bool isWhite) const {
+        if (prevMove[0].x == -1) // first move
+            return false;
+
         auto comp = [&](const Position* a, const Position* b) -> bool {
             return (a->x == b->x) && (a->y == b->y);
             };
-
-        if (prevMove[0].x == -1) // first move
-            return false;
 
         Position kingSide[2], queenSide[2];
         if (isWhite) {
@@ -98,12 +134,21 @@ private:
 
 
         if (comp(&kingSide[0], &prevMove[0]) && comp(&kingSide[1], &prevMove[1]))
-            return 1;
+            return 1; // able to KingSide en passant
         else if (comp(&queenSide[0], &prevMove[0]) && comp(&queenSide[1], &prevMove[1]))
             return -1;
         return 0;
     }
     
+
+    bool move_check(set<Position>& s, const Position& cur , const Position& next) {
+        if (!boundaryCheck(next) || isAlly(cur, next)) return false;
+
+        s.insert(next);
+        if (isEmpty(next))
+            return true;
+        else return false;
+    }
 
     set<Position> move_pawn_b(const Position pos) {
         cout << "pawn_b !\n";
@@ -180,38 +225,11 @@ private:
     set<Position> move_rook(const Position pos) {
         cout << "rook !\n";
         set<Position> s;
-        auto check = [&](Position nextPos) -> bool {
-            if (!boundaryCheck(nextPos) || isAlly(pos, nextPos)) return false;
 
-            s.insert(nextPos);
-            if (isEmpty(nextPos))
-                return true;
-            else return false;
-            };
-
-        Position nextPos = pos;
-        cout << "R\n";
-        while (true) {
-            nextPos.x++;
-            if (!check(nextPos)) break;
-        }
-
-        nextPos = pos;
-        while (true) {
-            nextPos.x--;
-            if (!check(nextPos)) break;
-        }
-
-        nextPos = pos;
-        while (true) {
-            nextPos.y++;
-            if (!check(nextPos)) break;
-        }
-
-        nextPos = pos;
-        while (true) {
-            nextPos.y--;
-            if (!check(nextPos)) break;
+        for (int i = 0; i < 4; i++) {
+            while (true) {
+                if (!move_check(s, pos, dir_straight[i] + pos)) break;
+            }
         }
 
         return s;
@@ -220,41 +238,11 @@ private:
     set<Position> move_bishop(const Position pos) {
         cout << "bishop !\n";
         set<Position> s;
-        auto check = [&](Position nextPos) -> bool {
-            if (!boundaryCheck(nextPos) || isAlly(pos, nextPos)) return false;
 
-            s.insert(nextPos);
-            if (isEmpty(nextPos))
-                return true;
-            else return false;
-            };
-
-        Position nextPos = pos;
-        while (true) {
-            nextPos.x++;
-            nextPos.y++;
-            if (!check(nextPos)) break;
-        }
-
-        nextPos = pos;
-        while (true) {
-            nextPos.x++;
-            nextPos.y--;
-            if (!check(nextPos)) break;
-        }
-
-        nextPos = pos;
-        while (true) {
-            nextPos.x--;
-            nextPos.y++;
-            if (!check(nextPos)) break;
-        }
-
-        nextPos = pos;
-        while (true) {
-            nextPos.x--;
-            nextPos.y--;
-            if (!check(nextPos)) break;
+        for (int i = 0; i < 4; i++) {
+            while (true) {
+                if (!move_check(s, pos, dir_diagonal[i] + pos)) break;
+            }
         }
 
         return s;
@@ -263,65 +251,14 @@ private:
     set<Position> move_queen(const Position pos) {
         cout << "queen !\n";
         set<Position> s;
-        auto check = [&](Position nextPos) -> bool {
-            if (!boundaryCheck(nextPos) || isAlly(pos, nextPos)) return false;
 
-            s.insert(nextPos);
-            if (isEmpty(nextPos))
-                return true;
-            else return false;
-            };
-
-        Position nextPos = pos;
-        while (true) {
-            nextPos.x++;
-            if (!check(nextPos)) break;
-        }
-
-        nextPos = pos;
-        while (true) {
-            nextPos.x--;
-            if (!check(nextPos)) break;
-        }
-
-        nextPos = pos;
-        while (true) {
-            nextPos.y++;
-            if (!check(nextPos)) break;
-        }
-
-        nextPos = pos;
-        while (true) {
-            nextPos.y--;
-            if (!check(nextPos)) break;
-        }
-
-        nextPos = pos;
-        while (true) {
-            nextPos.x++;
-            nextPos.y++;
-            if (!check(nextPos)) break;
-        }
-
-        nextPos = pos;
-        while (true) {
-            nextPos.x++;
-            nextPos.y--;
-            if (!check(nextPos)) break;
-        }
-
-        nextPos = pos;
-        while (true) {
-            nextPos.x--;
-            nextPos.y++;
-            if (!check(nextPos)) break;
-        }
-
-        nextPos = pos;
-        while (true) {
-            nextPos.x--;
-            nextPos.y--;
-            if (!check(nextPos)) break;
+        for (int i = 0; i < 4; i++) {
+            while (true) {
+                if (!move_check(s, pos, dir_straight[i] + pos)) break;
+            }
+            while (true) {
+                if (!move_check(s, pos, dir_diagonal[i] + pos)) break;
+            }
         }
 
         return s;
@@ -330,45 +267,13 @@ private:
     set<Position> move_king(const Position pos) {
         cout << "king !\n";
         set<Position> s;
-        Position posList[8] = {
-            {pos.x, pos.y + 1},
-            {pos.x + 1, pos.y + 1},
-            {pos.x + 1, pos.y},
-            {pos.x + 1, pos.y - 1},
-            {pos.x, pos.y - 1},
-            {pos.x - 1, pos.y - 1},
-            {pos.x - 1, pos.y},
-            {pos.x - 1, pos.y + 1}
-        };
 
-        for (int i = 0; i < 8; i++) if (boundaryCheck(posList[i]) && !isAlly(pos, posList[i]))
-                s.insert(posList[i]);
+        for (int i = 0; i < 4; i++) {
+            s.insert(dir_straight[i] + pos);
+            s.insert(dir_diagonal[i] + pos);
+        }
 
         return s;
-    }
-
-
-
-    bool notationCheck(const string st) {
-        if (st.size() == 2) {
-            if ((st[0] >= 'a' && st[0] <= 'h') &&
-                (st[1] >= '1' && st[1] <= '8')) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    Position convertPos(const string st) {
-        Position pos{ st[0] - 'a', st[1] - '1' };
-        return pos;
-    }
-
-    string convertPos(const Position pos) {
-        string st = "";
-        st += pos.x + 'a';
-        st += pos.y + '1';
-        return st;
     }
 
 
@@ -408,21 +313,16 @@ public:
         reset();
     }
 
-    void move(const Position* now, const Position* dest) {
+    void move(const Position& now, const Position& dest) {
         // cout << "MOVE : " << now->x << " " << now->y << " " << dest->x << " " << dest->y << "\n";
-        cout << "Move : " << convertPos(*now) << " -> " << convertPos(*dest) << "\n";
-        board[dest->y][dest->x] = board[now->y][now->x];
-        board[now->y][now->x].team = NONE;
-        board[now->y][now->x].type = EMPTY;
+        cout << "Move : " << convertPos(now) << " -> " << convertPos(dest) << "\n";
+        board[dest.y][dest.x] = board[now.y][now.x];
+        board[now.y][now.x].team = NONE;
+        board[now.y][now.x].type = EMPTY;
 
         isWhiteTurn = isWhiteTurn ? false : true;
-    }
-
-    void returnLegalMove(set<Position>* s) {
-        cout << "LEGALMOVE : ";
-        for (const Position iter : *s)
-            cout << iter.x << " " << iter.y << " ";
-        cout << "\n";
+        prevMove[0] = now;
+        prevMove[1] = dest;
     }
 
     void command() {
@@ -430,18 +330,10 @@ public:
 
         string now, next; 
         while (true) { // For Legal move
-            int command(-1); // 0 : move, 1 : return legal move list
             while (true) { // For Correct Input
                 cout << "enter the command >> "; cin >> now >> next;
 
-                if (notationCheck(now) && next == "LEGALMOVE") {
-                    command = 1;
-                    break;
-                }
-                else if (notationCheck(now) && notationCheck(next)) {
-                    command = 0;
-                    break;
-                }
+                if (notationCheck(now) && notationCheck(next)) break;
                 else cout << "move()::Command Error\n";
             }
 
@@ -465,50 +357,25 @@ public:
                 default: cout << "I don't know, Enter position again\n"; continue;
             }
 
-            if (command == 1) {
-                returnLegalMove(&s_legalMove);
-                return;
-            }
-
             cout << "Legal move [ ";
-            for (const auto iter : s_legalMove)
-                cout << convertPos(iter) << " ";
+            for (const auto iter : s_legalMove) cout << convertPos(iter) << " ";
             cout << "]\n";
 
             Position dest = convertPos(next);
             if (s_legalMove.find(dest) != s_legalMove.end()) {
-                move(&selected, &dest);
+                move(selected, dest);
                 break;
             }
             else cout << "It can't move there\n";
         }
     }
 
-    void startAI_test_scotchGame() {
-        random_device rd; mt19937 gen(rd());
-        uniform_int_distribution<> dis(1, 3);
-        int idx(0);
-        Position Black_scotch[4][2] = { // scotch gambit Bc5 variation
-            {4, 6, 4, 4},
-            {1, 7, 2, 5},
-            {4, 4, 3, 3},
-            {5, 7, 2, 4}
-        };
+    void start() {
         while (true) {
             print_board(true);
-            if (isWhiteTurn) {
-                command();
-            }
-            else {
-                Sleep(dis(gen) * 100 + 300);
-                move(&Black_scotch[idx][0], &Black_scotch[idx][1]);
-                cout << "MOVE : " << Black_scotch[idx][0].x << " " << Black_scotch[idx][0].y << " "
-                    << Black_scotch[idx][1].x << " " << Black_scotch[idx][1].y << "\n";
-                idx++;
-            }
+            command();
         }
     }
-
 
     // additional function
     void print_board(bool isW) {
@@ -534,11 +401,13 @@ public:
                 cout << (char)('a' + i) << "  ";
             cout << "\n\n";
         }
+        cout << "[previous Move] : " << convertPos(prevMove[0]) << " -> " << convertPos(prevMove[1]) << "\n";
+
     }
 
 };
 
 int main() {
     Game* chess = new Game();
-    chess->startAI_test_scotchGame();
+    chess->start();
 }

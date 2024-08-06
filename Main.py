@@ -148,7 +148,7 @@ class ChessPiece(QLabel):
 
 
 
-class ChessBoard(QWidget):
+class Chess(QWidget):
 ### Load
     def load_img(self):
         self.img_board = Path.getImgFolder() + 'Ground.png'
@@ -387,12 +387,6 @@ class ChessBoard(QWidget):
         self.off_legalMove_light()
         self.changeTurn()
 
-    def move_opponent(self, now_x, now_y, next_x, next_y, smooth):
-        print(f'Opponent Move Command : {boardPosToNotation(now_x, now_y)} -> {boardPosToNotation(next_x, next_y)}')
-
-    def move_player(self, now_x, now_y, next_x, next_y, smooth):
-        print(f'Player Move Command : {boardPosToNotation(now_x, now_y)} -> {boardPosToNotation(next_x, next_y)}')
-
     def changeTurn(self):
         if self.isTurnWhite:
             self.isTurnWhite = False
@@ -484,6 +478,6 @@ class ChessBoard(QWidget):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    mainWindow = ChessBoard()
+    mainWindow = Chess()
     mainWindow.show()
     sys.exit(app.exec_())
