@@ -137,8 +137,8 @@ private:
         int wb = isWhite ? 0 : 1, kq = isKingSide ? 0 : 1, rank = isWhite ? 0 : 7;
         bool ch1, ch2, ch3;
         ch1 = castlingMoveCheck_wb_KQ[wb][kq];
-        ch2 = isKingSide ? board[rank][5].type == NONE && board[rank][6].type == NONE :
-            board[rank][3].type == NONE && board[rank][2].type == NONE && board[rank][1].type == NONE;
+        ch2 = isKingSide ? board[rank][5].type == EMPTY && board[rank][6].type == EMPTY :
+            board[rank][3].type == EMPTY && board[rank][2].type == EMPTY && board[rank][1].type == EMPTY;
         if (isWhite) {
             ch3 = isKingSide ? board[rank][5].attack_b == 0 && board[rank][6].attack_b == 0 :
                 board[rank][3].attack_b == 0 && board[rank][2].attack_b == 0 && board[rank][1].attack_b == 0;
@@ -306,7 +306,7 @@ private:
 
         auto get = [&](set<Position>& s, const Position& pos, const bool& isWhite) -> void {
             switch (board[pos.y][pos.x].type) {
-            case NONE: break;
+            case EMPTY: break;
             case PAWN: pawnAttack_move(s, pos, isWhite, false); break;
             case KNIGHT: knight_move(s, pos, false); break;
             case BISHOP: diagonal_move(s, pos, false); break;
@@ -318,7 +318,7 @@ private:
 
         for (int y = 0; y < 8; y++) for (int x = 0; x < 8; x++) {
             cout << x << "," << y << typeToChar[board[y][x].type] << "\n";
-            if (board[y][x].type != NONE) {
+            if (board[y][x].type != EMPTY) {
                 set<Position> s; get(s, Position(x, y), board[y][x].team == WHITE);
                 
                 for (const Position p : s)
