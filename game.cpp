@@ -97,7 +97,7 @@ private:
 
     Square** board = new Square *[8];
     Position prevMove[2];
-    bool isWhiteTurn;
+    bool isWhiteTurn, castlingMoveCheck_wb_KQ[2][2];
 
 
 
@@ -131,6 +131,28 @@ private:
         else if (comp(&queenSide[0], &prevMove[0]) && comp(&queenSide[1], &prevMove[1]))
             return -1;
         return 0;
+    }
+
+    bool castling(const bool& isWhite, const bool& isKingSide) {
+        int wb = isWhite ? 0 : 1, kq = isKingSide ? 0 : 1, rank = isWhite ? 0 : 7;
+        bool ch1, ch2, ch3;
+        ch1 = castlingMoveCheck_wb_KQ[wb][kq];
+        ch2 = isKingSide ? board[rank][5].type == NONE && board[rank][6].type == NONE :
+            board[rank][3].type == NONE && board[rank][2].type == NONE && board[rank][1].type == NONE;
+        if (isWhite) {
+            ch3 = isKingSide ? board[rank][5].attack_b == 0 && board[rank][6].attack_b == 0 :
+                board[rank][3].attack_b == 0 && board[rank][2].attack_b == 0 && board[rank][1].attack_b == 0;
+        }
+        else {
+            ch3 = isKingSide ? board[rank][5].attack_w == 0 && board[rank][6].attack_w == 0 :
+                board[rank][3].attack_w == 0 && board[rank][2].attack_w == 0 && board[rank][1].attack_w == 0;
+        }
+
+        return ch1 && ch2 && ch3;
+    }
+
+    void promotion() {
+        cout << "promotion";
     }
 
 
@@ -267,6 +289,12 @@ private:
         cout << "king !\n";
         set<Position> s; king_move(s, pos, isWhite, true);
 
+        // Castling
+        if (castling(isWhite, true)) // King side
+            s.insert(Position(pos.x + 2, pos.y));
+        if (castling(isWhite, false)) // Queen side
+            s.insert(Position(pos.x - 2, pos.y));
+
         return s;
     }
 
@@ -346,6 +374,8 @@ public:
         cal_attackSquare();
         prevMove[0] = { -1, -1 }, prevMove[1] = { -1, -1 };
         isWhiteTurn = true;
+        for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) 
+            castlingMoveCheck_wb_KQ[i][j] = true;
     }
 
     void init() {
