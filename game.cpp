@@ -151,8 +151,24 @@ private:
         return ch1 && ch2 && ch3;
     }
 
-    void promotion() {
-        cout << "promotion";
+    void promotion(const Position& pos, const bool& isWhite) {
+        int input;
+        while (true) {
+            cout << "Choose promotion piece\n[1] Queen\n[2] Rook\n[3] Knight\n[4] Bishop\n >> ";
+            cin >> input;
+            if (input < 1 && input > 4) cout << "Incorrect. enter again\n";
+            else break;
+        }
+
+        switch (input) {
+        case 1: board[pos.y][pos.x].type = QUEEN; break;
+        case 2: board[pos.y][pos.x].type = ROOK; break;
+        case 3: board[pos.y][pos.x].type = KNIGHT; break;
+        case 4: board[pos.y][pos.x].type = BISHOP; break;
+        default: break;
+        }
+
+        cout << "Promotion -> " << typeToChar[board[pos.y][pos.x].type] << "\n";
     }
 
 
@@ -167,19 +183,19 @@ private:
         else return false;
     }
 
-    void pawnAttack_move(set<Position>& s, const Position& pos, const bool& isWhite, const bool& legalMove) {
+    void pawnAttack_move(set<Position>& s, const Position& now, const bool& isWhite, const bool& legalMove) {
         int dir = (isWhite ? +1 : -1);
-        auto func = [&](Position pos) -> void {
-            if (boundaryCheck({ pos.x, pos.y })) {
+        auto func = [&](Position next) -> void {
+            if (boundaryCheck({ next.x, next.y })) {
                 if (legalMove) {
-                    if (isEnemy(pos, { pos.x, pos.y }))
-                        s.insert(Position(pos.x, pos.y));
+                    if (isEnemy(now, next))
+                        s.insert(next);
                 }
-                else s.insert(Position(pos.x, pos.y));
+                else s.insert(next);
             }
             };
-        func(Position(pos.x + 1, pos.y + dir));
-        func(Position(pos.x - 1, pos.y + dir));
+        func(Position(now.x + 1, now.y + dir));
+        func(Position(now.x - 1, now.y + dir));
     }
 
     void straight_move(set<Position>& s, const Position& pos, const bool& legalMove) {
@@ -383,14 +399,27 @@ public:
     }
 
     void move(const Position& now, const Position& dest) {
-        // cout << "MOVE : " << now->x << " " << now->y << " " << dest->x << " " << dest->y << "\n";
         cout << "Move : " << convertPos(now) << " -> " << convertPos(dest) << "\n";
+
+        // update board
         board[dest.y][dest.x] = board[now.y][now.x];
         board[now.y][now.x].team = NONE;
         board[now.y][now.x].type = EMPTY;
-        isWhiteTurn = isWhiteTurn ? false : true;
+
+        // change turn
+        isWhiteTurn = !isWhiteTurn;
+
+        // update previous move 
         prevMove[0] = now;
         prevMove[1] = dest;
+
+        // Promotion check
+        if (board[dest.y][dest.x].type == PAWN) {
+            if (board[dest.y][dest.x].team == WHITE && dest.y == 7) // white pawn promotion
+                promotion(dest, true);
+            else if (board[now.y][now.x].team == BLACK && dest.y == 0) // black pawn promotion
+                promotion(dest, false);
+        }
 
         cal_attackSquare();
     }
