@@ -25,9 +25,7 @@ struct Position {
         return y < other.y;
     }
 
-    Position operator+(const Position& other) const {
-        return Position(x + other.x, y + other.y);
-    }
+    Position operator+(const Position& other) const { return Position(x + other.x, y + other.y); }
 };
 
 class Game {
@@ -54,18 +52,13 @@ private:
     char teamToChar[3] = { '-', 'w', 'b' };
 
     bool notationCheck(const string& st) {
-        if (st.size() == 2) {
-            if ((st[0] >= 'a' && st[0] <= 'h') &&
-                (st[1] >= '1' && st[1] <= '8')) {
-                return true;
-            }
-        }
+        if (st.size() == 2 && (st[0] >= 'a' && st[0] <= 'h') && (st[1] >= '1' && st[1] <= '8')) 
+            return true;
         return false;
     }
 
     Position convertPos(const string& st) {
-        Position pos{ st[0] - 'a', st[1] - '1' };
-        return pos;
+        return Position(st[0] - 'a', st[1] - '1' );
     }
 
     string convertPos(const Position& pos) {
@@ -102,11 +95,9 @@ private:
 
     Square** board = new Square *[8];
     Position prevMove[2];
-    bool isWhiteTurn = true;
+    bool isWhiteTurn;
 
     set<Position> vec_piece_w, vec_piece_b; // Position list of pieces
-    int score_pieces_w = 0, score_pieces_b = 0; // Pieces Score
-    int PNBRQ_w[5], PNBRQ_b[5]; // Number of pieces
 
 
     int en_passant(const Position& pos, const bool& isWhite) const {
@@ -151,12 +142,25 @@ private:
         else return false;
     }
 
+    set<Position> attack_pawn(const Position& pos, const bool& isWhite) {
+        int dir = (isWhite ? +1 : -1);
+        set<Position> s;
+        if (boundaryCheck({ pos.x + dir, pos.y + dir }) && isEnemy(pos, { pos.x + dir, pos.y + dir }))
+            s.insert(Position(pos.x + dir, pos.y + dir));
+
+        if (boundaryCheck({ pos.x - dir, pos.y + dir }) && isEnemy(pos, { pos.x - dir, pos.y + dir }))
+            s.insert(Position(pos.x - dir, pos.y + dir));
+
+        return s;
+    }
+
     set<Position> move_pawn(const Position& pos, const bool& isWhite) {
         int dir = (isWhite ? +1 : -1);
 
         cout << "pawn_" << (isWhite ? 'w' : 'b') << " !\n";
-        
-        set<Position> s;
+
+        // attack move
+        set<Position> s = attack_pawn(pos, isWhite);
 
         // Plain move
         if (isEmpty({ pos.x, pos.y + dir })) {
@@ -166,13 +170,6 @@ private:
                 s.insert(Position(pos.x, pos.y + dir * 2));
             }
         }
-
-        // Attack
-        if (boundaryCheck({ pos.x + dir, pos.y + dir }) && isEnemy(pos, { pos.x + dir, pos.y + dir }))
-            s.insert(Position(pos.x + dir, pos.y + dir));
-
-        if (boundaryCheck({ pos.x - dir, pos.y + dir }) && isEnemy(pos, { pos.x - dir, pos.y + dir }))
-            s.insert(Position(pos.x - dir, pos.y + dir));
 
         // en_passant Check
         int en_check = en_passant(pos, false);
@@ -249,43 +246,56 @@ private:
         cout << "king !\n";
         set<Position> s;
 
+        auto insert = [&](const Position& next) -> void {
+            if (!boundaryCheck(next))
+                return;
+
+            if (board[pos.y][pos.x].team == WHITE && 
+                board[next.y][next.x].attack_b == 0) {
+                s.insert(next);
+            }
+            else if (board[pos.y][pos.x].team == BLACK &&
+                board[next.y][next.x].attack_w == 0) {
+                s.insert(next);
+            }
+            };
+
         for (int i = 0; i < 4; i++) {
-            s.insert(dir_straight[i] + pos);
-            s.insert(dir_diagonal[i] + pos);
+            insert(dir_straight[i] + pos);
+            insert(dir_diagonal[i] + pos);
         }
 
         return s;
     }
 
+    void cal_attackSquare() {
+        for (int y = 0; y < 8; y++) for (int x = 0; x < 8; x++)
+            board[y][x].attack_w = 0, board[y][x].attack_b = 0;
 
-    void count_pawn_attackSquare(const Position& pos, const bool& isWhite) {
-        int dir = (isWhite ? +1 : -1);
+        auto get = [&](const Position& pos) -> set<Position> {
+            set<Position> s;
+            switch (board[pos.y][pos.x].type) {
+            case NONE: break;
+            case PAWN: s = attack_pawn(pos, board[pos.y][pos.x].team == WHITE);
+            case KNIGHT: s = move_knight(pos); break;
+            case BISHOP: s = move_bishop(pos); break;
+            case ROOK: s = move_rook(pos); break;
+            case QUEEN: s = move_queen(pos); break;
+            case KING: s = move_king(pos); break;
+            }
 
-        if (boundaryCheck({ pos.x + dir, pos.y + dir }))
-            s.insert(Position(pos.x + dir, pos.y + dir));
+            return s;
+            };
 
-        if (boundaryCheck({ pos.x - dir, pos.y + dir }) && isEnemy(pos, { pos.x - dir, pos.y + dir }))
-            s.insert(Position(pos.x - dir, pos.y + dir));
-    }
+        for (const Position pos : vec_piece_w) {
+            set<Position> s = get(pos);
+            for (const Position p : s) board[p.y][p.x].attack_w++;
+        }
 
-    void count_knight_attackSquare(const Position& pos) {
-
-    }
-
-    void count_rook_attackSquare(const Position& pos) {
-
-    }
-
-    void count_bishop_attackSquare(const Position& pos) {
-
-    }
-
-    void count_queen_attackSquare(const Position& pos) {
-
-    }
-
-    void count_king_attackSquare(const Position& pos) {
-
+        for (const Position pos : vec_piece_b) {
+            set<Position> s = get(pos);
+            for (const Position p : s) board[p.y][p.x].attack_b++;
+        }
     }
 
     bool getLegalMove(set<Position>& s, const Position& pos) {
@@ -303,24 +313,6 @@ private:
 
         return true;
     }
-
-
-
-    void recalculate_attackCount() {
-        for (int i = 0; i < 8; i++) for (int j = 0; j < 8; j++)
-            board[i][j].attack_w = 0, board[i][j].attack_b = 0;
-
-        for (const Position white : vec_piece_w) {
-            set<Position> legalMove;
-            if (!getLegalMove(legalMove, white)) {
-                cout << "recalculate_attackCount()::BIG PROBLEM\n";
-                exit(0);
-            }
-
-        }
-    }
-
-
 
 public:
     Game() : board(new Square* [8]) {
@@ -341,20 +333,15 @@ public:
         // piece init
         Type list[8] = { ROOK, KNIGHT, BISHOP, QUEEN, KING, BISHOP, KNIGHT, ROOK };
         for (int i = 0; i < 8; i++) {
-            board[0][i].type = list[i], board[0][i].team = WHITE;
-            board[1][i].type = PAWN, board[1][i].team = WHITE;
-            vec_piece_w.insert(Position(i, 0));
-            vec_piece_w.insert(Position(i, 1));
+            board[0][i].type = list[i], board[0][i].team = WHITE; vec_piece_w.insert(Position(i, 0));
+            board[1][i].type = PAWN, board[1][i].team = WHITE; vec_piece_w.insert(Position(i, 1));
 
-            board[7][i].type = list[i], board[7][i].team = BLACK;
-            board[6][i].type = PAWN, board[6][i].team = BLACK;
-            vec_piece_b.insert(Position(i, 7));
-            vec_piece_b.insert(Position(i, 6));
+            board[7][i].type = list[i], board[7][i].team = BLACK; vec_piece_b.insert(Position(i, 7));
+            board[6][i].type = PAWN, board[6][i].team = BLACK; vec_piece_b.insert(Position(i, 6));
         }
         for (int i = 2; i < 6; i++) for (int j = 0; j < 8; j++) {
             board[i][j].type = EMPTY, board[i][j].team = NONE;
         }
-
 
         prevMove[0] = { -1, -1 }, prevMove[1] = { -1, -1 };
         isWhiteTurn = true;
@@ -415,6 +402,8 @@ public:
     void start() {
         while (true) {
             print_board(true);
+            cal_attackSquare();
+            print_attackData(true);
             command();
         }
     }
@@ -446,6 +435,25 @@ public:
 
         cout << "[previous Move] : " << convertPos(prevMove[0]) << " -> " << convertPos(prevMove[1]) << "\n";
 
+    }
+
+    void print_attackData(bool isW) {
+        if (isW) {
+            for (int i = 7; i >= 0; i--) {
+                for (int j = 0; j < 8; j++) {
+                    cout << board[i][j].attack_w << "," << board[i][j].attack_b << "   ";
+                }
+                cout << "\n\n";
+            }
+        }
+        else {
+            for (int i = 0; i < 8; i++) {
+                for (int j = 0; j < 8; j++) {
+                    cout << board[i][j].attack_w << "," << board[i][j].attack_b << "   ";
+                }
+                cout << "\n\n";
+            }
+        }
     }
 
 };
