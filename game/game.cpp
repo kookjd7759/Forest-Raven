@@ -62,7 +62,7 @@ private:
     public:
         Type type = EMPTY;
         Team team = NONE;
-        int attack_w = 0, attack_b = 0;
+        int attack_wb[2]{ 0, 0 };
     };
 
     Square** board = new Square *[8];
@@ -109,14 +109,8 @@ private:
         ch1 = castlingMoveCheck_wb_KQ[wb][kq];
         ch2 = isKingSide ? board[rank][5].type == EMPTY && board[rank][6].type == EMPTY :
             board[rank][3].type == EMPTY && board[rank][2].type == EMPTY && board[rank][1].type == EMPTY;
-        if (isWhite) {
-            ch3 = isKingSide ? board[rank][5].attack_b == 0 && board[rank][6].attack_b == 0 :
-                board[rank][3].attack_b == 0 && board[rank][2].attack_b == 0 && board[rank][1].attack_b == 0;
-        }
-        else {
-            ch3 = isKingSide ? board[rank][5].attack_w == 0 && board[rank][6].attack_w == 0 :
-                board[rank][3].attack_w == 0 && board[rank][2].attack_w == 0 && board[rank][1].attack_w == 0;
-        }
+        ch3 = isKingSide ? board[rank][5].attack_wb[wb] == 0 && board[rank][6].attack_wb[wb] == 0 :
+            board[rank][3].attack_wb[wb] == 0 && board[rank][2].attack_wb[wb] == 0 && board[rank][1].attack_wb[wb] == 0;
 
         return ch1 && ch2 && ch3;
     }
@@ -204,8 +198,7 @@ private:
             Position next = pos + dir_king[i];
             if (boundaryCheck(next)) {
                 if (legalMove) {
-                    int attack = isWhite ? board[next.y][next.x].attack_b : board[next.y][next.x].attack_w;
-                    if (attack == 0 && !isAlly(pos, next))
+                    if (board[next.y][next.x].attack_wb[isWhite ? 0 : 1 == 0] && !isAlly(pos, next))
                         s.insert(next);
                 }
                 else s.insert(next);
@@ -288,7 +281,7 @@ private:
 
     void cal_attackSquare() {
         for (int y = 0; y < 8; y++) for (int x = 0; x < 8; x++)
-            board[y][x].attack_w = 0, board[y][x].attack_b = 0;
+            board[y][x].attack_wb[0] = 0, board[y][x].attack_wb[1] = 0;
 
         auto get = [&](set<Position>& s, const Position& pos, const bool& isWhite) -> void {
             switch (board[pos.y][pos.x].type) {
@@ -308,7 +301,7 @@ private:
                 set<Position> s; get(s, Position(x, y), board[y][x].team == WHITE);
                 
                 for (const Position p : s)
-                    board[y][x].team == WHITE ? board[p.y][p.x].attack_w++ : board[p.y][p.x].attack_b++;
+                    board[y][x].team == WHITE ? board[p.y][p.x].attack_wb[0]++ : board[p.y][p.x].attack_wb[1]++;
             }
         }
     }
@@ -440,6 +433,7 @@ public:
 
     // additional function
     void print_board(bool isW) {
+        cout << "DEBUG TEST!!\n";
         if (isW) {
             for (int i = 7; i >= 0; i--) {
                 for (int j = 0; j < 8; j++) {
@@ -471,7 +465,7 @@ public:
         if (isW) {
             for (int i = 7; i >= 0; i--) {
                 for (int j = 0; j < 8; j++) {
-                    cout << board[i][j].attack_w << "," << board[i][j].attack_b << "   ";
+                    cout << board[i][j].attack_wb[0] << "," << board[i][j].attack_wb[1] << "   ";
                 }
                 cout << "\n\n";
             }
@@ -479,7 +473,7 @@ public:
         else {
             for (int i = 0; i < 8; i++) {
                 for (int j = 0; j < 8; j++) {
-                    cout << board[i][j].attack_w << "," << board[i][j].attack_b << "   ";
+                    cout << board[i][j].attack_wb[0] << "," << board[i][j].attack_wb[1] << "   ";
                 }
                 cout << "\n\n";
             }

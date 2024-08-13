@@ -1,10 +1,7 @@
-#include <iostream>
 #include <windows.h>
 #include <random>
 #include <set>
 #include "utility.h"
-
-using namespace std;
 
 /*
 * (x, y)
@@ -62,7 +59,7 @@ private:
     public:
         Type type = EMPTY;
         Team team = NONE;
-        int attack_w = 0, attack_b = 0;
+        int attack_wb[2]{ 0,0 };
     };
 
     Square** board = new Square *[8];
