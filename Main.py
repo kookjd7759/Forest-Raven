@@ -368,6 +368,9 @@ class Chess(QWidget):
             self.delSelect()
             return 
         
+        now = boardPosToNotation(self.selected_piece[0], self.selected_piece[1])
+        next = boardPosToNotation(next_x, next_y)
+        connector.sendMY_move(now, next)
         self.move_piece(self.selected_piece[0], self.selected_piece[1], next_x, next_y, smooth)
         self.off_legalMove_light()
         self.delSelect()
@@ -376,7 +379,7 @@ class Chess(QWidget):
         self.move_piece(now_x, now_y, next_x, next_y, True)
 
     def move_piece(self, now_x, now_y, next_x, next_y, smooth): # Get Board Position
-        print(f'Move {boardPosToNotation(now_x, now_y)} -> {boardPosToNotation(next_x, next_y)}', end='')
+        print(f'Move {boardPosToNotation(now_x, now_y)} -> {boardPosToNotation(next_x, next_y)}')
 
         if self.pieces[next_y][next_x] != None:
             self.pieces[next_y][next_x].die()
@@ -394,6 +397,7 @@ class Chess(QWidget):
         self.changeTurn()
 
     def changeTurn(self):
+        self.print2DInfo()
         if self.isTurnWhite:
             self.isTurnWhite = False
             self.line_turn.setText('Black')
@@ -402,9 +406,9 @@ class Chess(QWidget):
             self.line_turn.setText('White')
         
         if self.isPlayerWhite != self.isTurnWhite: # AI turn
-            nowNotation = boardPosToNotation(self.prev_move[0], self.prev_move[1])
-            nextNotation = boardPosToNotation(self.prev_move[2], self.prev_move[3])
-            getAImove = threading.Thread(target=connector.getAI_move, args=(self.move_AI_callback, nowNotation, nextNotation, ))
+            now = boardPosToNotation(self.prev_move[0], self.prev_move[1])
+            next = boardPosToNotation(self.prev_move[2], self.prev_move[3])
+            getAImove = threading.Thread(target=connector.getAI_move, args=(self.move_AI_callback, ))
             getAImove.start()
 
 ### Mouse event

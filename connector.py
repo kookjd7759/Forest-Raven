@@ -17,8 +17,11 @@ def read():
     output = process.stdout.readline()
     return output.strip()
 
-def getAI_move(callback, nowNotation, nextNotation):
-    send(f'{nowNotation} {nextNotation}')
+def sendMY_move(now, next):
+    send(f'1 {now} {next}')
+
+def getAI_move(callback):
+    send(f'5')
     output = read()
     print(output)
     now_x, now_y, next_x, next_y = map(int, output.split())
@@ -27,11 +30,15 @@ def getAI_move(callback, nowNotation, nextNotation):
 def get_legalMove(notation):
     send(f'2 {notation}')
     output = read()
+    print(f'send :2 {notation}')
+    print(f'recieve :{output}')
     result = list(map(int, output.split()))
     return result
 
 if __name__ == '__main__':
-    result = get_legalMove('b1')
-    it = iter(result)
-    for x, y in zip(it, it):
-        print(f'{x}, {y}')
+    while True:
+        st = input()
+        print(st)
+        send(st)
+        output = read()
+        print(output)
