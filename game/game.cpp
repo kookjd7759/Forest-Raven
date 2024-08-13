@@ -138,7 +138,6 @@ private:
 
 
     bool move_check(set<Position>& s, const Position& cur , const Position& next, const bool& legalMove) {
-        cout << cur.x << "," << cur.y << " -> " << next.x << "," << next.y << "\n";
         if (!boundaryCheck(next) || (legalMove && isAlly(cur, next))) return false;
 
         s.insert(next);
@@ -186,8 +185,10 @@ private:
         for (int i = 0; i < 8; i++) {
             Position next = pos + dir_knight[i];
             if (boundaryCheck(next)) {
-                if (legalMove && !isAlly(pos, next))
-                    s.insert(next);
+                if (legalMove) {
+                    if (!isAlly(pos, next))
+                        s.insert(next);
+                }
                 else s.insert(next);
             }
         }
@@ -208,7 +209,7 @@ private:
 
 
 
-    set<Position> move_pawn(const Position& pos, const bool& isWhite) {
+    set<Position> get_pawn_move(const Position& pos, const bool& isWhite) {
         int dir = (isWhite ? +1 : -1);
 
         cout << "pawn_" << (isWhite ? 'w' : 'b') << " !\n";
@@ -236,35 +237,35 @@ private:
         return s;
     }
 
-    set<Position> move_knight(const Position& pos) {
+    set<Position> get_knight_move(const Position& pos) {
         cout << "knight !\n";
         set<Position> s; knight_move(s, pos, true);
 
         return s;
     }
 
-    set<Position> move_rook(const Position& pos) {
-        cout << "rook !\n";
-        set<Position> s; straight_move(s, pos, true);
-
-        return s;
-    }
-
-    set<Position> move_bishop(const Position& pos) {
+    set<Position> get_bishop_move(const Position& pos) {
         cout << "bishop !\n";
         set<Position> s; diagonal_move(s, pos, true);
 
         return s;
     }
 
-    set<Position> move_queen(const Position& pos) {
+    set<Position> get_rook_move(const Position& pos) {
+        cout << "rook !\n";
+        set<Position> s; straight_move(s, pos, true);
+
+        return s;
+    }
+
+    set<Position> get_queen_move(const Position& pos) {
         cout << "queen !\n";
         set<Position> s; straight_move(s, pos, true); diagonal_move(s, pos, true);
 
         return s;
     }
 
-    set<Position> move_king(const Position& pos, const bool& isWhite) {
+    set<Position> get_king_move(const Position& pos, const bool& isWhite) {
         cout << "king !\n";
         set<Position> s; king_move(s, pos, isWhite, true);
 
@@ -296,7 +297,6 @@ private:
             };
 
         for (int y = 0; y < 8; y++) for (int x = 0; x < 8; x++) {
-            cout << x << "," << y << typeToChar[board[y][x].type] << "\n";
             if (board[y][x].type != EMPTY) {
                 set<Position> s; get(s, Position(x, y), board[y][x].team == WHITE);
                 
@@ -306,21 +306,45 @@ private:
         }
     }
 
-    bool getLegalMove(set<Position>& s, const Position& pos) {
-        bool isWhite = board[pos.y][pos.x].team == WHITE;
-        switch (board[pos.y][pos.x].type) {
-        case NONE: cout << "There is no piece, Enter position again\n"; return false;
-        case PAWN: s = board[pos.y][pos.x].team == WHITE ?
-            move_pawn(pos, true) : move_pawn(pos, false); break;
-        case KNIGHT: s = move_knight(pos); break;
-        case BISHOP: s = move_bishop(pos); break;
-        case ROOK: s = move_rook(pos); break;
-        case QUEEN: s = move_queen(pos); break;
-        case KING: s = move_king(pos, isWhite); break;
-        default: cout << "I don't know, Enter position again\n"; return false;
+    void move(const Position& now, const Position& dest) {
+        cout << "Move : " << convertPos(now) << " -> " << convertPos(dest) << "\n";
+
+        // update board
+        board[dest.y][dest.x] = board[now.y][now.x];
+        board[now.y][now.x].team = NONE;
+        board[now.y][now.x].type = EMPTY;
+
+        // change turn
+        isWhiteTurn = !isWhiteTurn;
+
+        // update previous move 
+        prevMove[0] = now;
+        prevMove[1] = dest;
+
+        // Promotion check
+        if (board[dest.y][dest.x].type == PAWN) {
+            if (board[dest.y][dest.x].team == WHITE && dest.y == 7) // white pawn promotion
+                promotion(dest, true);
+            else if (board[now.y][now.x].team == BLACK && dest.y == 0) // black pawn promotion
+                promotion(dest, false);
         }
 
-        return true;
+        cal_attackSquare();
+    }
+
+    int get_legalMove(set<Position>& s, const Position& pos) {
+        bool isWhite = board[pos.y][pos.x].team == WHITE;
+        switch (board[pos.y][pos.x].type) {
+        case NONE: return 1;
+        case PAWN: s = get_pawn_move(pos, isWhite); break;
+        case KNIGHT: s = get_knight_move(pos); break;
+        case BISHOP: s = get_bishop_move(pos); break;
+        case ROOK: s = get_rook_move(pos); break;
+        case QUEEN: s = get_queen_move(pos); break;
+        case KING: s = get_king_move(pos, isWhite); break;
+        default: return -1;
+        }
+        return 0;
     }
 
 public:
@@ -361,122 +385,80 @@ public:
         reset();
     }
 
-    void move(const Position& now, const Position& dest) {
-        cout << "Move : " << convertPos(now) << " -> " << convertPos(dest) << "\n";
+    void command() {
+        cout << "(<Input command>)\n[1] print board \n[2] print attack data \n[3] move \n[4] get legal move \n >> ";
+        int n; cin >> n;
 
-        // update board
-        board[dest.y][dest.x] = board[now.y][now.x];
-        board[now.y][now.x].team = NONE;
-        board[now.y][now.x].type = EMPTY;
-
-        // change turn
-        isWhiteTurn = !isWhiteTurn;
-
-        // update previous move 
-        prevMove[0] = now;
-        prevMove[1] = dest;
-
-        // Promotion check
-        if (board[dest.y][dest.x].type == PAWN) {
-            if (board[dest.y][dest.x].team == WHITE && dest.y == 7) // white pawn promotion
-                promotion(dest, true);
-            else if (board[now.y][now.x].team == BLACK && dest.y == 0) // black pawn promotion
-                promotion(dest, false);
+        switch (n) {
+        case 1: print_board(); break;
+        case 2: print_attackData(); break;
+        case 3: command_move(); break;
+        case 4: command_getLegalMove(); break;
+        default: cout << "wrong number !\n"; break;
         }
-
-        cal_attackSquare();
     }
 
-    void command() {
-        cout << (isWhiteTurn ? "[White move]" : "[Black move]") << "\n";
-
-        string now, next; 
-        while (true) { // For Legal move
-            while (true) { // For Correct Input
-                cout << "enter the command >> "; cin >> now >> next;
-
-                if (notationCheck(now) && notationCheck(next)) break;
-                else cout << "move()::Command Error\n";
-            }
-
-            Position selected = convertPos(now);
-            cout << "selected : " << selected.x << " " << selected.y << "\n";
-            if ((isWhiteTurn && board[selected.y][selected.x].team == BLACK) ||
-                (!isWhiteTurn && board[selected.y][selected.x].team == WHITE)) {
-                cout << "Is not your piece\n";
-                continue;
-            }
-
-            set<Position> s_legalMove;
-            if (!getLegalMove(s_legalMove, selected)) continue;
-
-            cout << "Legal move [ ";
-            for (const auto iter : s_legalMove) cout << convertPos(iter) << " ";
-            cout << "]\n";
-
-            Position dest = convertPos(next);
-            if (s_legalMove.find(dest) != s_legalMove.end()) {
-                move(selected, dest);
-                break;
-            }
-            else cout << "It can't move there\n";
+    bool command_move() {
+        string now, next; cin >> now >> next;
+        if (!notationCheck(now) || !notationCheck(next)) { // notation check
+            cout << "Notation Error\n";
+            return false;
         }
+
+        Position pos = convertPos(now);
+        if ((isWhiteTurn && board[pos.y][pos.x].team == BLACK) ||
+            (!isWhiteTurn && board[pos.y][pos.x].team == WHITE)) { // team check
+            cout << "Is not your piece\n";
+            return false;
+        }
+
+        set<Position> s_legalMove;
+        int ch = get_legalMove(s_legalMove, pos);
+        if (ch != 0) {
+            cout << (ch == 1 ? "There is no piece" : "I don't know") << ", Enter position again\n"; // piece check
+            return false;
+        }
+
+        Position dest = convertPos(next);
+        if (s_legalMove.find(dest) != s_legalMove.end()) { // move check
+            move(pos, dest);
+            return true;
+        }
+        else {
+            cout << "It can't move there\n";
+            return false;
+        }
+    }
+
+    void command_getLegalMove() {
+        string pos; cin >> pos;
+        set<Position> s; get_legalMove(s, convertPos(pos));
+        for (const Position p : s)
+            cout << p.x << " " << p.y << " ";
+        cout << "\n";
     }
 
     void start() {
         while (true) {
-            print_board(true);
-            print_attackData(true);
             command();
         }
     }
 
     // additional function
-    void print_board(bool isW) {
-        cout << "DEBUG TEST!!\n";
-        if (isW) {
-            for (int i = 7; i >= 0; i--) {
-                for (int j = 0; j < 8; j++) {
-                    cout << teamToChar[board[i][j].team] << typeToChar[board[i][j].type] << " ";
-                }
-                cout << "\n";
-            }
-            for (int i = 0; i < 8; i++)
-                cout << (char)('a' + i) << "  ";
-            cout << "\n\n";
+    void print_board() {
+        for (int i = 7; i >= 0; i--) {
+            for (int j = 0; j < 8; j++) cout << teamToChar[board[i][j].team] << typeToChar[board[i][j].type] << " ";
+            cout << "\n";
         }
-        else {
-            for (int i = 0; i < 8; i++) {
-                for (int j = 0; j < 8; j++) {
-                    cout << teamToChar[board[i][j].team] << typeToChar[board[i][j].type] << " ";
-                }
-                cout << "\n";
-            }
-            for (int i = 7; i >= 0; i--)
-                cout << (char)('a' + i) << "  ";
-            cout << "\n\n";
-        }
-
+        for (int i = 0; i < 8; i++) cout << (char)('a' + i) << "  ";
+        cout << "\n\n";
         cout << "[previous Move] : " << convertPos(prevMove[0]) << " -> " << convertPos(prevMove[1]) << "\n";
-
     }
 
-    void print_attackData(bool isW) {
-        if (isW) {
-            for (int i = 7; i >= 0; i--) {
-                for (int j = 0; j < 8; j++) {
-                    cout << board[i][j].attack_wb[0] << "," << board[i][j].attack_wb[1] << "   ";
-                }
-                cout << "\n\n";
-            }
-        }
-        else {
-            for (int i = 0; i < 8; i++) {
-                for (int j = 0; j < 8; j++) {
-                    cout << board[i][j].attack_wb[0] << "," << board[i][j].attack_wb[1] << "   ";
-                }
-                cout << "\n\n";
-            }
+    void print_attackData() {
+        for (int i = 7; i >= 0; i--) {
+            for (int j = 0; j < 8; j++) cout << board[i][j].attack_wb[0] << "," << board[i][j].attack_wb[1] << "   ";
+            cout << "\n\n";
         }
     }
 
