@@ -64,7 +64,7 @@ class ChessPiece(QLabel):
             self.move(self.x(), BOARD_SIZE - 30)
      
     def followMouse(self, mousePos):
-        self.raise_() # Bring the piece to the top
+        self.raise_()
             
         pos = self.mapToParent(mousePos - QPoint(self.width() // 2, self.height() // 2))
         self.move(pos.x(), pos.y())
@@ -91,11 +91,8 @@ class ChessPiece(QLabel):
         self.UIx = next_UIx
         self.UIy = next_UIy
 
-    def touchCheck(self):
-        parent = self.parent()
-        if parent.isPlayerWhite == self.isTeamWhite: # player piece
-            return True
-        return False # NOT player piece
+    def move_return(self):
+        self.move(self.UIx * CELL_SIZE, self.UIy * CELL_SIZE)
 
 
 
@@ -124,7 +121,7 @@ class ChessPiece(QLabel):
         self.raise_()
 
     def mousePressEvent(self, event):
-        if self.touchCheck() == False: # NOT player piece
+        if self.parent().isPlayerWhite != self.isTeamWhite: # NOT player piece
             self.callback_land(self.UIx, self.UIy, True)
             return
         
@@ -214,9 +211,7 @@ class Chess(QWidget):
 
 ### Select Piece
     def isSelected(self):
-        if self.selected_piece[0] == -1 or self.selected_piece[1] == -1:
-            return False
-        return True
+        return self.selected_piece[0] != -1 or self.selected_piece[1] != -1
 
     def setSelect(self, x, y): # Get Board Position
         notation = boardPosToNotation(x, y)
@@ -224,12 +219,11 @@ class Chess(QWidget):
         if self.isSelected():
             self.off_light(self.selected_piece[0], self.selected_piece[1])
 
+        # turn on HighLight
+        self.on_light(x, y, True)
+
         # change UI
         self.line_selected.setText(notation)
-
-        # Create HighLight
-        UIx, UIy = UI_Board_PosConv(x, y, self.isPlayerWhite)
-        self.highlight[UIy][UIx].on(True)
 
         # Change Data
         templist = list(self.selected_piece)
@@ -252,7 +246,7 @@ class Chess(QWidget):
 ### Piece
     def create_piece(self, st, x, y, type, isTeamWhite): # Get Board Position
         UIx, UIy = UI_Board_PosConv(x, y, self.isPlayerWhite) # Board to UI Position Convert
-        lbl_piece = ChessPiece(self, self.piece_images[st], UIx, UIy, type, isTeamWhite, self.piece_press_callback, self.piece_land_callback)
+        lbl_piece = ChessPiece(self, self.piece_images[st], UIx, UIy, type, isTeamWhite, self.piece_callback_press, self.piece_callback_land)
         self.pieces[y][x] = lbl_piece # Update the 2D list with the new piece
     
     def init_pieces(self):
@@ -272,19 +266,19 @@ class Chess(QWidget):
             self.create_piece('bp', i, 6, 'P', False)  # Black pawns
             self.create_piece('b' + initPos[i], i, 7, typeList[i], False) # Black other pieces
 
-    def piece_press_callback(self, UIx, UIy):
+    def piece_callback_press(self, UIx, UIy):
         x, y = UI_Board_PosConv(UIx, UIy, self.isPlayerWhite)
         self.setSelect(x, y)
 
-    def piece_land_callback(self, UIx, UIy, smooth):
+    def piece_callback_land(self, UIx, UIy, smooth):
         if self.isSelected() == False:
             return 
         
         x, y = UI_Board_PosConv(UIx, UIy, self.isPlayerWhite)
         if self.selected_piece[0] != x or self.selected_piece[1] != y: # move
-            self.move_piece(self.selected_piece[0], self.selected_piece[1], x, y, smooth)
+            self.move_ME(x, y, smooth)
         else: # click
-            self.pieces[y][x].move_direct(UIx, UIy)
+            self.pieces[y][x].move_return()
 
 ### Window initalize
     def __init__(self):
@@ -360,17 +354,29 @@ class Chess(QWidget):
         self.setLayout(vbox)
 
 ### Move Logic
-    def move_piece(self, now_x, now_y, next_x, next_y, smooth): # Get Board Position
-        if self.isTurnWhite != self.pieces[now_y][now_x].isTeamWhite: # Opponent Turn
-            return 
-
-        print(f'Move {boardPosToNotation(now_x, now_y)} -> {boardPosToNotation(next_x, next_y)}', end='')
-
-        if self.isTurnWhite == self.isPlayerWhite:
+    def isLegalMove(self, next_x, next_y):
+        it = iter(self.legalMove)
+        for x, y in zip(it, it):
+            print(f'{x}, {y} is legal')
+            if x == next_x and y == next_y:
+                return True
+        return False
+    
+    def move_ME(self, next_x, next_y, smooth):
+        if self.isPlayerWhite != self.isTurnWhite or self.isLegalMove(next_x, next_y) == False: # Opponent Turn & illegal move
+            self.pieces[self.selected_piece[1]][self.selected_piece[0]].move_return()
             self.delSelect()
-            print(' / [Player] ', end='')
-        else:
-            print(' / [AI] ', end='')
+            return 
+        
+        self.move_piece(self.selected_piece[0], self.selected_piece[1], next_x, next_y, smooth)
+        self.off_legalMove_light()
+        self.delSelect()
+
+    def move_AI_callback(self, now_x, now_y, next_x, next_y):
+        self.move_piece(now_x, now_y, next_x, next_y, True)
+
+    def move_piece(self, now_x, now_y, next_x, next_y, smooth): # Get Board Position
+        print(f'Move {boardPosToNotation(now_x, now_y)} -> {boardPosToNotation(next_x, next_y)}', end='')
 
         if self.pieces[next_y][next_x] != None:
             self.pieces[next_y][next_x].die()
@@ -381,10 +387,10 @@ class Chess(QWidget):
             self.pieces[now_y][now_x].move_smooth(UIx, UIy)
         else:
             self.pieces[now_y][now_x].move_direct(UIx, UIy)
+
         self.pieces[now_y][now_x] = None
 
         self.prev_move = (now_x, now_y, next_x, next_y)
-        self.off_legalMove_light()
         self.changeTurn()
 
     def changeTurn(self):
@@ -398,14 +404,8 @@ class Chess(QWidget):
         if self.isPlayerWhite != self.isTurnWhite: # AI turn
             nowNotation = boardPosToNotation(self.prev_move[0], self.prev_move[1])
             nextNotation = boardPosToNotation(self.prev_move[2], self.prev_move[3])
-            getAImove = threading.Thread(target=connector.getAI_move, args=(self.AI_move_callback, nowNotation, nextNotation, ))
+            getAImove = threading.Thread(target=connector.getAI_move, args=(self.move_AI_callback, nowNotation, nextNotation, ))
             getAImove.start()
-
-    def AI_move_callback(self, now_x, now_y, next_x, next_y):
-        self.move_piece(now_x, now_y, next_x, next_y, smooth=True)
-
-    def update_legalMoveList(self):
-        print('TODO: update legalMove')
 
 ### Mouse event
     def mousePressEvent(self, event):
@@ -414,7 +414,7 @@ class Chess(QWidget):
             x, y = UI_Board_PosConv(mousePos.x() // CELL_SIZE, mousePos.y() // CELL_SIZE, self.isPlayerWhite)
             print(f'{boardPosToNotation(x, y)} clicked !')
             if self.isSelected():
-                self.move_piece(self.selected_piece[0], self.selected_piece[1], x, y, smooth=True)
+                self.move_ME(x, y, True)
         elif event.button() == Qt.RightButton:
             self.delSelect()
 
@@ -424,8 +424,6 @@ class Chess(QWidget):
         self.isTurnWhite = True
         self.delSelect()
         self.prev_move = (-1, -1, -1, -1)
-
-        connector.send_restart_event()
 
     def btn_changeColor_function(self):
         if self.isPlayerWhite:

@@ -116,23 +116,17 @@ private:
     }
 
     void promotion(const Position& pos, const bool& isWhite) {
-        int input;
-        while (true) {
-            cout << "Choose promotion piece\n[1] Queen\n[2] Rook\n[3] Knight\n[4] Bishop\n >> ";
-            cin >> input;
-            if (input < 1 && input > 4) cout << "Incorrect. enter again\n";
-            else break;
-        }
-
+        // cout << "Choose promotion piece\n[1] Queen\n[2] Rook\n[3] Knight\n[4] Bishop\n >> ";
+        int input; cin >> input;
         switch (input) {
         case 1: board[pos.y][pos.x].type = QUEEN; break;
         case 2: board[pos.y][pos.x].type = ROOK; break;
         case 3: board[pos.y][pos.x].type = KNIGHT; break;
         case 4: board[pos.y][pos.x].type = BISHOP; break;
-        default: break;
+        default: board[pos.y][pos.x].type = QUEEN; break; // error ? auto Queen promotion
         }
 
-        cout << "Promotion -> " << typeToChar[board[pos.y][pos.x].type] << "\n";
+        // cout << "Promotion -> " << typeToChar[board[pos.y][pos.x].type] << "\n";
     }
 
 
@@ -211,9 +205,6 @@ private:
 
     set<Position> get_pawn_move(const Position& pos, const bool& isWhite) {
         int dir = (isWhite ? +1 : -1);
-
-        cout << "pawn_" << (isWhite ? 'w' : 'b') << " !\n";
-
         set<Position> s; 
 
         // Plain move
@@ -238,35 +229,30 @@ private:
     }
 
     set<Position> get_knight_move(const Position& pos) {
-        cout << "knight !\n";
         set<Position> s; knight_move(s, pos, true);
 
         return s;
     }
 
     set<Position> get_bishop_move(const Position& pos) {
-        cout << "bishop !\n";
         set<Position> s; diagonal_move(s, pos, true);
 
         return s;
     }
 
     set<Position> get_rook_move(const Position& pos) {
-        cout << "rook !\n";
         set<Position> s; straight_move(s, pos, true);
 
         return s;
     }
 
     set<Position> get_queen_move(const Position& pos) {
-        cout << "queen !\n";
         set<Position> s; straight_move(s, pos, true); diagonal_move(s, pos, true);
 
         return s;
     }
 
     set<Position> get_king_move(const Position& pos, const bool& isWhite) {
-        cout << "king !\n";
         set<Position> s; king_move(s, pos, isWhite, true);
 
         // Castling
@@ -307,7 +293,7 @@ private:
     }
 
     void move(const Position& now, const Position& dest) {
-        cout << "Move : " << convertPos(now) << " -> " << convertPos(dest) << "\n";
+        //cout << "Move : " << convertPos(now) << " -> " << convertPos(dest) << "\n";
 
         // update board
         board[dest.y][dest.x] = board[now.y][now.x];
@@ -386,36 +372,37 @@ public:
     }
 
     void command() {
-        cout << "(<Input command>)\n[1] print board \n[2] print attack data \n[3] move \n[4] get legal move \n >> ";
+        // cout << "(<Input command>)\n[1] move \n[2] get legal move \n[3] print board \n[4] print attack data \n";
         int n; cin >> n;
 
         switch (n) {
-        case 1: print_board(); break;
-        case 2: print_attackData(); break;
-        case 3: command_move(); break;
-        case 4: command_getLegalMove(); break;
-        default: cout << "wrong number !\n"; break;
+        case 1: command_move(); break;
+        case 2: command_getLegalMove(); break;
+        case 3: print_board(); break;
+        case 4: print_attackData(); break;
+        default: //cout << "wrong number !\n"; 
+            break;
         }
     }
 
     bool command_move() {
         string now, next; cin >> now >> next;
         if (!notationCheck(now) || !notationCheck(next)) { // notation check
-            cout << "Notation Error\n";
+            // cout << "Notation Error\n";
             return false;
         }
 
         Position pos = convertPos(now);
         if ((isWhiteTurn && board[pos.y][pos.x].team == BLACK) ||
             (!isWhiteTurn && board[pos.y][pos.x].team == WHITE)) { // team check
-            cout << "Is not your piece\n";
+            // cout << "Is not your piece\n";
             return false;
         }
 
         set<Position> s_legalMove;
         int ch = get_legalMove(s_legalMove, pos);
         if (ch != 0) {
-            cout << (ch == 1 ? "There is no piece" : "I don't know") << ", Enter position again\n"; // piece check
+            // cout << (ch == 1 ? "There is no piece" : "I don't know") << ", Enter position again\n"; // piece check
             return false;
         }
 
@@ -425,7 +412,7 @@ public:
             return true;
         }
         else {
-            cout << "It can't move there\n";
+            // cout << "It can't move there\n";
             return false;
         }
     }
