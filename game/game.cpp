@@ -211,7 +211,7 @@ private:
         if (isEmpty({ pos.x, pos.y + dir })) {
             s.insert(Position(pos.x, pos.y + dir));
             // First move
-            if (pos.y == (isWhite ? 1 : 6)) {
+            if (isEmpty({ pos.x, pos.y + dir * 2}) && pos.y == (isWhite ? 1 : 6)) {
                 s.insert(Position(pos.x, pos.y + dir * 2));
             }
         }
@@ -426,11 +426,15 @@ public:
         cout << "\n";
     }
 
-    Position AI_scotch[4][2]{
+    Position AI_scotch[8][2]{
         {{4, 6}, {4, 4}},
         {{1, 7}, {2, 5}},
         {{4, 4}, {3, 3}},
-        {{5, 7}, {2, 4}}
+        {{5, 7}, {2, 4}},
+        {{3, 3}, {2, 2}},
+        {{4, 7}, {5, 6}},
+        {{5, 6}, {4, 7}},
+        {{2, 2}, {1, 1}}
     };
     int idx = 0;
     void move_AI() {
@@ -471,3 +475,18 @@ int main() {
     Game* chess = new Game();
     chess->start();
 }
+
+/*
+1 e2 e4
+5
+1 g1 f3
+5
+1 d2 d4
+5
+1 f1 c4
+5
+1 c2 c3
+5
+1 d1 d5
+5
+*/

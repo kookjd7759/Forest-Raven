@@ -74,7 +74,6 @@ class ChessPiece(QLabel):
         self.deleteLater()
 
     def move_smooth(self, next_UIx, next_UIy):
-        print('move start')
         self.animation.setStartValue(QPoint(self.UIx * CELL_SIZE, self.UIy * CELL_SIZE))
         self.animation.setEndValue(QPoint(next_UIx * CELL_SIZE, next_UIy * CELL_SIZE))
         
@@ -87,7 +86,6 @@ class ChessPiece(QLabel):
         self.move(next_UIx * CELL_SIZE, next_UIy * CELL_SIZE)
         self.UIx = next_UIx
         self.UIy = next_UIy
-        print('move end')
 
     def move_direct(self, next_UIx, next_UIy):
         self.move(next_UIx * CELL_SIZE, next_UIy * CELL_SIZE)
@@ -125,14 +123,13 @@ class ChessPiece(QLabel):
 
     def mousePressEvent(self, event):
         if self.parent().isPlayerWhite != self.isTeamWhite: # NOT player piece
-            print('NOT player piece')
             self.callback_land(self.UIx, self.UIy, True)
             return
         
         # player piece
-        self.moving = True
-        self.callback_press(self.UIx, self.UIy)
         if event.button() == Qt.LeftButton:
+            self.moving = True
+            self.callback_press(self.UIx, self.UIy)
             self.followMouse(event.pos())
 
     def mouseMoveEvent(self, event):
@@ -280,7 +277,7 @@ class Chess(QWidget):
     def piece_callback_land(self, UIx, UIy, smooth):
         if self.isSelected() == False:
             return
-        print('piece_callback_land')
+        
         x, y = UI_Board_PosConv(UIx, UIy, self.isPlayerWhite)
         if self.selected_piece[0] != x or self.selected_piece[1] != y: # move
             self.move_ME(x, y, smooth)
@@ -311,7 +308,6 @@ class Chess(QWidget):
                 self.highlight[UIy][UIx] = HighLightSquare(self, UIx, UIy)
 
     def UIinit(self):
-        
         self.setFixedSize(BOARD_SIZE, 555) # size of the windows
         self.setWindowTitle('Chess')
         vbox = QVBoxLayout()
