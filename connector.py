@@ -21,17 +21,18 @@ def sendMY_move(now, next):
     send(f'1 {now} {next}')
 
 def getAI_move(callback):
+    print('getAI_move()')
     send(f'5')
     output = read()
-    print(output)
     now_x, now_y, next_x, next_y = map(int, output.split())
     callback(now_x, now_y, next_x, next_y)
 
 def get_legalMove(notation):
+    print('get_legalMove()')
     send(f'2 {notation}')
     output = read()
-    print(f'send :2 {notation}')
-    print(f'recieve :{output}')
+    print(f'send : 2 {notation}')
+    print(f'recieve : {output}')
     result = list(map(int, output.split()))
     return result
 

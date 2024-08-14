@@ -74,6 +74,7 @@ class ChessPiece(QLabel):
         self.deleteLater()
 
     def move_smooth(self, next_UIx, next_UIy):
+        print('move start')
         self.animation.setStartValue(QPoint(self.UIx * CELL_SIZE, self.UIy * CELL_SIZE))
         self.animation.setEndValue(QPoint(next_UIx * CELL_SIZE, next_UIy * CELL_SIZE))
         
@@ -82,9 +83,11 @@ class ChessPiece(QLabel):
         
         self.animation.start()
         self.loop.exec_()
-
+        
+        self.move(next_UIx * CELL_SIZE, next_UIy * CELL_SIZE)
         self.UIx = next_UIx
         self.UIy = next_UIy
+        print('move end')
 
     def move_direct(self, next_UIx, next_UIy):
         self.move(next_UIx * CELL_SIZE, next_UIy * CELL_SIZE)
@@ -122,6 +125,7 @@ class ChessPiece(QLabel):
 
     def mousePressEvent(self, event):
         if self.parent().isPlayerWhite != self.isTeamWhite: # NOT player piece
+            print('NOT player piece')
             self.callback_land(self.UIx, self.UIy, True)
             return
         
@@ -136,6 +140,9 @@ class ChessPiece(QLabel):
             self.followMouse(event.pos())
 
     def mouseReleaseEvent(self, event):
+        if self.parent().isPlayerWhite != self.isTeamWhite: # NOT player piece
+            return
+        
         if event.button() == Qt.LeftButton:
             self.moving = False
             mousePos = self.parent().mapFromGlobal(self.mapToGlobal(event.pos()))
@@ -272,8 +279,8 @@ class Chess(QWidget):
 
     def piece_callback_land(self, UIx, UIy, smooth):
         if self.isSelected() == False:
-            return 
-        
+            return
+        print('piece_callback_land')
         x, y = UI_Board_PosConv(UIx, UIy, self.isPlayerWhite)
         if self.selected_piece[0] != x or self.selected_piece[1] != y: # move
             self.move_ME(x, y, smooth)
@@ -357,7 +364,6 @@ class Chess(QWidget):
     def isLegalMove(self, next_x, next_y):
         it = iter(self.legalMove)
         for x, y in zip(it, it):
-            print(f'{x}, {y} is legal')
             if x == next_x and y == next_y:
                 return True
         return False
@@ -381,15 +387,15 @@ class Chess(QWidget):
     def move_piece(self, now_x, now_y, next_x, next_y, smooth): # Get Board Position
         print(f'Move {boardPosToNotation(now_x, now_y)} -> {boardPosToNotation(next_x, next_y)}')
 
-        if self.pieces[next_y][next_x] != None:
-            self.pieces[next_y][next_x].die()
-        self.pieces[next_y][next_x] = self.pieces[now_y][now_x]
-
         UIx, UIy = UI_Board_PosConv(next_x, next_y, self.isPlayerWhite)
         if smooth:
             self.pieces[now_y][now_x].move_smooth(UIx, UIy)
         else:
             self.pieces[now_y][now_x].move_direct(UIx, UIy)
+
+        if self.pieces[next_y][next_x] != None:
+            self.pieces[next_y][next_x].die()
+        self.pieces[next_y][next_x] = self.pieces[now_y][now_x]
 
         self.pieces[now_y][now_x] = None
 
@@ -406,8 +412,6 @@ class Chess(QWidget):
             self.line_turn.setText('White')
         
         if self.isPlayerWhite != self.isTurnWhite: # AI turn
-            now = boardPosToNotation(self.prev_move[0], self.prev_move[1])
-            next = boardPosToNotation(self.prev_move[2], self.prev_move[3])
             getAImove = threading.Thread(target=connector.getAI_move, args=(self.move_AI_callback, ))
             getAImove.start()
 
