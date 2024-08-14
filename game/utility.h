@@ -2,7 +2,6 @@
 #define UTILITY_H
 
 #include <iostream>
-#include <string>
 
 using namespace std;
 
@@ -18,6 +17,7 @@ struct Position {
     }
 
     Position operator+(const Position& other) const { return Position(x + other.x, y + other.y); }
+    bool operator==(const Position& other) const { return bool(x == other.x && y == other.y); }
 };
 
 bool notationCheck(const string& st);

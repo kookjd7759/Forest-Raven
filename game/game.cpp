@@ -109,9 +109,11 @@ private:
         ch1 = castlingMoveCheck_wb_KQ[wb][kq];
         ch2 = isKingSide ? board[rank][5].type == EMPTY && board[rank][6].type == EMPTY :
             board[rank][3].type == EMPTY && board[rank][2].type == EMPTY && board[rank][1].type == EMPTY;
-        ch3 = isKingSide ? board[rank][5].attack_wb[wb] == 0 && board[rank][6].attack_wb[wb] == 0 :
-            board[rank][3].attack_wb[wb] == 0 && board[rank][2].attack_wb[wb] == 0 && board[rank][1].attack_wb[wb] == 0;
-
+        
+        int op = isWhite ? 1 : 0;
+        ch3 = isKingSide ? board[rank][5].attack_wb[op] == 0 && board[rank][6].attack_wb[op] == 0 :
+            board[rank][3].attack_wb[op] == 0 && board[rank][2].attack_wb[op] == 0 && board[rank][1].attack_wb[op] == 0;
+        
         return ch1 && ch2 && ch3;
     }
 
@@ -293,6 +295,18 @@ private:
     }
 
     void move(const Position& now, const Position& dest) {
+        // castling move check
+        if (board[now.y][now.x].type == KING) {
+            int wb = (board[now.y][now.x].team == WHITE ? 0 : 1);
+            castlingMoveCheck_wb_KQ[wb][0] = castlingMoveCheck_wb_KQ[wb][1] = false;
+        }
+        else if (board[now.y][now.x].type == ROOK) {
+            const Position rookPos[4]{ {7, 0}, {0, 0}, {7, 7}, {0, 7} }; // wk, wq, bk, bq
+            for (int i = 0; i < 4; i++) {
+                if (rookPos[i] == now) 
+                    castlingMoveCheck_wb_KQ[i / 2][i % 2] = false;
+            }
+        }
         //cout << "Move : " << convertPos(now) << " -> " << convertPos(dest) << "\n";
 
         // update board
@@ -363,8 +377,7 @@ public:
         cal_attackSquare();
         prevMove[0] = { -1, -1 }, prevMove[1] = { -1, -1 };
         isWhiteTurn = true;
-        for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) 
-            castlingMoveCheck_wb_KQ[i][j] = true;
+        for (int i = 0; i < 4; i++) castlingMoveCheck_wb_KQ[i / 2][i % 2] = true;
     }
 
     void init() {

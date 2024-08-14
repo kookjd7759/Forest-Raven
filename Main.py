@@ -39,9 +39,9 @@ class HighLightSquare(QLabel):
         if self.parent().pieces[y][x] != None:
             self.parent().pieces[y][x].raise_()
         if isSelectedLight:
-            self.setStyleSheet('background-color: rgba(220, 220, 0, 170); border: 2px solid rgba(240, 240, 240, 130);')
+            self.setStyleSheet('background-color: rgba(210, 210, 0, 170); border: 2px solid rgba(240, 240, 240, 120);')
         else:
-            self.setStyleSheet('background-color: rgba(250, 130, 130, 170);')
+            self.setStyleSheet('background-color: rgba(250, 150, 150, 180);')
         self.show()
 
     def off(self):
