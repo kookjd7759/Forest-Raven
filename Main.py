@@ -382,6 +382,17 @@ class Chess(QWidget):
 
     def move_piece(self, now_x, now_y, next_x, next_y, smooth): # Get Board Position
         print(f'Move {boardPosToNotation(now_x, now_y)} -> {boardPosToNotation(next_x, next_y)}')
+        # Check en passant move
+        if self.pieces[now_y][now_x].type == 'P' and now_x != next_x: # pawn takes something
+            if self.pieces[next_y][next_x] == None: # en passant move
+                reverse_dir = 0
+                if self.pieces[now_y][now_x].isTeamWhite:
+                    reverse_dir = -1
+                else:
+                    reverse_dir = 1
+                
+                if self.pieces[next_y + reverse_dir][next_x] != None:
+                    self.pieces[next_y + reverse_dir][next_x].die()
 
         UIx, UIy = UI_Board_PosConv(next_x, next_y, self.isPlayerWhite)
         if smooth:

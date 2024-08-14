@@ -72,33 +72,20 @@ private:
 
 
     int en_passant(const Position& pos, const bool& isWhite) const {
-        if (prevMove[0].x == -1) // first move
+        if ((prevMove[0].x == -1) || (pos.y != (isWhite ? 4 : 3))) // first move or is not rank 5
             return false;
 
-        auto comp = [&](const Position* a, const Position* b) -> bool {
-            return (a->x == b->x) && (a->y == b->y);
-            };
-
         Position kingSide[2], queenSide[2];
-        if (isWhite) {
-            kingSide[0] = { pos.x + 1, pos.y + 2 };
-            kingSide[1] = { pos.x + 1, pos.y };
+        int dir = isWhite ? +2 : -2;
+        kingSide[0] = { pos.x + 1, pos.y + dir };
+        kingSide[1] = { pos.x + 1, pos.y };
 
-            queenSide[0] = { pos.x - 1, pos.y + 2 };
-            queenSide[1] = { pos.x - 1, pos.y };
-        }
-        else {
-            kingSide[0] = { pos.x + 1, pos.y - 2 };
-            kingSide[1] = { pos.x + 1, pos.y };
+        queenSide[0] = { pos.x - 1, pos.y + dir };
+        queenSide[1] = { pos.x - 1, pos.y };
 
-            queenSide[0] = { pos.x - 1, pos.y - 2 };
-            queenSide[1] = { pos.x - 1, pos.y };
-        }
-
-
-        if (comp(&kingSide[0], &prevMove[0]) && comp(&kingSide[1], &prevMove[1]))
+        if (kingSide[0] == prevMove[0] && kingSide[1] == prevMove[1])
             return 1; // able to KingSide en passant
-        else if (comp(&queenSide[0], &prevMove[0]) && comp(&queenSide[1], &prevMove[1]))
+        else if (queenSide[0] == prevMove[0] && queenSide[1] == prevMove[1])
             return -1;
         return 0;
     }
@@ -195,7 +182,7 @@ private:
             Position next = pos + dir_king[i];
             if (boundaryCheck(next)) {
                 if (legalMove) {
-                    if (board[next.y][next.x].attack_wb[isWhite ? 0 : 1 == 0] && !isAlly(pos, next))
+                    if (board[next.y][next.x].attack_wb[isWhite ? 1 : 0] == 0 && !isAlly(pos, next))
                         s.insert(next);
                 }
                 else s.insert(next);
@@ -222,7 +209,7 @@ private:
         pawnAttack_move(s, pos, isWhite, true);
 
         // en_passant Check
-        int en_check = en_passant(pos, false);
+        int en_check = en_passant(pos, isWhite);
         if (en_check != 0) {
             s.insert(Position(pos.x + en_check, pos.y + dir));
         }
@@ -295,7 +282,7 @@ private:
     }
 
     void move(const Position& now, const Position& dest) {
-        // castling move check
+        // king and rook move check for castling
         if (board[now.y][now.x].type == KING) {
             int wb = (board[now.y][now.x].team == WHITE ? 0 : 1);
             castlingMoveCheck_wb_KQ[wb][0] = castlingMoveCheck_wb_KQ[wb][1] = false;
@@ -307,6 +294,16 @@ private:
                     castlingMoveCheck_wb_KQ[i / 2][i % 2] = false;
             }
         }
+
+        // 
+        if (board[now.y][now.x].type == PAWN && now.x != dest.x) { // PAWN takes something
+            if (board[dest.y][dest.x].type == EMPTY) { // en_passant move
+                int reverse_dir = (board[now.y][now.x].team == WHITE ? -1 : +1);
+                board[dest.y + reverse_dir][dest.x].team = NONE;
+                board[dest.y + reverse_dir][dest.x].type = EMPTY;
+            }
+        }
+
         //cout << "Move : " << convertPos(now) << " -> " << convertPos(dest) << "\n";
 
         // update board
@@ -449,11 +446,16 @@ public:
         {{5, 6}, {4, 7}},
         {{2, 2}, {1, 1}}
     };
+    Position en_passant_test[3][2]{
+        {{0, 6}, {0, 5}},
+        {{3, 6}, {3, 4}},
+        {{0, 5}, {0, 4}}
+    };
     int idx = 0;
     void move_AI() {
-        move(AI_scotch[idx][0], AI_scotch[idx][1]);
+        move(en_passant_test[idx][0], en_passant_test[idx][1]);
         for (int i = 0; i < 2; i++)
-            cout << AI_scotch[idx][i].x << " " << AI_scotch[idx][i].y << " ";
+            cout << en_passant_test[idx][i].x << " " << en_passant_test[idx][i].y << " ";
         cout << "\n";
         idx++;
     }
@@ -502,4 +504,13 @@ int main() {
 5
 1 d1 d5
 5
+*/
+
+/*
+1 e2 e4
+5
+1 e4 e5
+5
+3
+2 e5
 */
