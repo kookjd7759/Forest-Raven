@@ -382,7 +382,7 @@ class Chess(QWidget):
 
     def move_piece(self, now_x, now_y, next_x, next_y, smooth): # Get Board Position
         print(f'Move {boardPosToNotation(now_x, now_y)} -> {boardPosToNotation(next_x, next_y)}')
-        # Check en passant move
+        # En passant check
         if self.pieces[now_y][now_x].type == 'P' and now_x != next_x: # pawn takes something
             if self.pieces[next_y][next_x] == None: # en passant move
                 reverse_dir = 0
@@ -393,7 +393,7 @@ class Chess(QWidget):
                 
                 if self.pieces[next_y + reverse_dir][next_x] != None:
                     self.pieces[next_y + reverse_dir][next_x].die()
-
+        
         UIx, UIy = UI_Board_PosConv(next_x, next_y, self.isPlayerWhite)
         if smooth:
             self.pieces[now_y][now_x].move_smooth(UIx, UIy)
@@ -403,6 +403,21 @@ class Chess(QWidget):
         if self.pieces[next_y][next_x] != None:
             self.pieces[next_y][next_x].die()
         self.pieces[next_y][next_x] = self.pieces[now_y][now_x]
+
+        # Castling check
+        if self.pieces[now_y][now_x].type == 'K' and abs(now_x - next_x) == 2:
+            rookDestX, rookDestY = next_x + 1, 7
+            x = 0
+            if  next_x > now_x: # king side
+                x = 7
+                rookDestX = next_x - 1
+            y = 7
+            if self.pieces[now_y][now_x].isTeamWhite: # white move
+                y = 0
+                rookDestY = 0
+            UIx, UIy = UI_Board_PosConv(rookDestX, rookDestY, self.isPlayerWhite)
+            self.pieces[y][x].move_smooth(UIx, UIy)
+            self.pieces[y][x] = None
 
         self.pieces[now_y][now_x] = None
 

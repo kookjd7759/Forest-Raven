@@ -21,9 +21,10 @@ private:
     const Position dir_diagonal[4]{ {1, 1}, {1, -1}, {-1, -1}, {-1, 1} };
     const Position dir_knight[8]{ {1, 2}, {-1, 2}, {2, 1}, {-2, 1}, {2, -1}, {-2, -1}, {1, -2}, {-1, -2} };
     const Position dir_king[8]{ {0, 1}, {1, 1}, {1, 0}, {1, -1}, {0, -1}, {-1, -1}, {-1, 0}, {-1, 1} };
+    const Position rookPos[4]{ {7, 0}, {0, 0}, {7, 7}, {0, 7} }; // wk, wq, bk, bq
 
     enum Type {
-        EMPTY,
+        NOTYPE,
         PAWN,
         KNIGHT,
         BISHOP,
@@ -34,7 +35,7 @@ private:
     const char typeToChar[7] = { '-', 'P', 'N', 'B', 'R', 'Q', 'K' };
 
     enum Team {
-        NONE,
+        NOTEAM,
         WHITE,
         BLACK,
     };
@@ -45,23 +46,23 @@ private:
     }
 
     const bool isEnemy(const Position& a, const Position& b) const {
-        return ((board[a.y][a.x].team != NONE && board[b.y][b.x].team != NONE) &&
+        return ((board[a.y][a.x].team != NOTEAM && board[b.y][b.x].team != NOTEAM) &&
             (board[a.y][a.x].team != board[b.y][b.x].team));
     }
 
     const bool isAlly(const Position& a, const Position& b) const {
-        return ((board[a.y][a.x].team != NONE && board[b.y][b.x].team != NONE) &&
+        return ((board[a.y][a.x].team != NOTEAM && board[b.y][b.x].team != NOTEAM) &&
             board[a.y][a.x].team == board[b.y][b.x].team);
     }
 
     const bool isEmpty(const Position& pos) const {
-        return (board[pos.y][pos.x].team == NONE ? true : false);
+        return (board[pos.y][pos.x].team == NOTEAM ? true : false);
     }
 
     class Square {
     public:
-        Type type = EMPTY;
-        Team team = NONE;
+        Type type = NOTYPE;
+        Team team = NOTEAM;
         int attack_wb[2]{ 0, 0 };
     };
 
@@ -94,8 +95,8 @@ private:
         int wb = isWhite ? 0 : 1, kq = isKingSide ? 0 : 1, rank = isWhite ? 0 : 7;
         bool ch1, ch2, ch3;
         ch1 = castlingMoveCheck_wb_KQ[wb][kq];
-        ch2 = isKingSide ? board[rank][5].type == EMPTY && board[rank][6].type == EMPTY :
-            board[rank][3].type == EMPTY && board[rank][2].type == EMPTY && board[rank][1].type == EMPTY;
+        ch2 = isKingSide ? board[rank][5].type == NOTYPE && board[rank][6].type == NOTYPE :
+            board[rank][3].type == NOTYPE && board[rank][2].type == NOTYPE && board[rank][1].type == NOTYPE;
         
         int op = isWhite ? 1 : 0;
         ch3 = isKingSide ? board[rank][5].attack_wb[op] == 0 && board[rank][6].attack_wb[op] == 0 :
@@ -261,7 +262,7 @@ private:
 
         auto get = [&](set<Position>& s, const Position& pos, const bool& isWhite) -> void {
             switch (board[pos.y][pos.x].type) {
-            case EMPTY: break;
+            case NOTYPE: break;
             case PAWN: pawnAttack_move(s, pos, isWhite, false); break;
             case KNIGHT: knight_move(s, pos, false); break;
             case BISHOP: diagonal_move(s, pos, false); break;
@@ -272,7 +273,7 @@ private:
             };
 
         for (int y = 0; y < 8; y++) for (int x = 0; x < 8; x++) {
-            if (board[y][x].type != EMPTY) {
+            if (board[y][x].type != NOTYPE) {
                 set<Position> s; get(s, Position(x, y), board[y][x].team == WHITE);
                 
                 for (const Position p : s)
@@ -281,50 +282,62 @@ private:
         }
     }
 
+    void move_piece(const Position& now, const Position& dest) {
+        if (board[now.y][now.x].type == NOTYPE) {
+            cout << "move_piece()::MOVE ERROR, there is no piece\n";
+            return;
+        }
+        board[dest.y][dest.x] = board[now.y][now.x];
+        board[now.y][now.x].team = NOTEAM;
+        board[now.y][now.x].type = NOTYPE;
+    }
+
     void move(const Position& now, const Position& dest) {
-        // king and rook move check for castling
-        if (board[now.y][now.x].type == KING) {
+        // Castling check
+        if (board[now.y][now.x].type == KING) { // If move king, never do castes
             int wb = (board[now.y][now.x].team == WHITE ? 0 : 1);
             castlingMoveCheck_wb_KQ[wb][0] = castlingMoveCheck_wb_KQ[wb][1] = false;
+            if (abs(now.x - dest.x) == 2) { // Castling move
+                bool kingSide = dest.x > now.x;
+                int index = wb * 2 + (kingSide ? 0 : 1);
+                move_piece(rookPos[index], dest + Position(dest.x + (kingSide ? -1 : +1), dest.y)); // move rook
+            }
         }
         else if (board[now.y][now.x].type == ROOK) {
-            const Position rookPos[4]{ {7, 0}, {0, 0}, {7, 7}, {0, 7} }; // wk, wq, bk, bq
             for (int i = 0; i < 4; i++) {
                 if (rookPos[i] == now) 
                     castlingMoveCheck_wb_KQ[i / 2][i % 2] = false;
             }
         }
 
-        // 
+        // En passant check ?
         if (board[now.y][now.x].type == PAWN && now.x != dest.x) { // PAWN takes something
-            if (board[dest.y][dest.x].type == EMPTY) { // en_passant move
+            if (board[dest.y][dest.x].type == NOTYPE) { // En passant move
                 int reverse_dir = (board[now.y][now.x].team == WHITE ? -1 : +1);
-                board[dest.y + reverse_dir][dest.x].team = NONE;
-                board[dest.y + reverse_dir][dest.x].type = EMPTY;
+                board[dest.y + reverse_dir][dest.x].team = NOTEAM;
+                board[dest.y + reverse_dir][dest.x].type = NOTYPE;
             }
+        }
+
+        // Promotion check
+        if (board[dest.y][dest.x].type == PAWN) {
+            bool isWhite = board[dest.y][dest.x].team == WHITE;
+            if (isWhite && dest.y == 7) // white pawn promotion
+                promotion(dest, isWhite);
+            else if (!isWhite && dest.y == 0) // black pawn promotion
+                promotion(dest, isWhite);
         }
 
         //cout << "Move : " << convertPos(now) << " -> " << convertPos(dest) << "\n";
 
         // update board
-        board[dest.y][dest.x] = board[now.y][now.x];
-        board[now.y][now.x].team = NONE;
-        board[now.y][now.x].type = EMPTY;
+        move_piece(now, dest);
 
         // change turn
         isWhiteTurn = !isWhiteTurn;
 
         // update previous move 
-        prevMove[0] = now;
-        prevMove[1] = dest;
-
-        // Promotion check
-        if (board[dest.y][dest.x].type == PAWN) {
-            if (board[dest.y][dest.x].team == WHITE && dest.y == 7) // white pawn promotion
-                promotion(dest, true);
-            else if (board[now.y][now.x].team == BLACK && dest.y == 0) // black pawn promotion
-                promotion(dest, false);
-        }
+        prevMove[0] = now; prevMove[1] = dest;
 
         cal_attackSquare();
     }
@@ -332,7 +345,7 @@ private:
     int get_legalMove(set<Position>& s, const Position& pos) {
         bool isWhite = board[pos.y][pos.x].team == WHITE;
         switch (board[pos.y][pos.x].type) {
-        case NONE: return 1;
+        case NOTEAM: return 1;
         case PAWN: s = get_pawn_move(pos, isWhite); break;
         case KNIGHT: s = get_knight_move(pos); break;
         case BISHOP: s = get_bishop_move(pos); break;
@@ -368,7 +381,7 @@ public:
             board[6][i].type = PAWN, board[6][i].team = BLACK;
         }
         for (int i = 2; i < 6; i++) for (int j = 0; j < 8; j++) {
-            board[i][j].type = EMPTY, board[i][j].team = NONE;
+            board[i][j].type = NOTYPE, board[i][j].team = NOTEAM;
         }
 
         cal_attackSquare();
@@ -453,9 +466,9 @@ public:
     };
     int idx = 0;
     void move_AI() {
-        move(en_passant_test[idx][0], en_passant_test[idx][1]);
+        move(AI_scotch[idx][0], AI_scotch[idx][1]);
         for (int i = 0; i < 2; i++)
-            cout << en_passant_test[idx][i].x << " " << en_passant_test[idx][i].y << " ";
+            cout << AI_scotch[idx][i].x << " " << AI_scotch[idx][i].y << " ";
         cout << "\n";
         idx++;
     }
