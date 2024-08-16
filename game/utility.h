@@ -20,6 +20,12 @@ struct Position {
     bool operator==(const Position& other) const { return bool(x == other.x && y == other.y); }
 };
 
+const Position dir_straight[4]{ {0, 1}, {0, -1}, {1, 0}, {-1, 0} };
+const Position dir_diagonal[4]{ {1, 1}, {1, -1}, {-1, -1}, {-1, 1} };
+const Position dir_knight[8]{ {1, 2}, {-1, 2}, {2, 1}, {-2, 1}, {2, -1}, {-2, -1}, {1, -2}, {-1, -2} };
+const Position dir_king[8]{ {0, 1}, {1, 1}, {1, 0}, {1, -1}, {0, -1}, {-1, -1}, {-1, 0}, {-1, 1} };
+const Position rookPos[4]{ {7, 0}, {0, 0}, {7, 7}, {0, 7} }; // wk, wq, bk, bq
+
 bool notationCheck(const string& st);
 Position convertPos(const string& st);
 string convertPos(const Position& pos);
