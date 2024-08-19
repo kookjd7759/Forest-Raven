@@ -512,13 +512,15 @@ public:
 
     // additional function
     void print_board() {
+        cout << "-----------------------\n";
         for (int i = 7; i >= 0; i--) {
             for (int j = 0; j < 8; j++) cout << teamToChar[board[i][j].team] << typeToChar[board[i][j].type] << " ";
             cout << "\n";
         }
         for (int i = 0; i < 8; i++) cout << (char)('a' + i) << "  ";
-        cout << "\n\n";
+        cout << "\n-----------------------\n";
         cout << "[previous Move] : " << convertPos(prevMove[0]) << " -> " << convertPos(prevMove[1]) << "\n";
+        cout << "[check White / Black] " << isCheck_wb[0] << " / " << isCheck_wb[1] << "\n";
     }
 
     void print_attackData() {
