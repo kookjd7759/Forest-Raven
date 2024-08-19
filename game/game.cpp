@@ -1,7 +1,6 @@
 #include <iostream>
-#include <windows.h>
-#include <random>
 #include <set>
+#include <windows.h>
 #include "utility.h"
 
 using namespace std;
@@ -62,20 +61,21 @@ private:
 
     Square** board = new Square *[8];
     Position prevMove[2];
-    bool isWhiteTurn, castlingMoveCheck_wb_KQ[2][2];
+    bool isWhiteTurn, isPlayerWhite, castlingMoveCheck_wb_KQ[2][2];
     Position kingPos_wb[2];
+    int isCheck_wb[2]; // 0:no, 1:check, 2:mate
 
 
 
     int en_passant_check(const Position& pos, const bool& isWhite) const {
-        if ((prevMove[0].x == -1) || (pos.y != (isWhite ? 4 : 3))) // first move or is not rank 5
+        if ( (pos.y != (isWhite ? 4 : 3))) // pawn is not in rank 5
             return false;
 
         Position side_KQ[2][2];
         int dir = isWhite ? +2 : -2;
-        for (int i = 0, add = 1; i < 2; i++, add -= 2) {
-            side_KQ[i][0] = { pos.x + add, pos.y + dir };
-            side_KQ[i][1] = { pos.x + add, pos.y };
+        for (int i = 0, kq = 1; i < 2; i++, kq -= 2) {
+            side_KQ[i][0] = { pos.x + kq, pos.y + dir };
+            side_KQ[i][1] = { pos.x + kq, pos.y };
         }
 
         if (side_KQ[0][0] == prevMove[0] && side_KQ[0][1] == prevMove[1]) return 1;
@@ -97,7 +97,8 @@ private:
         return ch1 && ch2 && ch3;
     }
 
-    void promotion(const Position& pos, const bool& isWhite) {
+    void promotion(const Position& pos, const Team& team) {
+        board[pos.y][pos.x].team = team;
         int input; cin >> input;
         switch (input) {
         case 1: board[pos.y][pos.x].type = QUEEN; break;
@@ -110,23 +111,65 @@ private:
 
 
 
+    bool thisMoveCheckFree(const Position& now, const Position& dest, const bool& isWhite) {
+        bool ret = false;
+        Position king = kingPos_wb[isWhite ? 0 : 1];
 
-    bool move_check(set<Position>& s, const Position& cur , const Position& next, const bool& legalMove) {
+        Square dest_copy = board[dest.y][dest.x];
+        move_piece_boardUpdate(now, dest);
+        cal_attackSquare();
+        if (board[king.y][king.x].attack_wb[isWhite ? 1 : 0] == 0) ret = true;
+        move_piece_boardUpdate(dest, now);
+        board[dest.y][dest.x] = dest_copy;
+
+        return ret;
+    }
+
+    void insert_withCheck(set<Position>& s, const Position& pos, const Position& target, const bool& isWhite) {
+        if (thisMoveCheckFree(pos, target, isWhite))
+            s.insert(target);
+    }
+
+    void update_isCheck() { // 0.no 1.check 2.mate
+        for (int wb = 0, op = 1; wb < 2; wb++, op--) {
+            Position king = kingPos_wb[wb];
+            if (board[king.y][king.x].attack_wb[op] == 0)
+                isCheck_wb[wb] = 0;
+            else {
+                set<pair<Position, Position>> move_1 = get_candidate_move(wb);
+                bool mate = true;
+                for (const pair<Position, Position> move : move_1) {
+                    if (thisMoveCheckFree(move.first, move.second, wb)) {
+                        mate = false;
+                        break;
+                    }
+                }
+                cal_attackSquare();
+                isCheck_wb[wb] = mate ? 1 : 2;
+            }
+        }
+    }
+
+
+
+    bool move_check(set<Position>& s, const Position& cur , const Position& next, const bool& legalMove, const bool& isWhite) {
         if (!boundaryCheck(next) || (legalMove && isAlly(cur, next))) return false;
 
-        s.insert(next);
+        if (legalMove) insert_withCheck(s, cur, next, isWhite);
+        else s.insert(next);
+
         if (isEmpty(next))
             return true;
         else return false;
-    }
+    } 
 
-    void pawnAttack_move(set<Position>& s, const Position& now, const bool& isWhite, const bool& legalMove) {
+    void pawnAttack_move(set<Position>& s, const Position& now, const bool& legalMove, const bool& isWhite) {
         int dir = (isWhite ? +1 : -1);
         auto func = [&](Position next) -> void {
             if (boundaryCheck({ next.x, next.y })) {
                 if (legalMove) {
                     if (isEnemy(now, next))
-                        s.insert(next);
+                        insert_withCheck(s, now, next, isWhite);
                 }
                 else s.insert(next);
             }
@@ -135,169 +178,114 @@ private:
         func(Position(now.x - 1, now.y + dir));
     }
 
-    void straight_move(set<Position>& s, const Position& pos, const bool& legalMove) {
+    void pawn_move(set<Position>& s, const Position& pos, const bool& isWhite) {
+        int dir = (isWhite ? +1 : -1);
+        
+        // Plain move
+        Position one(pos.x, pos.y + dir);
+        if (isEmpty(one)) {
+            insert_withCheck(s, pos, one, isWhite);
+            // First move
+            Position two(pos.x, pos.y + dir * 2);
+            if (isEmpty(two) && pos.y == (isWhite ? 1 : 6))
+                insert_withCheck(s, pos, two, isWhite);
+        }
+
+        // attack move
+        pawnAttack_move(s, pos, true, isWhite);
+
+        // en_passant Check
+        int en = en_passant_check(pos, isWhite);
+        if (en != 0)
+            insert_withCheck(s, pos, Position(pos.x + en, pos.y + dir), isWhite);
+    }
+
+    void straight_move(set<Position>& s, const Position& pos, const bool& legalMove, const bool& isWhite) {
         for (int i = 0; i < 4; i++) {
             Position next = pos;
             while (true) {
                 next = next + dir_straight[i];
-                if (!move_check(s, pos, next, legalMove)) break;
+                if (!move_check(s, pos, next, legalMove, isWhite)) break;
             }
         }
     }
 
-    void diagonal_move(set<Position>& s, const Position& pos, const bool& legalMove) {
+    void diagonal_move(set<Position>& s, const Position& pos, const bool& legalMove, const bool& isWhite) {
         for (int i = 0; i < 4; i++) {
             Position next = pos;
             while (true) {
                 next = next + dir_diagonal[i];
-                if (!move_check(s, pos, next, legalMove)) break;
+                if (!move_check(s, pos, next, legalMove, isWhite)) break;
             }
         }
     }
 
-    void knight_move(set<Position>& s, const Position& pos, const bool& legalMove) {
+    void knight_move(set<Position>& s, const Position& pos, const bool& legalMove, const bool& isWhite) {
         for (int i = 0; i < 8; i++) {
             Position next = pos + dir_knight[i];
             if (boundaryCheck(next)) {
                 if (legalMove) {
                     if (!isAlly(pos, next))
-                        s.insert(next);
+                        insert_withCheck(s, pos, next, isWhite);
                 }
                 else s.insert(next);
             }
         }
     }
 
-    void king_move(set<Position>& s, const Position& pos, const bool& isWhite, const bool& legalMove) {
+    void king_move(set<Position>& s, const Position& pos, const bool& legalMove, const bool& isWhite) {
         for (int i = 0; i < 8; i++) {
             Position next = pos + dir_king[i];
             if (boundaryCheck(next)) {
                 if (legalMove) {
-                    if (board[next.y][next.x].attack_wb[isWhite ? 1 : 0] == 0 && !isAlly(pos, next))
-                        s.insert(next);
+                    if (!isAlly(pos, next)) 
+                        insert_withCheck(s, pos, next, isWhite);
                 }
                 else s.insert(next);
             }
         }
-    }
-
-
-
-    set<Position> get_pawn_move(const Position& pos, const bool& isWhite) {
-        int dir = (isWhite ? +1 : -1);
-        set<Position> s; 
-
-        // Plain move
-        if (isEmpty({ pos.x, pos.y + dir })) {
-            s.insert(Position(pos.x, pos.y + dir));
-            // First move
-            if (isEmpty({ pos.x, pos.y + dir * 2}) && pos.y == (isWhite ? 1 : 6)) {
-                s.insert(Position(pos.x, pos.y + dir * 2));
-            }
-        }
-
-        // attack move
-        pawnAttack_move(s, pos, isWhite, true);
-
-        // en_passant Check
-        int en = en_passant_check(pos, isWhite);
-        if (en != 0) 
-            s.insert(Position(pos.x + en, pos.y + dir));
-
-        return s;
-    }
-
-    set<Position> get_knight_move(const Position& pos) {
-        set<Position> s; knight_move(s, pos, true);
-
-        return s;
-    }
-
-    set<Position> get_bishop_move(const Position& pos) {
-        set<Position> s; diagonal_move(s, pos, true);
-
-        return s;
-    }
-
-    set<Position> get_rook_move(const Position& pos) {
-        set<Position> s; straight_move(s, pos, true);
-
-        return s;
-    }
-
-    set<Position> get_queen_move(const Position& pos) {
-        set<Position> s; straight_move(s, pos, true); diagonal_move(s, pos, true);
-
-        return s;
-    }
-
-    set<Position> get_king_move(const Position& pos, const bool& isWhite) {
-        set<Position> s; king_move(s, pos, isWhite, true);
 
         // Castling
-        if (castling_check(isWhite, true)) // King side
-            s.insert(Position(pos.x + 2, pos.y));
-        if (castling_check(isWhite, false)) // Queen side
-            s.insert(Position(pos.x - 2, pos.y));
+        if (isCheck_wb[isWhite ? 0 : 1] == 0) {
+            if (castling_check(isWhite, true)) // King side
+                s.insert(Position(pos.x + 2, pos.y));
+            if (castling_check(isWhite, false)) // Queen side
+                s.insert(Position(pos.x - 2, pos.y));
+        }
+    }
 
-        return s;
+    void get_legalMove(set<Position>& s, const Position& pos) {
+        bool isWhite = (board[pos.y][pos.x].team == WHITE);
+        switch (board[pos.y][pos.x].type) {
+        case NOTEAM: break;
+        case PAWN: pawn_move(s, pos, isWhite); break;
+        case KNIGHT: knight_move(s, pos, true, isWhite); break;
+        case BISHOP: diagonal_move(s, pos, true, isWhite); break;
+        case ROOK: straight_move(s, pos, true, isWhite); break;
+        case QUEEN: straight_move(s, pos, true, isWhite); diagonal_move(s, pos, true, isWhite); break;
+        case KING: king_move(s, pos, true, isWhite); break;
+        default: break;
+        }
     }
 
     set<pair<Position, Position>> get_candidate_move(const bool& isWhite) {
         set<pair<Position, Position>> s;
+        Team team = isWhite ? WHITE : BLACK;
         for (int y = 0; y < 8; y++)
             for (int x = 0; x < 8; x++) {
-                if (board[y][x].team != NOTEAM && board[y][x].team == (isWhite ? WHITE : BLACK)) {
-                    set<Position> move;
-                    Position pos(x, y); 
-                    switch (board[y][x].type) {
-                    case NOTYPE: break;
-                    case PAWN: pawnAttack_move(move, pos, isWhite, true); break;
-                    case KNIGHT: knight_move(move, pos, true); break;
-                    case BISHOP: diagonal_move(move, pos, true); break;
-                    case ROOK: straight_move(move, pos, true); break;
-                    case QUEEN: diagonal_move(move, pos, true); straight_move(move, pos, true); break;
-                    case KING: king_move(move, pos, isWhite, true); break;
-                    }
+                if (board[y][x].team == team) {
+                    set<Position> move; Position pos(x, y);
+                    get_legalMove(move, pos);
 
                     for (const Position p : move)
-                        s.insert(make_pair(Position(x, y), p));
+                        s.insert(make_pair(pos, p));
                 }
             }
+
+        return s;
     }
 
 
-
-    int isCheck(const bool& isWhite) { // 0.no 1.check 2.mate
-        auto isKingAttacked = [&](Position king) -> bool {
-            int op = (isWhite ? 1 : 0);
-            return board[king.y][king.x].attack_wb[op] != 0;
-            };
-
-        int wb = (isWhite ? 0 : 1);
-        Position king = kingPos_wb[wb];
-        if (!isKingAttacked(king))
-            return 0;
-        else {
-            set<pair<Position, Position>> move_1 = get_candidate_move(isWhite);
-            bool isCheck = false;
-            for (const pair<Position, Position> move : move_1) {
-                Position now = move.first, dest = move.second;
-
-                Square temp = board[dest.y][dest.x];
-                move_piece_boardUpdate(now, dest);
-                cal_attackSquare();
-                if (!isKingAttacked(king)) isCheck = true;
-                move_piece_boardUpdate(dest, now);
-                board[dest.y][dest.x] = temp;
-
-                if (isCheck)
-                    break;
-            }
-            cal_attackSquare();
-            return (isCheck ? 1 : 2);
-        }
-    }
 
     void cal_attackSquare() {
         for (int y = 0; y < 8; y++) for (int x = 0; x < 8; x++)
@@ -306,12 +294,12 @@ private:
         auto get = [&](set<Position>& s, const Position& pos, const bool& isWhite) -> void {
             switch (board[pos.y][pos.x].type) {
             case NOTYPE: break;
-            case PAWN: pawnAttack_move(s, pos, isWhite, false); break;
-            case KNIGHT: knight_move(s, pos, false); break;
-            case BISHOP: diagonal_move(s, pos, false); break;
-            case ROOK: straight_move(s, pos, false); break;
-            case QUEEN: diagonal_move(s, pos, false); straight_move(s, pos, false); break;
-            case KING: king_move(s, pos, isWhite, false); break;
+            case PAWN: pawnAttack_move(s, pos, false, isWhite); break;
+            case KNIGHT: knight_move(s, pos, false, isWhite); break;
+            case BISHOP: diagonal_move(s, pos, false, isWhite); break;
+            case ROOK: straight_move(s, pos, false, isWhite); break;
+            case QUEEN: diagonal_move(s, pos, false, isWhite), straight_move(s, pos, false, isWhite); break;
+            case KING: king_move(s, pos, false, isWhite); break;
             }
             };
 
@@ -319,8 +307,9 @@ private:
             if (board[y][x].type != NOTYPE) {
                 set<Position> s; get(s, Position(x, y), board[y][x].team == WHITE);
                 
+                int wb = (board[y][x].team == WHITE ? 0 : 1);
                 for (const Position p : s)
-                    board[y][x].team == WHITE ? board[p.y][p.x].attack_wb[0]++ : board[p.y][p.x].attack_wb[1]++;
+                    board[p.y][p.x].attack_wb[wb]++;
             }
         }
     }
@@ -332,14 +321,11 @@ private:
     }
 
     void move_piece(const Position& now, const Position& dest) {
-        if (board[now.y][now.x].type == KING) { // king position recording
-            int wb = (board[now.y][now.x].team == WHITE ? 0 : 1);
-            kingPos_wb[wb] = dest;
-        }
-        if (board[now.y][now.x].type == NOTYPE) {
-            cout << "move_piece()::MOVE ERROR, there is no piece\n";
-            return;
-        }
+        if (board[now.y][now.x].type == NOTYPE) return; // ERROR
+
+        if (board[now.y][now.x].type == KING) // king position recording
+            kingPos_wb[board[now.y][now.x].team == WHITE ? 0 : 1] = dest;
+
         move_piece_boardUpdate(now, dest);
     }
 
@@ -352,7 +338,7 @@ private:
             if (abs(now.x - dest.x) == 2) { // Castling move
                 bool kingSide = dest.x > now.x;
                 int index = wb * 2 + (kingSide ? 0 : 1);
-                move_piece(rookPos[index], dest + Position(dest.x + (kingSide ? -1 : +1), dest.y)); // move rook
+                move_piece(rookPos[index], Position(dest.x + (kingSide ? -1 : +1), dest.y)); // move rook
             }
         }
         else if (board[now.y][now.x].type == ROOK) {
@@ -372,12 +358,8 @@ private:
         }
 
         // Promotion check
-        if (board[now.y][now.x].type == PAWN && dest.y == (isWhite ? 7 : 0)) {
-            bool isWhite = board[dest.y][dest.x].team == WHITE;
-            if (isWhite && dest.y == 7) // white pawn promotion
-                promotion(dest, isWhite);
-            else if (!isWhite && dest.y == 0) // black pawn promotion
-                promotion(dest, isWhite);
+        if (board[now.y][now.x].type == PAWN && (dest.y == 7 || dest.y == 0)) {
+            promotion(dest, board[dest.y][dest.x].team);
         }
 
         //cout << "Move : " << convertPos(now) << " -> " << convertPos(dest) << "\n";
@@ -392,21 +374,7 @@ private:
         prevMove[0] = now; prevMove[1] = dest;
 
         cal_attackSquare();
-    }
-
-    int get_legalMove(set<Position>& s, const Position& pos) {
-        bool isWhite = board[pos.y][pos.x].team == WHITE;
-        switch (board[pos.y][pos.x].type) {
-        case NOTEAM: return 1;
-        case PAWN: s = get_pawn_move(pos, isWhite); break;
-        case KNIGHT: s = get_knight_move(pos); break;
-        case BISHOP: s = get_bishop_move(pos); break;
-        case ROOK: s = get_rook_move(pos); break;
-        case QUEEN: s = get_queen_move(pos); break;
-        case KING: s = get_king_move(pos, isWhite); break;
-        default: return -1;
-        }
-        return 0;
+        update_isCheck();
     }
 
 public:
@@ -432,16 +400,17 @@ public:
             board[7][i].type = list[i], board[7][i].team = BLACK;
             board[6][i].type = PAWN, board[6][i].team = BLACK;
         }
-        for (int i = 2; i < 6; i++) for (int j = 0; j < 8; j++) {
+        for (int i = 2; i < 6; i++) for (int j = 0; j < 8; j++) 
             board[i][j].type = NOTYPE, board[i][j].team = NOTEAM;
-        }
 
-        kingPos_wb[0] = { 4, 0 }, kingPos_wb[1] = { 4, 7 };
         prevMove[0] = { -1, -1 }, prevMove[1] = { -1, -1 };
-        isWhiteTurn = true;
+        isWhiteTurn = true; isPlayerWhite = true;
         for (int i = 0; i < 4; i++) castlingMoveCheck_wb_KQ[i / 2][i % 2] = true;
+        kingPos_wb[0] = { 4, 0 }, kingPos_wb[1] = { 4, 7 };
+        isCheck_wb[0] = 0, isCheck_wb[1] = 0;
 
         cal_attackSquare();
+        update_isCheck();
     }
 
     void init() {
@@ -449,7 +418,6 @@ public:
     }
 
     void command() {
-        //cout << "(<Input command>)\n[1] move \n[2] get legal move \n[3] print board \n[4] print attack data \n";
         int n; cin >> n;
 
         switch (n) {
@@ -458,8 +426,7 @@ public:
         case 3: print_board(); break;
         case 4: print_attackData(); break;
         case 5: move_AI(); break;
-        default: //cout << "wrong number !\n"; 
-            break;
+        default: break;
         }
     }
 
@@ -477,12 +444,7 @@ public:
             return false;
         }
 
-        set<Position> s_legalMove;
-        int ch = get_legalMove(s_legalMove, pos);
-        if (ch != 0) {
-            //cout << (ch == 1 ? "There is no piece" : "I don't know") << ", Enter position again\n"; // piece check
-            return false;
-        }
+        set<Position> s_legalMove; get_legalMove(s_legalMove, pos);
 
         Position dest = convertPos(next);
         if (s_legalMove.find(dest) != s_legalMove.end()) { // move check
@@ -520,16 +482,29 @@ public:
     };
     int idx = 0;
     void move_AI() {
+        /*
         move(AI_scotch[idx][0], AI_scotch[idx][1]);
         for (int i = 0; i < 2; i++)
             cout << AI_scotch[idx][i].x << " " << AI_scotch[idx][i].y << " ";
         cout << "\n";
         idx++;
+        */
+        set<pair<Position, Position>> s = get_candidate_move(!isPlayerWhite);
+        auto iter = s.begin();
+        int idx = get_random(0, s.size() - 1);
+        advance(iter, idx - 1);
+        move(iter->first, iter->second);
+        cout << iter->first.x << " " << iter->first.y << " " << iter->second.x << " " << iter->second.y;
+        cout << "\n";
     }
 
     void start() {
         while (true) {
             command();
+            if (isCheck_wb[0] == 2 || isCheck_wb[1] == 2) {
+                cout << "MATE\n";
+                break;
+            }
         }
     }
 

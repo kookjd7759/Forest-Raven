@@ -15,3 +15,12 @@ string convertPos(const Position& pos) {
     st += pos.y + '1';
     return st;
 }
+
+int get_random(const int& a, const int& b) {
+    std::random_device rd; 
+    std::mt19937 gen(rd()); 
+
+    std::uniform_int_distribution<int> rand(a, b);
+
+    return rand(gen);
+}

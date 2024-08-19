@@ -2,6 +2,7 @@
 #define UTILITY_H
 
 #include <iostream>
+#include <random>
 
 using namespace std;
 
@@ -29,5 +30,6 @@ const Position rookPos[4]{ {7, 0}, {0, 0}, {7, 7}, {0, 7} }; // wk, wq, bk, bq
 bool notationCheck(const string& st);
 Position convertPos(const string& st);
 string convertPos(const Position& pos);
+int get_random(const int& a, const int& b);
 
 #endif // UTILITY_H
