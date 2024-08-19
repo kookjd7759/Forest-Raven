@@ -161,7 +161,7 @@ private:
         if (isEmpty(next))
             return true;
         else return false;
-    } 
+    }
 
     void pawnAttack_move(set<Position>& s, const Position& now, const bool& legalMove, const bool& isWhite) {
         int dir = (isWhite ? +1 : -1);
@@ -490,12 +490,14 @@ public:
         idx++;
         */
         set<pair<Position, Position>> s = get_candidate_move(!isPlayerWhite);
-        auto iter = s.begin();
-        int idx = get_random(0, s.size() - 1);
-        advance(iter, idx - 1);
-        move(iter->first, iter->second);
-        cout << iter->first.x << " " << iter->first.y << " " << iter->second.x << " " << iter->second.y;
-        cout << "\n";
+        if (!s.empty()) {
+            auto iter = s.begin();
+            int idx = get_random(0, s.size() - 1);
+            iter = std::next(s.begin(), idx);
+            move(iter->first, iter->second);
+            cout << iter->first.x << " " << iter->first.y << " " << iter->second.x << " " << iter->second.y;
+            cout << "\n";
+        }
     }
 
     void start() {
