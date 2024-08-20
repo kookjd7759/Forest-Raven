@@ -16,10 +16,7 @@ def boardPosToNotation(x, y): # Get Board Position
     return file[x] + rank[y]
 
 def UI_Board_PosConv(x, y, isPlayerWhite): # UI to Board / Board to UI Converting
-    if isPlayerWhite:
-        return x, 7 - y
-    else:
-        return 7 - x, y
+    return (x, 7 - y) if isPlayerWhite else (7 - x, y)
 
 
 
@@ -46,6 +43,54 @@ class HighLightSquare(QLabel):
 
     def off(self):
         self.hide()
+
+
+
+class PromotionWindow(QLabel):
+
+    def loadImages(self):
+        parent = self.parent()
+        color = 'w' if self.isWhite else 'b'
+        self.images = {
+            'q': parent.piece_images[color + 'q'],
+            'n': parent.piece_images[color + 'n'],
+            'r': parent.piece_images[color + 'r'],
+            'b': parent.piece_images[color + 'b']
+        }
+    
+    def __init__(self, parent, UIx, isWhite):
+        super().__init__(parent)
+        self.isWhite = isWhite
+        self.loadImages()
+        self.UIinit()
+        self.resize(CELL_SIZE, 4 * CELL_SIZE)
+        self.move(UIx * CELL_SIZE, 0)
+        self.raise_()
+
+    def UIinit(self):
+        layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0) 
+        layout.setSpacing(0)
+        self.setStyleSheet('background-color: white; border-radius: 4px;')
+
+        shadow = QGraphicsDropShadowEffect(self)
+        shadow.setBlurRadius(20)
+        shadow.setOffset(2, 2)
+        shadow.setColor(QColor('rgba(0, 0, 0, 0.5)'))
+        self.setGraphicsEffect(shadow)
+
+        for piece in ['q', 'r', 'b', 'n']:
+            label = QLabel(self)
+            label.setPixmap(QPixmap(self.images[piece]))
+            label.setFixedSize(CELL_SIZE, CELL_SIZE)
+            label.setScaledContents(True)
+            layout.addWidget(label)
+        self.setLayout(layout)
+    
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            mousePos = self.parent().mapFromGlobal(self.mapToGlobal(event.pos()))
+            print(f'promotion to {mousePos.y() // CELL_SIZE}')
 
 
 
@@ -131,12 +176,17 @@ class ChessPiece(QLabel):
             self.moving = True
             self.callback_press(self.UIx, self.UIy)
             self.followMouse(event.pos())
+        if event.button() == Qt.RightButton and self.moving:
+            self.moving = False
+            self.callback_land(self.UIx, self.UIy, False)
 
     def mouseMoveEvent(self, event):
         if self.moving:
             self.followMouse(event.pos())
 
     def mouseReleaseEvent(self, event):
+        if self.moving == False:
+            return
         if self.parent().isPlayerWhite != self.isTeamWhite: # NOT player piece
             return
         
@@ -306,6 +356,8 @@ class Chess(QWidget):
         for UIx in range(8):
             for UIy in range(8):
                 self.highlight[UIy][UIx] = HighLightSquare(self, UIx, UIy)
+        
+        self.promotion = PromotionWindow(self, 1, self.isPlayerWhite)
 
     def UIinit(self):
         self.setFixedSize(BOARD_SIZE, 555) # size of the windows
@@ -368,7 +420,11 @@ class Chess(QWidget):
         if self.isPlayerWhite != self.isTurnWhite or self.isLegalMove(next_x, next_y) == False: # Opponent Turn & illegal move
             self.pieces[self.selected_piece[1]][self.selected_piece[0]].move_return()
             self.delSelect()
-            return 
+            return
+        
+        # Promotion check 
+        if self.pieces[self.selected_piece[1]][self.selected_piece[0]].type == 'P' and next_y == (7 if self.isPlayerWhite else 0):
+            print('Promotion !!')
         
         now = boardPosToNotation(self.selected_piece[0], self.selected_piece[1])
         next = boardPosToNotation(next_x, next_y)
@@ -393,6 +449,7 @@ class Chess(QWidget):
                 
                 if self.pieces[next_y + reverse_dir][next_x] != None:
                     self.pieces[next_y + reverse_dir][next_x].die()
+                    self.pieces[next_y + reverse_dir][next_x] = None
         
         UIx, UIy = UI_Board_PosConv(next_x, next_y, self.isPlayerWhite)
         if smooth:
@@ -416,6 +473,7 @@ class Chess(QWidget):
                 y = 0
                 rookDestY = 0
             UIx, UIy = UI_Board_PosConv(rookDestX, rookDestY, self.isPlayerWhite)
+            self.pieces[rookDestY][rookDestX] = self.pieces[y][x]
             self.pieces[y][x].move_smooth(UIx, UIy)
             self.pieces[y][x] = None
 
@@ -468,10 +526,7 @@ class Chess(QWidget):
 ### Additional function
     def print2DInfo(self):
         def team(isTeamWhite):
-            if isTeamWhite:
-                return 'w'
-            else:
-                return 'b'
+            return 'w' if isTeamWhite else 'b'
             
         if self.isPlayerWhite:
             for i in range(7, -1, -1):
