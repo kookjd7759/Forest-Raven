@@ -1,9 +1,6 @@
-#include <iostream>
 #include <set>
 #include <windows.h>
 #include "utility.h"
-
-using namespace std;
 
 class Game {
 private:
@@ -59,7 +56,7 @@ private:
 
 
     int en_passant_check(const Position& pos, const bool& isWhite) const {
-        if ( (pos.y != (isWhite ? 4 : 3))) // pawn is not in rank 5
+        if (pos.y != (isWhite ? 4 : 3)) // pawn is not in rank 5
             return false;
 
         Position side_KQ[2][2];
@@ -103,6 +100,9 @@ private:
 
 
     bool thisMoveCheckFree(const Position& now, const Position& dest, const bool& isWhite) {
+        if (board[now.y][now.x].type == KING) 
+            return board[dest.y][dest.x].attack_wb[isWhite ? 1 : 0] == 0;
+
         bool ret = false;
         Position king = kingPos_wb[isWhite ? 0 : 1];
 
@@ -112,7 +112,7 @@ private:
         if (board[king.y][king.x].attack_wb[isWhite ? 1 : 0] == 0) ret = true;
         move_piece_boardUpdate(dest, now);
         board[dest.y][dest.x] = dest_copy;
-
+        cal_attackSquare();
         return ret;
     }
 
@@ -222,7 +222,7 @@ private:
             Position next = pos + dir_king[i];
             if (boundaryCheck(next)) {
                 if (legalMove) {
-                    if (!isAlly(pos, next)) 
+                    if (!isAlly(pos, next))
                         insert_withCheck(s, pos, next, isWhite);
                 }
                 else s.insert(next);
@@ -265,11 +265,11 @@ private:
                         s.insert(make_pair(pos, p));
                 }
             }
-
+        /*
         cout << "Candidate move [" << s.size() << "]\n";
         for (const pair<Position, Position> move : s)
             cout << convertPos(move.first) << " -> " << convertPos(move.second) << "\n";
-
+            */
         return s;
     }
 
@@ -277,25 +277,23 @@ private:
 
     void cal_attackSquare() {
         for (int y = 0; y < 8; y++) for (int x = 0; x < 8; x++)
-            board[y][x].attack_wb[0] = 0, board[y][x].attack_wb[1] = 0;
-
-        auto get = [&](set<Position>& s, const Position& pos, const bool& isWhite) -> void {
-            switch (board[pos.y][pos.x].type) {
-            case NOTYPE: break;
-            case PAWN: pawnAttack_move(s, pos, false, isWhite); break;
-            case KNIGHT: knight_move(s, pos, false, isWhite); break;
-            case BISHOP: diagonal_move(s, pos, false, isWhite); break;
-            case ROOK: straight_move(s, pos, false, isWhite); break;
-            case QUEEN: diagonal_move(s, pos, false, isWhite), straight_move(s, pos, false, isWhite); break;
-            case KING: king_move(s, pos, false, isWhite); break;
-            }
-            };
+            board[y][x].attack_wb[0] = board[y][x].attack_wb[1] = 0;
 
         for (int y = 0; y < 8; y++) for (int x = 0; x < 8; x++) {
-            if (board[y][x].type != NOTYPE) {
-                set<Position> s; get(s, Position(x, y), board[y][x].team == WHITE);
-                
-                int wb = (board[y][x].team == WHITE ? 0 : 1);
+            if (board[y][x].type != NOTYPE) { // there is piece
+                set<Position> s; Position pos(x, y);
+                bool isWhite = (board[y][x].team == WHITE);
+                switch (board[pos.y][pos.x].type) {
+                case NOTYPE: break;
+                case PAWN: pawnAttack_move(s, pos, false, isWhite); break;
+                case KNIGHT: knight_move(s, pos, false, isWhite); break;
+                case BISHOP: diagonal_move(s, pos, false, isWhite); break;
+                case ROOK: straight_move(s, pos, false, isWhite); break;
+                case QUEEN: diagonal_move(s, pos, false, isWhite), straight_move(s, pos, false, isWhite); break;
+                case KING: king_move(s, pos, false, isWhite); break;
+                }
+
+                int wb = isWhite ? 0 : 1;
                 for (const Position p : s)
                     board[p.y][p.x].attack_wb[wb]++;
             }
@@ -418,31 +416,9 @@ public:
         }
     }
 
-    bool move_ME() {
+    void move_ME() {
         string now, next; cin >> now >> next;
-        if (!notationCheck(now) || !notationCheck(next)) { // notation check
-            //cout << "Notation Error\n";
-            return false;
-        }
-
-        Position pos = convertPos(now);
-        if ((isWhiteTurn && board[pos.y][pos.x].team == BLACK) ||
-            (!isWhiteTurn && board[pos.y][pos.x].team == WHITE)) { // team check
-            //cout << "Is not your piece\n";
-            return false;
-        }
-
-        set<Position> s_legalMove; get_legalMove(s_legalMove, pos);
-
-        Position dest = convertPos(next);
-        if (s_legalMove.find(dest) != s_legalMove.end()) { // move check
-            move(pos, dest);
-            return true;
-        }
-        else {
-            //cout << "It can't move there\n";
-            return false;
-        }
+        move(convertPos(now), convertPos(next));
     }
 
     void command_getLegalMove() {
@@ -458,7 +434,7 @@ public:
         if (!s.empty()) {
             auto iter = s.begin();
             int idx = get_random(0, s.size() - 1);
-            iter = std::next(s.begin(), idx);
+            iter = next(s.begin(), idx);
             move(iter->first, iter->second);
             cout << iter->first.x << " " << iter->first.y << " " << iter->second.x << " " << iter->second.y;
             cout << "\n";
@@ -499,27 +475,3 @@ int main() {
     Game* chess = new Game();
     chess->start();
 }
-
-/*
-1 e2 e4
-5
-1 g1 f3
-5
-1 d2 d4
-5
-1 f1 c4
-5
-1 c2 c3
-5
-1 d1 d5
-5
-*/
-
-/*
-1 e2 e4
-5
-1 e4 e5
-5
-3
-2 e5
-*/
