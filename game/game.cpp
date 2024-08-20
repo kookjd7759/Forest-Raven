@@ -5,15 +5,6 @@
 
 using namespace std;
 
-/*
-* (x, y)
-* 
-* y     (7, 7) 
-* ^
-* | WR WN ...
-* (0,0) -> x 
-*/
-
 class Game {
 private:
     enum Type {
@@ -136,16 +127,9 @@ private:
             if (board[king.y][king.x].attack_wb[op] == 0)
                 isCheck_wb[wb] = 0;
             else {
-                set<pair<Position, Position>> move_1 = get_candidate_move(wb);
-                bool mate = true;
-                for (const pair<Position, Position> move : move_1) {
-                    if (thisMoveCheckFree(move.first, move.second, wb)) {
-                        mate = false;
-                        break;
-                    }
-                }
-                cal_attackSquare();
-                isCheck_wb[wb] = mate ? 1 : 2;
+                set<pair<Position, Position>> move_1 = get_candidate_move(wb == 0 ? true : false);
+                bool mate = move_1.empty();
+                isCheck_wb[wb] = mate ? 2 : 1;
             }
         }
     }
@@ -281,6 +265,10 @@ private:
                         s.insert(make_pair(pos, p));
                 }
             }
+
+        cout << "Candidate move [" << s.size() << "]\n";
+        for (const pair<Position, Position> move : s)
+            cout << convertPos(move.first) << " -> " << convertPos(move.second) << "\n";
 
         return s;
     }
@@ -465,30 +453,7 @@ public:
         cout << "\n";
     }
 
-    Position AI_scotch[8][2]{
-        {{4, 6}, {4, 4}},
-        {{1, 7}, {2, 5}},
-        {{4, 4}, {3, 3}},
-        {{5, 7}, {2, 4}},
-        {{3, 3}, {2, 2}},
-        {{4, 7}, {5, 6}},
-        {{5, 6}, {4, 7}},
-        {{2, 2}, {1, 1}}
-    };
-    Position en_passant_test[3][2]{
-        {{0, 6}, {0, 5}},
-        {{3, 6}, {3, 4}},
-        {{0, 5}, {0, 4}}
-    };
-    int idx = 0;
     void move_AI() {
-        /*
-        move(AI_scotch[idx][0], AI_scotch[idx][1]);
-        for (int i = 0; i < 2; i++)
-            cout << AI_scotch[idx][i].x << " " << AI_scotch[idx][i].y << " ";
-        cout << "\n";
-        idx++;
-        */
         set<pair<Position, Position>> s = get_candidate_move(!isPlayerWhite);
         if (!s.empty()) {
             auto iter = s.begin();
@@ -503,10 +468,8 @@ public:
     void start() {
         while (true) {
             command();
-            if (isCheck_wb[0] == 2 || isCheck_wb[1] == 2) {
-                cout << "MATE\n";
-                break;
-            }
+            if (isCheck_wb[1] == 2) cout << "WHITE WIN !!\n";
+            else if (isCheck_wb[0] == 2) cout << "BLACK WIN !!\n";
         }
     }
 
