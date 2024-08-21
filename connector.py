@@ -25,7 +25,7 @@ def sendMY_move_promotion(now, next, num):
     send(f'1 {now} {next} {num}')
 
 def getAI_move(callback):
-    send(f'5')
+    send('3')
     output = read()
     now_x, now_y, next_x, next_y = map(int, output.split())
     callback(now_x, now_y, next_x, next_y)
@@ -35,6 +35,10 @@ def get_legalMove(notation):
     output = read()
     result = list(map(int, output.split()))
     return result
+
+def restart():
+    send('4')
+
 
 if __name__ == '__main__':
     while True:

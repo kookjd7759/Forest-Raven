@@ -561,6 +561,7 @@ class Chess(QWidget):
         self.isTurnWhite = True
         self.delSelect()
         self.prev_move = (-1, -1, -1, -1)
+        connector.restart()
 
     def btn_changeColor_function(self):
         if self.isPlayerWhite:

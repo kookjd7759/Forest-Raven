@@ -100,17 +100,14 @@ private:
 
 
     bool thisMoveCheckFree(const Position& now, const Position& dest, const bool& isWhite) {
-        if (board[now.y][now.x].type == KING) 
-            return board[dest.y][dest.x].attack_wb[isWhite ? 1 : 0] == 0;
-
         bool ret = false;
-        Position king = kingPos_wb[isWhite ? 0 : 1];
 
         Square dest_copy = board[dest.y][dest.x];
-        move_piece_boardUpdate(now, dest);
+        move_piece(now, dest);
+        Position king = kingPos_wb[isWhite ? 0 : 1];
         cal_attackSquare();
         if (board[king.y][king.x].attack_wb[isWhite ? 1 : 0] == 0) ret = true;
-        move_piece_boardUpdate(dest, now);
+        move_piece(dest, now);
         board[dest.y][dest.x] = dest_copy;
         cal_attackSquare();
         return ret;
@@ -302,19 +299,13 @@ private:
         }
     }
 
-    void move_piece_boardUpdate(const Position& now, const Position& dest) {
-        board[dest.y][dest.x] = board[now.y][now.x];
-        board[now.y][now.x].team = NOTEAM;
-        board[now.y][now.x].type = NOTYPE;
-    }
-
     void move_piece(const Position& now, const Position& dest) {
-        if (board[now.y][now.x].type == NOTYPE) return; // ERROR
-
         if (board[now.y][now.x].type == KING) // king position recording
             kingPos_wb[board[now.y][now.x].team == WHITE ? 0 : 1] = dest;
 
-        move_piece_boardUpdate(now, dest);
+        board[dest.y][dest.x] = board[now.y][now.x];
+        board[now.y][now.x].team = NOTEAM;
+        board[now.y][now.x].type = NOTYPE;
     }
 
     void move(const Position& now, const Position& dest) {
@@ -409,9 +400,10 @@ public:
         switch (n) {
         case 1: move_ME(); break;
         case 2: command_getLegalMove(); break;
-        case 3: print_board(); break;
-        case 4: print_attackData(); break;
-        case 5: move_AI(); break;
+        case 3: move_AI(); break;
+        case 4: reset(); break;
+        case 5: print_board(); break;
+        case 6: print_attackData(); break;
         default: break;
         }
     }
