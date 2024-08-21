@@ -90,8 +90,8 @@ private:
         int input; cin >> input;
         switch (input) {
         case 1: board[pos.y][pos.x].type = QUEEN; break;
-        case 2: board[pos.y][pos.x].type = ROOK; break;
-        case 3: board[pos.y][pos.x].type = KNIGHT; break;
+        case 2: board[pos.y][pos.x].type = KNIGHT; break;
+        case 3: board[pos.y][pos.x].type = ROOK; break;
         case 4: board[pos.y][pos.x].type = BISHOP; break;
         default: board[pos.y][pos.x].type = QUEEN; break;
         }
@@ -169,16 +169,18 @@ private:
         Position one(pos.x, pos.y + dir);
         if (isEmpty(one)) {
             insert_withCheck(s, pos, one, isWhite);
-            // First move
-            Position two(pos.x, pos.y + dir * 2);
-            if (isEmpty(two) && pos.y == (isWhite ? 1 : 6))
-                insert_withCheck(s, pos, two, isWhite);
+            
+            if (pos.y == (isWhite ? 1 : 6)) { // First move
+                Position two(pos.x, pos.y + dir * 2);
+                if (isEmpty(two))
+                    insert_withCheck(s, pos, two, isWhite);
+            }
         }
 
-        // attack move
+        // Attack move
         pawnAttack_move(s, pos, true, isWhite);
 
-        // en_passant Check
+        // En_passant Check
         int en = en_passant_check(pos, isWhite);
         if (en != 0)
             insert_withCheck(s, pos, Position(pos.x + en, pos.y + dir), isWhite);
@@ -475,3 +477,13 @@ int main() {
     Game* chess = new Game();
     chess->start();
 }
+
+/*
+1 h2 h4
+1 h4 h5
+1 h5 h6
+1 g8 f6
+1 h6 g7
+3
+2 g7
+*/

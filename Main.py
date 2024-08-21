@@ -50,22 +50,21 @@ class PromotionWindow(QLabel):
 
     def loadImages(self):
         parent = self.parent()
-        color = 'w' if self.isWhite else 'b'
+        team = 'w' if self.isWhite else 'b'
         self.images = {
-            'q': parent.piece_images[color + 'q'],
-            'n': parent.piece_images[color + 'n'],
-            'r': parent.piece_images[color + 'r'],
-            'b': parent.piece_images[color + 'b']
+            'q': parent.piece_images[team + 'q'],
+            'n': parent.piece_images[team + 'n'],
+            'r': parent.piece_images[team + 'r'],
+            'b': parent.piece_images[team + 'b']
         }
     
-    def __init__(self, parent, UIx, isWhite):
+    def __init__(self, parent, isWhite):
         super().__init__(parent)
         self.isWhite = isWhite
         self.loadImages()
         self.UIinit()
         self.resize(CELL_SIZE, 4 * CELL_SIZE)
-        self.move(UIx * CELL_SIZE, 0)
-        self.raise_()
+        self.hide()
 
     def UIinit(self):
         layout = QVBoxLayout()
@@ -87,6 +86,11 @@ class PromotionWindow(QLabel):
             layout.addWidget(label)
         self.setLayout(layout)
     
+    def on(self, UIx, UIy):
+        self.move(UIx * CELL_SIZE, UIy * CELL_SIZE)
+        self.raise_()
+        self.show()
+
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             mousePos = self.parent().mapFromGlobal(self.mapToGlobal(event.pos()))
@@ -248,11 +252,6 @@ class Chess(QWidget):
         UIx, UIy = UI_Board_PosConv(x, y, self.isPlayerWhite)
         self.highlight[UIy][UIx].on(isSelectedLight)
 
-    def clear_light(self):
-        for x in range(8):
-            for y in range(8):
-                self.highlight[y][x].off()
-
     def on_legalMove_light(self):
         it = iter(self.legalMove)
         for x, y in zip(it, it):
@@ -341,6 +340,7 @@ class Chess(QWidget):
         self.prev_move = (-1, -1, -1, -1)
         self.isPlayerWhite = True
         self.isTurnWhite = True
+        self.Picking_promotion = False
         self.legalMove = []
 
         self.load_img()
@@ -356,8 +356,8 @@ class Chess(QWidget):
         for UIx in range(8):
             for UIy in range(8):
                 self.highlight[UIy][UIx] = HighLightSquare(self, UIx, UIy)
-        
-        self.promotion = PromotionWindow(self, 1, self.isPlayerWhite)
+                
+        self.promotion_window = PromotionWindow(self, self.isPlayerWhite)
 
     def UIinit(self):
         self.setFixedSize(BOARD_SIZE, 555) # size of the windows
@@ -424,7 +424,9 @@ class Chess(QWidget):
         
         # Promotion check 
         if self.pieces[self.selected_piece[1]][self.selected_piece[0]].type == 'P' and next_y == (7 if self.isPlayerWhite else 0):
-            print('Promotion !!')
+            UIx, UIy = UI_Board_PosConv(next_x, next_y, self.isPlayerWhite)
+            self.promotion_window.on(UIx, UIy)
+            return
         
         now = boardPosToNotation(self.selected_piece[0], self.selected_piece[1])
         next = boardPosToNotation(next_x, next_y)
