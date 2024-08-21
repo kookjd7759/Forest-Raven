@@ -572,6 +572,11 @@ class Chess(QWidget):
             self.line_player.setText('White')
             
         self.btn_gameRestart_function()
+        connector.changeColor()
+
+        if self.isPlayerWhite == False:
+            getAImove = threading.Thread(target=connector.getAI_move, args=(self.move_AI_callback, ))
+            getAImove.start()
 
 ### Additional function
     def print2DInfo(self):

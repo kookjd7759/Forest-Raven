@@ -9,6 +9,8 @@ process = subprocess.Popen(
     text = True
 )
 
+
+
 def send(st):
     process.stdin.write(st + '\n')
     process.stdin.flush()
@@ -39,6 +41,8 @@ def get_legalMove(notation):
 def restart():
     send('4')
 
+def changeColor():
+    send('5')
 
 if __name__ == '__main__':
     while True:

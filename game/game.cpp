@@ -389,9 +389,22 @@ public:
         cal_attackSquare();
         update_isCheck();
     }
+    
+    void changeColor() {
+        reset();
+        isPlayerWhite = !isPlayerWhite;
+    }
 
     void init() {
         reset();
+    }
+
+    void sendMateInfo() {
+        // (0)None (1)White WIN (2)Black WIN
+        if (isCheck_wb[1] == 2) cout << '1';
+        else if (isCheck_wb[0] == 2) cout << '2';
+        else cout << '0';
+        cout << "\n";
     }
 
     void command() {
@@ -402,8 +415,9 @@ public:
         case 2: command_getLegalMove(); break;
         case 3: move_AI(); break;
         case 4: reset(); break;
-        case 5: print_board(); break;
-        case 6: print_attackData(); break;
+        case 5: changeColor(); break;
+        case 6: print_board(); break;
+        case 7: print_attackData(); break;
         default: break;
         }
     }
@@ -436,8 +450,6 @@ public:
     void start() {
         while (true) {
             command();
-            if (isCheck_wb[1] == 2) cout << "WHITE WIN !!\n";
-            else if (isCheck_wb[0] == 2) cout << "BLACK WIN !!\n";
         }
     }
 
