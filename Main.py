@@ -58,13 +58,18 @@ class PromotionWindow(QLabel):
             'b': parent.piece_images[team + 'b']
         }
     
-    def __init__(self, parent, isWhite):
+    def __init__(self, parent, isWhite, callback):
         super().__init__(parent)
         self.isWhite = isWhite
+        self.callback = callback
+        self.now_x = 0
+        self.now_y = 0
+        self.dest_x = 0
+        self.dest_y = 0
         self.loadImages()
         self.UIinit()
         self.resize(CELL_SIZE, 4 * CELL_SIZE)
-        self.hide()
+        self.off()
 
     def UIinit(self):
         layout = QVBoxLayout()
@@ -86,15 +91,24 @@ class PromotionWindow(QLabel):
             layout.addWidget(label)
         self.setLayout(layout)
     
-    def on(self, UIx, UIy):
+    def on(self, now_x, now_y, dest_x, dest_y):
+        self.now_x = now_x
+        self.now_y = now_y
+        self.dest_x = dest_x
+        self.dest_y = dest_y
+        UIx, UIy = UI_Board_PosConv(dest_x, dest_y, self.isWhite)
         self.move(UIx * CELL_SIZE, UIy * CELL_SIZE)
         self.raise_()
         self.show()
 
+    def off(self):
+        self.hide()
+
+    # (1)Q (2)N (3)R (4)B
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             mousePos = self.parent().mapFromGlobal(self.mapToGlobal(event.pos()))
-            print(f'promotion to {mousePos.y() // CELL_SIZE}')
+            self.callback(self.now_x, self.now_y, self.dest_x, self.dest_y, mousePos.y() // CELL_SIZE)
 
 
 
@@ -320,6 +334,7 @@ class Chess(QWidget):
             self.create_piece('b' + initPos[i], i, 7, typeList[i], False) # Black other pieces
 
     def piece_callback_press(self, UIx, UIy):
+        self.promotion_out()
         x, y = UI_Board_PosConv(UIx, UIy, self.isPlayerWhite)
         self.setSelect(x, y)
 
@@ -357,7 +372,7 @@ class Chess(QWidget):
             for UIy in range(8):
                 self.highlight[UIy][UIx] = HighLightSquare(self, UIx, UIy)
                 
-        self.promotion_window = PromotionWindow(self, self.isPlayerWhite)
+        self.promotion_window = PromotionWindow(self, self.isPlayerWhite, self.promotion_callback)
 
     def UIinit(self):
         self.setFixedSize(BOARD_SIZE, 555) # size of the windows
@@ -416,6 +431,35 @@ class Chess(QWidget):
                 return True
         return False
     
+    def promotion_out(self):
+        if self.Picking_promotion:
+            self.promotion_window.off()
+            self.Picking_promotion = False
+
+    def promotion_callback(self, now_x, now_y, dest_x, dest_y, num):
+        list_1 = ['q', 'n', 'r', 'b']
+        list_2 = ['Q', 'N', 'R', 'B']
+        
+        if self.pieces[now_y][now_x] != None:
+            self.pieces[now_y][now_x].die()
+            self.pieces[now_y][now_x] = None
+
+        if self.pieces[dest_y][dest_x] != None:
+            self.pieces[dest_y][dest_x].die()
+            self.pieces[dest_y][dest_x] = None
+
+        self.create_piece(('w' if self.isPlayerWhite else 'b') + list_1[num], dest_x, dest_y, list_2[num], self.isPlayerWhite)
+        print(f'promotion to {list_2[num]}')
+
+        self.promotion_window.off()
+        now = boardPosToNotation(self.selected_piece[0], self.selected_piece[1])
+        next = boardPosToNotation(dest_x, dest_y)
+        connector.sendMY_move_promotion(now, next, num)
+        self.prev_move = (now_x, now_y, dest_x, dest_y)
+        self.changeTurn()
+        self.off_legalMove_light()
+        self.delSelect()
+
     def move_ME(self, next_x, next_y, smooth):
         if self.isPlayerWhite != self.isTurnWhite or self.isLegalMove(next_x, next_y) == False: # Opponent Turn & illegal move
             self.pieces[self.selected_piece[1]][self.selected_piece[0]].move_return()
@@ -424,8 +468,9 @@ class Chess(QWidget):
         
         # Promotion check 
         if self.pieces[self.selected_piece[1]][self.selected_piece[0]].type == 'P' and next_y == (7 if self.isPlayerWhite else 0):
-            UIx, UIy = UI_Board_PosConv(next_x, next_y, self.isPlayerWhite)
-            self.promotion_window.on(UIx, UIy)
+            self.pieces[self.selected_piece[1]][self.selected_piece[0]].move_return()
+            self.promotion_window.on(self.selected_piece[0], self.selected_piece[1], next_x, next_y)
+            self.Picking_promotion = True
             return
         
         now = boardPosToNotation(self.selected_piece[0], self.selected_piece[1])
@@ -500,12 +545,14 @@ class Chess(QWidget):
 ### Mouse event
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
+            self.promotion_out()
             mousePos = self.mapFromGlobal(self.mapToGlobal(event.pos()))
             x, y = UI_Board_PosConv(mousePos.x() // CELL_SIZE, mousePos.y() // CELL_SIZE, self.isPlayerWhite)
             print(f'{boardPosToNotation(x, y)} clicked !')
             if self.isSelected():
                 self.move_ME(x, y, True)
         elif event.button() == Qt.RightButton:
+            self.promotion_out()
             self.delSelect()
 
 ### button function

@@ -21,6 +21,9 @@ def read():
 def sendMY_move(now, next):
     send(f'1 {now} {next}')
 
+def sendMY_move_promotion(now, next, num):
+    send(f'1 {now} {next} {num}')
+
 def getAI_move(callback):
     send(f'5')
     output = read()

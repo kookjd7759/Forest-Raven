@@ -345,15 +345,13 @@ private:
             }
         }
 
-        // Promotion check
-        if (board[now.y][now.x].type == PAWN && (dest.y == 7 || dest.y == 0)) {
-            promotion(dest, board[dest.y][dest.x].team);
-        }
-
-        //cout << "Move : " << convertPos(now) << " -> " << convertPos(dest) << "\n";
-
         // update board
         move_piece(now, dest);
+
+        // Promotion check
+        if (board[dest.y][dest.x].type == PAWN && (dest.y == 7 || dest.y == 0)) {
+            promotion(dest, board[dest.y][dest.x].team);
+        }
 
         // change turn
         isWhiteTurn = !isWhiteTurn;
@@ -482,8 +480,8 @@ int main() {
 1 h2 h4
 1 h4 h5
 1 h5 h6
-1 g8 f6
 1 h6 g7
-3
-2 g7
+1 g7 h8
+1
+2 h8
 */
