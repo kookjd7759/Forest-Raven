@@ -89,10 +89,10 @@ private:
         board[pos.y][pos.x].team = team;
         int input; cin >> input;
         switch (input) {
-        case 1: board[pos.y][pos.x].type = QUEEN; break;
-        case 2: board[pos.y][pos.x].type = KNIGHT; break;
-        case 3: board[pos.y][pos.x].type = ROOK; break;
-        case 4: board[pos.y][pos.x].type = BISHOP; break;
+        case 0: board[pos.y][pos.x].type = QUEEN; break;
+        case 1: board[pos.y][pos.x].type = ROOK; break;
+        case 2: board[pos.y][pos.x].type = BISHOP; break;
+        case 3: board[pos.y][pos.x].type = KNIGHT; break;
         default: board[pos.y][pos.x].type = QUEEN; break;
         }
     }
@@ -399,12 +399,11 @@ public:
         reset();
     }
 
-    void sendMateInfo() {
-        // (0)None (1)White WIN (2)Black WIN
-        if (isCheck_wb[1] == 2) cout << '1';
-        else if (isCheck_wb[0] == 2) cout << '2';
-        else cout << '0';
-        cout << "\n";
+    char sendMateInfo() {
+        // (1)White WIN (2)Black WIN
+        if (isCheck_wb[1] == 2) return '1';
+        else if (isCheck_wb[0] == 2) return '2';
+        return '0';
     }
 
     void command() {
@@ -437,14 +436,14 @@ public:
 
     void move_AI() {
         set<pair<Position, Position>> s = get_candidate_move(!isPlayerWhite);
-        if (!s.empty()) {
+        if (!s.empty() && !(isCheck_wb[0] == 2 || isCheck_wb[1] == 2)) {
             auto iter = s.begin();
             int idx = get_random(0, s.size() - 1);
             iter = next(s.begin(), idx);
             move(iter->first, iter->second);
-            cout << iter->first.x << " " << iter->first.y << " " << iter->second.x << " " << iter->second.y;
-            cout << "\n";
+            cout << iter->first.x << " " << iter->first.y << " " << iter->second.x << " " << iter->second.y << "\n";
         }
+        else cout << sendMateInfo() << " -1 -1 -1\n";
     }
 
     void start() {
@@ -481,11 +480,11 @@ int main() {
 }
 
 /*
-1 h2 h4
-1 h4 h5
-1 h5 h6
-1 h6 g7
-1 g7 h8
-1
-2 h8
+1 g2 g4
+1 g4 g5
+1 g5 g6
+1 g6 h7
+1 h7 g8 
+2
+6
 */

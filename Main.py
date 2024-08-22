@@ -437,8 +437,8 @@ class Chess(QWidget):
             self.Picking_promotion = False
 
     def promotion_callback(self, now_x, now_y, dest_x, dest_y, num):
-        list_1 = ['q', 'n', 'r', 'b']
-        list_2 = ['Q', 'N', 'R', 'B']
+        list_1 = ['q', 'r', 'b', 'n']
+        list_2 = ['Q', 'R', 'B', 'N']
         
         if self.pieces[now_y][now_x] != None:
             self.pieces[now_y][now_x].die()
@@ -449,7 +449,7 @@ class Chess(QWidget):
             self.pieces[dest_y][dest_x] = None
 
         self.create_piece(('w' if self.isPlayerWhite else 'b') + list_1[num], dest_x, dest_y, list_2[num], self.isPlayerWhite)
-        print(f'promotion to {list_2[num]}')
+        print(f'promotion to {list_2[num]} {num}')
 
         self.promotion_window.off()
         now = boardPosToNotation(self.selected_piece[0], self.selected_piece[1])
@@ -481,7 +481,10 @@ class Chess(QWidget):
         self.delSelect()
 
     def move_AI_callback(self, now_x, now_y, next_x, next_y):
-        self.move_piece(now_x, now_y, next_x, next_y, True)
+        if now_y == -1 or next_x == -1 or next_y == -1:
+            print(f'CheckMate, {"White" if now_x == 1 else "Black"} WIN')
+        else:
+            self.move_piece(now_x, now_y, next_x, next_y, True)
 
     def move_piece(self, now_x, now_y, next_x, next_y, smooth): # Get Board Position
         print(f'Move {boardPosToNotation(now_x, now_y)} -> {boardPosToNotation(next_x, next_y)}')
