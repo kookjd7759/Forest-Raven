@@ -37,7 +37,7 @@ private:
     }
 
     const bool isEmpty(const Position& pos) const {
-        return (board[pos.y][pos.x].team == NOTEAM ? true : false);
+        return board[pos.y][pos.x].team == NOTEAM;
     }
 
     class Square {
