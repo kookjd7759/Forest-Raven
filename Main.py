@@ -112,6 +112,39 @@ class PromotionWindow(QLabel):
 
 
 
+class GameEndWindow(QDialog): 
+    # winner = 0.draw 1.white 2.black
+    def __init__(self, parent, winner, callback): 
+        super().__init__(parent)
+        self.winner = winner
+        self.callback = callback
+        self.initUI()
+
+    def initUI(self):
+        self.setFixedSize(170, 100)
+        label = QLabel('test', self)
+        label.setAlignment(Qt.AlignCenter)  # 텍스트를 가로축, 세로축 중앙 정렬
+        if self.winner == 0:
+            self.setWindowTitle('Draw')
+            label.setText('draw')
+        else:
+            self.setWindowTitle('CheckMate')
+            label.setText(f'CheckMate, {"White" if self.winner == 1 else "Black"} WIN !')
+
+        btn = QPushButton('Restart', self)
+        btn.clicked.connect(self.btn_function)
+        vbox = QVBoxLayout()
+        vbox.addWidget(label)
+        vbox.addWidget(btn)
+        self.setLayout(vbox)
+        self.show()
+    
+    def btn_function(self):
+        self.callback()
+        self.close()
+
+
+
 class ChessPiece(QLabel):
 
     def boundaryCheck(self):
@@ -375,7 +408,7 @@ class Chess(QWidget):
         self.promotion_window = PromotionWindow(self, self.isPlayerWhite, self.promotion_callback)
 
     def UIinit(self):
-        self.setFixedSize(BOARD_SIZE, 555) # size of the windows
+        self.setFixedSize(BOARD_SIZE, 585) # size of the windows
         self.setWindowTitle('Chess')
         vbox = QVBoxLayout()
 
@@ -414,11 +447,19 @@ class Chess(QWidget):
         hbox_turn.addWidget(lbl_turn)
         hbox_turn.addWidget(line_turn)
 
+        # TestButton
+        hbox_test = QHBoxLayout()
+        lbl_test = QLabel('<b>[test]</b>', self)
+        btn_test= QPushButton('test btn', self)
+        btn_test.clicked.connect(self.btn_test_function)
+        hbox_test.addWidget(lbl_test)
+        hbox_test.addWidget(btn_test)
 
         vbox.addWidget(lbl_board)
         vbox.addLayout(hbox_player)
         vbox.addLayout(hbox_selected)
         vbox.addLayout(hbox_turn)
+        vbox.addLayout(hbox_test)
         vbox.setContentsMargins(0,0,0,0)
 
         self.setLayout(vbox)
@@ -480,9 +521,17 @@ class Chess(QWidget):
         self.off_legalMove_light()
         self.delSelect()
 
+    def gameEnd(self, winner):
+        self.setEnabled(False)
+        gameEnd_window = GameEndWindow(self, winner, self.btn_gameRestart_function)
+        gameEnd_window.exec_() 
+        self.setEnabled(True)
+
+
+
     def move_AI_callback(self, now_x, now_y, next_x, next_y):
         if now_y == -1 or next_x == -1 or next_y == -1:
-            print(f'CheckMate, {"White" if now_x == 1 else "Black"} WIN')
+            self.gameEnd(now_x)
         else:
             self.move_piece(now_x, now_y, next_x, next_y, True)
 
@@ -580,6 +629,9 @@ class Chess(QWidget):
         if self.isPlayerWhite == False:
             getAImove = threading.Thread(target=connector.getAI_move, args=(self.move_AI_callback, ))
             getAImove.start()
+
+    def btn_test_function(self):
+        self.gameEnd(1)
 
 ### Additional function
     def print2DInfo(self):
