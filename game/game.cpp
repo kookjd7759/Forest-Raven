@@ -44,11 +44,20 @@ private:
     public:
         Type type = NOTYPE;
         Team team = NOTEAM;
-        int attack_wb[2]{ 0, 0 };
+        int attack_wb[2]{ 0, 0 }; 
+        /* attack_wb
+        idx 0:white, 1:black
+        각 team의 얼마나 많은 기물이 해당 칸을 공격하고 있는지 기록하는 용도
+        공격하고 있는 칸 = Piece를 capture하며 이동할 수 있는 칸을 의미
+        */
     };
 
     Square** board = new Square *[8];
     Position prevMove[2];
+    /* prevMove
+    idx 0:current Postion 1:next Position
+    직전 Move를 기록해놓는 용도
+    */
     bool isWhiteTurn, isPlayerWhite, castlingMoveCheck_wb_KQ[2][2];
     Position kingPos_wb[2];
     int isCheck_wb[2]; // 0:no, 1:check, 2:mate
