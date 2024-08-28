@@ -678,9 +678,13 @@ class Window(QWidget):
 from typing import Literal
 
 class Chess:
-    Color = {
+    Color = { # 'White' : 0, 'Black' : 1
         'White' : 0,
         'Black' : 1
+    }
+    Side = { # 'KingSide' : 2, 'QueenSide' : 3,
+        'KingSide' : 2,
+        'QueenSide' : 3,
     }
 
     class Position:
@@ -725,8 +729,12 @@ class Chess:
             self.__board[attack.y][attack.x] = None
             self.move(cur, dest)
 
-    def castling(self, color: Literal[0, 1], side):
-        if True: # TODO: Castling 조건 구현
+    def castling_Check(self, color: Literal[0, 1]):
+        return True
+        # TODO: Castling 조건 구현
+
+    def castling(self, color: Literal[0, 1], side: Literal[2, 3]):
+        if self.castling_Check(self): 
             print('castling')
 
     def en_passent(self):
