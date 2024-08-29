@@ -682,44 +682,100 @@ class Chess:
         'White' : 0,
         'Black' : 1
     }
-    Side = { # 'KingSide' : 2, 'QueenSide' : 3,
+    Side = { # 'KingSide' : 2, 'QueenSide' : 3
         'KingSide' : 2,
         'QueenSide' : 3,
+    }
+    Type = { # 'King' : 4, 'Queen' : 5, 'Rook' : 6, 'Knight' : 7, 'Bishop' : 8, 'Pawn' : 9
+        'King' : 4, 
+        'Queen' : 5, 
+        'Rook' : 6, 
+        'Knight' : 7, 
+        'Bishop' : 8, 
+        'Pawn' : 9
     }
 
     class Position:
         def __init__(self, x, y):
             self.x = x
             self.y = y
+        
+        def __add__(self, other):
+            if isinstance(other, Chess.Position):
+                return Chess.Position(self.x + other.x, self.y + other.y)
+
+    class Piece:
+        def __init__(self, type: Literal[4, 5, 6, 7, 8, 9], color: Literal[0, 1]):
+            self.type = type
+            self.color = color
 
     class Square:
-        def __init__(self):
-            self.piece = None
-            self.color = None
+        def __init__(self, piece: 'Chess.Piece'):
+            self.piece = piece
             self.attack_wb = [0, 0]
 
-        def set(self, piece, color):
+        def set(self, piece: 'Chess.Piece'):
             self.piece = piece
-            self.color = color
         
-        def attacked_by(self, color):
+        def attacked_by(self, color: Literal[0, 1]):
             return True if self.attack_wb[color] != 0 else False
             
         def empty(self):
             return True if self.piece == None else False
 
+    dir_straight = { Position(0, 1), Position(0, -1), Position(1, 0), Position(-1, 0) }
+    dir_diagonal = { Position(1, 1), Position(1, -1), Position(-1, -1), Position(-1, 1) }
+    dir_knight = { Position(1, 2), Position(-1, 2), Position(2, 1), Position(-2, 1), 
+                  Position(2, -1), Position(-2, -1), Position(1, -2), Position(-1, -2)}
     class Board:
+        def __boundaryCheck(self, position: 'Chess.Position'):
+            return True if position.x >= 0 and position.x <= 7 and position.y >= 0 and position.y <= 7 else False
+
+        def __isAlly(self, cur: 'Chess.Position', dest: 'Chess.Position'):
+            return self.__board[cur.y][cur.x].empty() == False and self.__board[dest.y][dest.x].empty() == False and \
+                self.__board[cur.y][cur.x].piece.color == self.__board[cur.y][cur.x].piece.color
+
+        def __isEnemy(self, cur: 'Chess.Position', dest: 'Chess.Position'):
+            return self.__board[cur.y][cur.x].empty() == False and self.__board[dest.y][dest.x].empty() == False and \
+                self.__board[cur.y][cur.x].piece.color != self.__board[cur.y][cur.x].piece.color
+
+
+        def __dirMove(self, list: list, cur: 'Chess.Position', dir: 'Chess.Position'):
+            next = cur
+            while True:
+                next += dir
+                if not self.__boundaryCheck(next) or self.__isAlly(cur, next):
+                    return
+                
+                if self.__board[next.y][next.x].empty():
+                    list.append(next)
+                elif self.__isEnemy(cur, next):
+                    list.append(next)
+                    return
+                
+                # TODO: legalMove function
+
+        def __straight(self, position: 'Chess.Position', legalMove: bool):
+            list = []
+            for dir in chess.dir_straight:
+                self.__dirMove(list, position, dir)
+
+        def __diagonal(self, position: 'Chess.Position', legalMove: bool):
+            list = []
+            for dir in chess.dir_diagonal:
+                self.__dirMove(list, position, dir)
+
         def __init__(self):
             self.reset()
         
         def reset(self):
-            initPos = ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
+            initList = ['Rook', 'Knight', 'Bishop', 'Queen', 'King', 'Bishop', 'Knight', 'Rook']
             self.__board = [[Chess.Square(Chess.Position(x, y)) for x in range(8)] for y in range(8)]
             for i in range(8): 
-                self.__board[1][i].set('P', Chess.Color['White']) # White's pawns
-                self.__board[0][i].set(initPos[i], Chess.Color['White']) # White's backrank pieces
-                self.__board[6][i].set('P', Chess.Color['Black']) # Black's pawns
-                self.__board[7][i].set(initPos[i], Chess.Color['Black']) # Black's backrank pieces
+                self.__board[1][i].set(Chess.Piece('Pawn', Chess.Color['White'])) # White's pawns
+                self.__board[0][i].set(Chess.Piece(initList[i], Chess.Color['White'])) # White's backrank pieces
+                self.__board[6][i].set(Chess.Piece('Pawn', Chess.Color['Black'])) # Black's pawns
+                self.__board[7][i].set(Chess.Piece(initList[i], Chess.Color['Black'])) # Black's backrank pieces
 
         def move(self, cur: 'Chess.Position', dest: 'Chess.Position'):
             self.__board[dest.y][dest.x] = self.__board[cur.y][cur.x]
@@ -728,6 +784,8 @@ class Chess:
         def capture(self, cur: 'Chess.Position', dest: 'Chess.Position', attack: 'Chess.Position'):
             self.__board[attack.y][attack.x] = None
             self.move(cur, dest)
+
+
 
     def castling_Check(self, color: Literal[0, 1]):
         return True
@@ -742,6 +800,7 @@ class Chess:
 
     def promotion(self):
         print('promotion')
+
 
 
     def __init__(self):
