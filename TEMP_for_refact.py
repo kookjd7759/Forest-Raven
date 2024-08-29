@@ -725,6 +725,8 @@ class Chess:
 
     dir_straight = { Position(0, 1), Position(0, -1), Position(1, 0), Position(-1, 0) }
     dir_diagonal = { Position(1, 1), Position(1, -1), Position(-1, -1), Position(-1, 1) }
+    dir_all = { Position(0, 1), Position(0, -1), Position(1, 0), Position(-1, 0), 
+               Position(1, 1), Position(1, -1), Position(-1, -1), Position(-1, 1) }
     dir_knight = { Position(1, 2), Position(-1, 2), Position(2, 1), Position(-2, 1), 
                   Position(2, -1), Position(-2, -1), Position(1, -2), Position(-1, -2)}
     class Board:
@@ -739,7 +741,7 @@ class Chess:
             return self.__board[cur.y][cur.x].empty() == False and self.__board[dest.y][dest.x].empty() == False and \
                 self.__board[cur.y][cur.x].piece.color != self.__board[cur.y][cur.x].piece.color
 
-        def __dirMove(self, list: list, cur: 'Chess.Position', dir: 'Chess.Position'):
+        def __repeatMove(self, list: list, cur: 'Chess.Position', dir: 'Chess.Position'):
             next = cur
             while True:
                 next += dir
@@ -754,22 +756,38 @@ class Chess:
                 
                 # TODO: legalMove function
 
+        def __oneMove(self, list: list, cur: 'Chess.Position', dir: 'Chess.Position'):
+            next = cur + dir
+            if self.__board[next.y][next.x].empty() or self.__isEnemy(cur, next):
+                list.append(next)
+
+
         def __straight(self, position: 'Chess.Position', legalMove: bool):
             list = []
             for dir in Chess.dir_straight:
-                self.__dirMove(list, position, dir)
+                self.__repeatMove(list, position, dir)
 
         def __diagonal(self, position: 'Chess.Position', legalMove: bool):
             list = []
             for dir in Chess.dir_diagonal:
-                self.__dirMove(list, position, dir)
+                self.__repeatMove(list, position, dir)
 
         def __knight(self, position: 'Chess.Position', legalMove: bool):
             list = []
             for dir in Chess.dir_knight:
-                next = position + dir
-                if self.__board[next.y][next.x].empty() or self.__isEnemy(position, next):
-                    list.append(next)
+                self.__oneMove(list, position, dir)
+
+        def __king(self, position: 'Chess.Position', legalMove: bool):
+            list = []
+            for dir in Chess.dir_all:
+                self.__oneMove(list, position, dir)
+
+        def __Queen(self, position: 'Chess.Position', legalMove: bool):
+            list = []
+            for dir in Chess.dir_all:
+                self.__repeatMove(list, position, dir)
+
+
 
         def __init__(self):
             self.reset()
