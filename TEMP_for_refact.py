@@ -739,7 +739,6 @@ class Chess:
             return self.__board[cur.y][cur.x].empty() == False and self.__board[dest.y][dest.x].empty() == False and \
                 self.__board[cur.y][cur.x].piece.color != self.__board[cur.y][cur.x].piece.color
 
-
         def __dirMove(self, list: list, cur: 'Chess.Position', dir: 'Chess.Position'):
             next = cur
             while True:
@@ -757,13 +756,20 @@ class Chess:
 
         def __straight(self, position: 'Chess.Position', legalMove: bool):
             list = []
-            for dir in chess.dir_straight:
+            for dir in Chess.dir_straight:
                 self.__dirMove(list, position, dir)
 
         def __diagonal(self, position: 'Chess.Position', legalMove: bool):
             list = []
-            for dir in chess.dir_diagonal:
+            for dir in Chess.dir_diagonal:
                 self.__dirMove(list, position, dir)
+
+        def __knight(self, position: 'Chess.Position', legalMove: bool):
+            list = []
+            for dir in Chess.dir_knight:
+                next = position + dir
+                if self.__board[next.y][next.x].empty() or self.__isEnemy(position, next):
+                    list.append(next)
 
         def __init__(self):
             self.reset()
