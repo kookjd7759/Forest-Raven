@@ -1,4 +1,5 @@
 from typing import Literal
+from typing import List
 
 class Chess:
     Color = { # 'White' : 0, 'Black' : 1
@@ -16,6 +17,13 @@ class Chess:
         'Knight' : 7, 
         'Bishop' : 8, 
         'Pawn' : 9
+    }
+    Movement_type = { # 'Move': 10, 'Capture': 11, 'Castling': 12, 'En_passent': 13, 'Pomotion': 14
+        'Move': 10,
+        'Capture': 11,
+        'Castling': 12,
+        'En_passent': 13,
+        'Pomotion': 14,
     }
 
     class Position:
@@ -46,13 +54,14 @@ class Chess:
         def empty(self):
             return True if self.piece == None else False
 
+
     dir_straight = { Position(0, 1), Position(0, -1), Position(1, 0), Position(-1, 0) }
     dir_diagonal = { Position(1, 1), Position(1, -1), Position(-1, -1), Position(-1, 1) }
     dir_all = { Position(0, 1), Position(0, -1), Position(1, 0), Position(-1, 0), Position(1, 1), Position(1, -1), Position(-1, -1), Position(-1, 1) }
     dir_knight = { Position(1, 2), Position(-1, 2), Position(2, 1), Position(-2, 1), Position(2, -1), Position(-2, -1), Position(1, -2), Position(-1, -2)}
     class Board:
-        def __boundaryCheck(self, position: 'Chess.Position'):
-            return True if position.x >= 0 and position.x <= 7 and position.y >= 0 and position.y <= 7 else False
+        def __boundaryCheck(self, pos: 'Chess.Position'):
+            return True if pos.x >= 0 and pos.x <= 7 and pos.y >= 0 and pos.y <= 7 else False
 
         def __isAlly(self, cur: 'Chess.Position', dest: 'Chess.Position'):
             return self.__board[cur.y][cur.x].empty() == False and self.__board[dest.y][dest.x].empty() == False and \
@@ -66,6 +75,17 @@ class Chess:
             king = self.king_position_wb[color]
             return True if self.__board[king.y][king.x].isattacked(color) else False
 
+        def __isThisPlayLegal(self, movement_type: Literal[10, 11, 12, 13, 14], cur: 'Chess.Position', dest: 'Chess.Position', attack: 'Chess.Position' = None):
+            temp_board = self.__board
+            if movement_type == chess.Movement_type['Move']:
+                self.move(cur, dest)
+            elif movement_type == chess.Movement_type['Capture']:
+                self.capture(cur, dest, attack)
+            elif movement_type == chess.Movement_type['Castling']:
+                self.castling(cur, dest)
+            elif movement_type == chess.Movement_type['En_passent']:
+                self.en_passent(cur, dest)
+                
 
         def __repeatMove(self, list: list, cur: 'Chess.Position', dir: 'Chess.Position'):
             next = cur
@@ -87,60 +107,80 @@ class Chess:
             if self.__boundaryCheck(next) and (self.__board[next.y][next.x].empty() or self.__isEnemy(cur, next)):
                 list.append(next)
 
-        def __rook(self, position: 'Chess.Position', legalMove: bool):
+        def __rook(self, pos: 'Chess.Position', legalMove: bool):
             list = []
             for dir in Chess.dir_straight:
-                self.__repeatMove(list, position, dir)
+                self.__repeatMove(list, pos, dir)
             return list
 
-        def __bishop(self, position: 'Chess.Position', legalMove: bool):
+        def __bishop(self, pos: 'Chess.Position', legalMove: bool):
             list = []
             for dir in Chess.dir_diagonal:
-                self.__repeatMove(list, position, dir)
+                self.__repeatMove(list, pos, dir)
             return list
 
-        def __knight(self, position: 'Chess.Position', legalMove: bool):
+        def __knight(self, pos: 'Chess.Position', legalMove: bool):
             list = []
             for dir in Chess.dir_knight:
-                self.__oneMove(list, position, dir)
+                self.__oneMove(list, pos, dir)
             return list
 
-        def __king(self, position: 'Chess.Position', legalMove: bool):
+        def __king(self, pos: 'Chess.Position', legalMove: bool):
             list = []
             for dir in Chess.dir_all:
-                self.__oneMove(list, position, dir)
+                self.__oneMove(list, pos, dir)
             return list
 
-        def __Queen(self, position: 'Chess.Position', legalMove: bool):
+        def __Queen(self, pos: 'Chess.Position', legalMove: bool):
             list = []
             for dir in Chess.dir_all:
-                self.__repeatMove(list, position, dir)
+                self.__repeatMove(list, pos, dir)
             return list
 
-        def __pawn_move():
-            print('__pawn_move()')
-            # TODO: implement pawn move
-
-        def __pawn_attack():
-            print('__pawn_attack()')
-            # TODO: implement pawn attck
-
-        def __getMoveList(self, position: 'Chess.Position', legalMove: bool):
+        def __pawn_move(self, pos: 'Chess.Position'):
             list = []
-            print(type(self.__board[position.y][position.x].piece.type))
-            piece_type = self.__board[position.y][position.x].piece.type
+            color = self.__board[pos.y][pos.x].piece.color
+            dir = Chess.Position(0, +1) if color == Chess.Color['White'] else Chess.Position(0, -1)
+
+            next = pos + dir
+            if self.__board[next.y][next.x].empty():
+                list.append(next)
+                if pos.y == (1 if color == Chess.Color['White'] else 6): # first move
+                    next += dir
+                    if self.__board[next.y][next.x].empty():
+                        list.append(next)
+            return list
+
+        def __pawn_attack(self, pos: 'Chess.Position', legalMove: bool):
+            list = []
+            def add(next: 'Chess.Position'):
+                if self.__boundaryCheck(next):
+                    if (not legalMove) or (legalMove and self.__isEnemy(pos, next)):
+                        list.append(next)
+
+            color = self.__board[pos.y][pos.x].piece.color
+            dir = Chess.Position(0, +1) if color == Chess.Color['White'] else Chess.Position(0, -1)
+            add(Chess.Position(-1, 0) + dir) # king side 
+            add(Chess.Position(+1, 0) + dir) # queen side   
+            return list
+
+            # TODO: en passant
+
+        def __legalMoveList(self, pos: 'Chess.Position'):
+            list = []
+            piece_type = self.__board[pos.y][pos.x].piece.type
             if piece_type == Chess.Type['King']:
-                list = self.__king(position, legalMove)
+                list = self.__king(pos, True)
             elif piece_type == Chess.Type['Queen']:
-                list = self.__Queen(position, legalMove)
+                list = self.__Queen(pos, True)
             elif piece_type == Chess.Type['Rook']:
-                list = self.__rook(position, legalMove)
+                list = self.__rook(pos, True)
             elif piece_type == Chess.Type['Knight']:
-                list = self.__knight(position, legalMove)
+                list = self.__knight(pos, True)
             elif piece_type == Chess.Type['Bishop']:
-                list = self.__bishop(position, legalMove)
+                list = self.__bishop(pos, True)
             elif piece_type == Chess.Type['Pawn']:
-                print('Pawn move') # TODO
+                list = self.__pawn_move(pos) + self.__pawn_attack(pos, True)
 
             return list
 
@@ -177,12 +217,33 @@ class Chess:
             self.__calAttackSquare()
 
         def move(self, cur: 'Chess.Position', dest: 'Chess.Position'):
+            if self.__board[cur.y][cur.x].piece.type == Chess.Type['King']:
+                color = self.__board[cur.y][cur.x].piece.color
+                self.king_position_wb[color] = dest
+            
             self.__board[dest.y][dest.x] = self.__board[cur.y][cur.x]
             self.__board[cur.y][cur.x] = None
 
         def capture(self, cur: 'Chess.Position', dest: 'Chess.Position', attack: 'Chess.Position'):
             self.__board[attack.y][attack.x] = None
             self.move(cur, dest)
+
+        def castling(self, cur: 'Chess.Position', dest: 'Chess.Position'):
+            rank = (0 if self.__board[cur.y][cur.x].piece.color == Chess.Type['White'] else 7)
+            if dest.x > cur.x: # King Side Castling
+                rook_pos = Chess.Position(7, rank)
+                self.move(cur, dest)
+                self.move(rook_pos, dest + Chess.Position(-1, 0))
+            else: # Queen Side Castling
+                rook_pos = Chess.Position(0, rank)
+                self.move(cur, dest)
+                self.move(rook_pos, dest + Chess.Position(+1, 0))
+
+        def en_passent(self, cur: 'Chess.Position', dest: 'Chess.Position'):
+            self.move(cur, dest)
+            dir = Chess.Position(0, (-1 if self.__board[cur.y][cur.x].piece.color == Chess.Type['White'] else +1))
+            attack = dest + dir
+            self.__board[attack.y][attack.x] = None
 
 
 
@@ -209,6 +270,7 @@ class Chess:
 
     def start(self):
         print('game start')
+
 
 
 if __name__ == '__main__':
