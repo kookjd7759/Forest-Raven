@@ -45,9 +45,5 @@ def changeColor():
     send('5')
 
 if __name__ == '__main__':
-    while True:
-        st = input()
-        print(st)
-        send(st)
-        output = read()
-        print(output)
+    legalMoveList = get_legalMove('a1')
+    print(legalMoveList)
