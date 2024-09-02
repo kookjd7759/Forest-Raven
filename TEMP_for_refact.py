@@ -1,5 +1,4 @@
 from typing import Literal
-from typing import List
 
 class Chess:
     Color = { # 'White' : 0, 'Black' : 1
@@ -26,6 +25,19 @@ class Chess:
         'Pomotion': 14,
     }
 
+    Color_to_string = { # 'White : 0, 'Black' : 1
+        0: 'w',
+        1: 'b'
+    }
+    Type_to_string = { # 'King' : 4, 'Queen' : 5, 'Rook' : 6, 'Knight' : 7, 'Bishop' : 8, 'Pawn' : 9
+        4 : 'K', 
+        5 : 'Q', 
+        6 : 'R', 
+        7 : 'N', 
+        8 : 'B', 
+        9 : 'P'
+    }
+
     class Position:
         def __init__(self, x: int, y: int):
             self.x = x
@@ -41,7 +53,7 @@ class Chess:
             self.color = color
 
     class Square:
-        def __init__(self, piece: 'Chess.Piece'):
+        def __init__(self, piece: 'Chess.Piece' = None):
             self.piece = piece
             self.attack_wb = [0, 0]
 
@@ -53,7 +65,6 @@ class Chess:
             
         def empty(self):
             return True if self.piece == None else False
-
 
     dir_straight = { Position(0, 1), Position(0, -1), Position(1, 0), Position(-1, 0) }
     dir_diagonal = { Position(1, 1), Position(1, -1), Position(-1, -1), Position(-1, 1) }
@@ -91,12 +102,12 @@ class Chess:
             next = cur
             while True:
                 next += dir
-                if not self.__boundaryCheck(next) or self.__isAlly(cur, next):
+                if not self.__boundaryCheck(next):
                     return
                 
                 if self.__board[next.y][next.x].empty():
                     list.append(next)
-                elif self.__isEnemy(cur, next):
+                else:
                     list.append(next)
                     return
                 
@@ -104,8 +115,10 @@ class Chess:
 
         def __oneMove(self, list: list, cur: 'Chess.Position', dir: 'Chess.Position'):
             next = cur + dir
-            if self.__boundaryCheck(next) and (self.__board[next.y][next.x].empty() or self.__isEnemy(cur, next)):
+            if self.__boundaryCheck(next):
                 list.append(next)
+            
+            # TODO: legalMove function
 
         def __rook(self, pos: 'Chess.Position', legalMove: bool):
             list = []
@@ -159,14 +172,14 @@ class Chess:
                         list.append(next)
 
             color = self.__board[pos.y][pos.x].piece.color
-            dir = Chess.Position(0, +1) if color == Chess.Color['White'] else Chess.Position(0, -1)
-            add(Chess.Position(-1, 0) + dir) # king side 
-            add(Chess.Position(+1, 0) + dir) # queen side   
+            dir = +1 if color == Chess.Color['White'] else -1
+            add(pos + Chess.Position(-1, dir)) # king side 
+            add(pos + Chess.Position(+1, dir)) # queen side   
             return list
 
             # TODO: en passant
 
-        def __legalMoveList(self, pos: 'Chess.Position'):
+        def __get_moveList(self, pos: 'Chess.Position'):
             list = []
             piece_type = self.__board[pos.y][pos.x].piece.type
             if piece_type == Chess.Type['King']:
@@ -181,39 +194,59 @@ class Chess:
                 list = self.__bishop(pos, True)
             elif piece_type == Chess.Type['Pawn']:
                 list = self.__pawn_move(pos) + self.__pawn_attack(pos, True)
+            return list
 
+        def __get_attackList(self, pos: 'Chess.Position'):
+            list = []
+            piece_type = self.__board[pos.y][pos.x].piece.type
+            if piece_type == Chess.Type['King']:
+                list = self.__king(pos, False)
+            elif piece_type == Chess.Type['Queen']:
+                list = self.__Queen(pos, False)
+            elif piece_type == Chess.Type['Rook']:
+                list = self.__rook(pos, False)
+            elif piece_type == Chess.Type['Knight']:
+                list = self.__knight(pos, False)
+            elif piece_type == Chess.Type['Bishop']:
+                list = self.__bishop(pos, False)
+            elif piece_type == Chess.Type['Pawn']:
+                list = self.__pawn_attack(pos, False)
             return list
 
         def __calAttackSquare(self):
             for _ in self.__board:
                 for square in _:
-                    square.attack_wb[0] = 0
-                    square.attack_wb[1] = 0
-                    
-            for x in range(0, 8):
-                for y in range(0, 8):
+                    square.attack_wb[Chess.Color['White']] = 0
+                    square.attack_wb[Chess.Color['Black']] = 0
+            
+            for y in range(0, 8):
+                for x in range(0, 8):
                     if not self.__board[y][x].empty():
-                        posList = self.__getMoveList(Chess.Position(x, y), legalMove=False)
+                        posList = self.__get_attackList(Chess.Position(x, y))
+                        color = self.__board[y][x].piece.color
+                        print(f'{x}, {y} / {Chess.Type_to_string[self.__board[y][x].piece.type]} - ', end='')
                         for pos in posList:
-                            color = self.__board[pos.y][pos.x].piece.color
+                            print(f'({pos.x}, {pos.y}) ', end='')
                             self.__board[pos.y][pos.x].attack_wb[color] += 1
+                        print()
 
 
 
         def __init__(self):
             self.king_position_wb = []
             self.reset()
+            self.print_board()
         
         def reset(self):
             initList = ['Rook', 'Knight', 'Bishop', 'Queen', 'King', 'Bishop', 'Knight', 'Rook']
-            self.__board = [[Chess.Square(Chess.Position(x, y)) for x in range(8)] for y in range(8)]
+            self.__board = [[Chess.Square() for x in range(8)] for y in range(8)]
             for i in range(8): 
                 self.__board[1][i].set(Chess.Piece(Chess.Type['Pawn'], Chess.Color['White'])) # White's pawns
                 self.__board[0][i].set(Chess.Piece(Chess.Type[initList[i]], Chess.Color['White'])) # White's backrank pieces
                 self.__board[6][i].set(Chess.Piece(Chess.Type['Pawn'], Chess.Color['Black'])) # Black's pawns
                 self.__board[7][i].set(Chess.Piece(Chess.Type[initList[i]], Chess.Color['Black'])) # Black's backrank pieces
                 
-            self.king_position_wb = [Chess.Position(0, 4), Chess.Position(7, 4)]
+            self.king_position_wb = [Chess.Position(4, 0), Chess.Position(4, 7)]
             self.__calAttackSquare()
 
         def move(self, cur: 'Chess.Position', dest: 'Chess.Position'):
@@ -229,7 +262,7 @@ class Chess:
             self.move(cur, dest)
 
         def castling(self, cur: 'Chess.Position', dest: 'Chess.Position'):
-            rank = (0 if self.__board[cur.y][cur.x].piece.color == Chess.Type['White'] else 7)
+            rank = (0 if self.__board[cur.y][cur.x].piece.color == Chess.Color['White'] else 7)
             if dest.x > cur.x: # King Side Castling
                 rook_pos = Chess.Position(7, rank)
                 self.move(cur, dest)
@@ -241,10 +274,23 @@ class Chess:
 
         def en_passent(self, cur: 'Chess.Position', dest: 'Chess.Position'):
             self.move(cur, dest)
-            dir = Chess.Position(0, (-1 if self.__board[cur.y][cur.x].piece.color == Chess.Type['White'] else +1))
+            dir = Chess.Position(0, (-1 if self.__board[cur.y][cur.x].piece.color == Chess.Color['White'] else +1))
             attack = dest + dir
             self.__board[attack.y][attack.x] = None
 
+        def print_board(self):
+            for _ in self.__board:
+                for square in _:
+                    if square.empty():
+                        print('-- ', end='')
+                    else:
+                        print(f'{Chess.Color_to_string[square.piece.color]}{Chess.Type_to_string[square.piece.type]} ', end='')
+                print()
+            print()
+            for _ in self.__board:
+                for square in _:
+                    print(f'({square.attack_wb[0]}, {square.attack_wb[1]})  ', end='')
+                print()
 
 
     def castling_Check(self, color: Literal[0, 1]):
