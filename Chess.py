@@ -47,6 +47,21 @@ class Chess:
             if isinstance(other, Chess.Position):
                 return Chess.Position(self.x + other.x, self.y + other.y)
 
+        def isEqual(self, other):
+            if isinstance(other, Chess.Position):
+                return self.x == other.x and self.y == other.y
+
+    class PreviousMove:
+        def __init__(self, type: Literal[4, 5, 6, 7, 8, 9] = None, prev: 'Chess.Position' = None, now: 'Chess.Position' = None):
+            self.type = type
+            self.prev = prev
+            self.now = now
+        
+        def set(self, type: Literal[4, 5, 6, 7, 8, 9], prev: 'Chess.Position', now: 'Chess.Position'):
+            self.type = type
+            self.prev = prev
+            self.now = now
+
     class Piece:
         def __init__(self, type: Literal[4, 5, 6, 7, 8, 9], color: Literal[0, 1]):
             self.type = type
@@ -90,11 +105,11 @@ class Chess:
             color = self.__board[cur.y][cur.x].piece.color
             temp_destPiece = self.__board[dest.y][dest.x].piece
 
-            self.move(cur, dest)
+            self.move_piece(cur, dest)
 
             ret = not self.__isCheck(color)
 
-            self.move(dest, cur)
+            self.move_piece(dest, cur)
             self.__board[dest.y][dest.x].piece = temp_destPiece
 
             return ret
@@ -235,6 +250,8 @@ class Chess:
 
         def __init__(self):
             self.king_position_wb = []
+            self.castling_moveCheck_wb_qk = [[False, False],[False, False]]
+            self.prev_move = Chess.PreviousMove()
             self.reset()
             print(self.__isEnemy(Chess.Position(0, 0), Chess.Position(7, 7)))
         
@@ -250,15 +267,31 @@ class Chess:
             self.king_position_wb = [Chess.Position(4, 0), Chess.Position(4, 7)]
             self.__calAttackSquare()
 
-        def move(self, cur: 'Chess.Position', dest: 'Chess.Position'):
+        # Move function
+        def move_piece(self, cur: 'Chess.Position', dest: 'Chess.Position'):
             if self.__board[cur.y][cur.x].piece.type == Chess.Type['King']:
                 color = self.__board[cur.y][cur.x].piece.color
                 self.king_position_wb[color] = dest
-            
+
             self.__board[dest.y][dest.x].piece = self.__board[cur.y][cur.x].piece
             self.__board[cur.y][cur.x].piece = None
 
+        def move(self, cur: 'Chess.Position', dest: 'Chess.Position'): 
+            ### king, rook moving check
+            piece_color = self.__board[cur.y][cur.x].piece.color
+            piece_type = self.__board[cur.y][cur.x].piece.type
+            if piece_type == self.Type['King']:
+                self.castling_moveCheck_wb_qk[piece_color][0] = False
+                self.castling_moveCheck_wb_qk[piece_color][1] = False
+            elif piece_type == self.Type['Rook']:
+                if cur.x == 0: # Queen side rook 
+                    self.castling_moveCheck_wb_qk[piece_color][0] = False
+                elif cur.x == 7: # King side rook
+                    self.castling_moveCheck_wb_qk[piece_color][1] = False
+
+            self.move_piece(cur, dest)
             self.__calAttackSquare()
+            self.prev_move.set(piece_type, cur, dest)
 
         def castling(self, cur: 'Chess.Position', dest: 'Chess.Position'):
             rank = (0 if self.__board[cur.y][cur.x].piece.color == Chess.Color['White'] else 7)
@@ -277,6 +310,7 @@ class Chess:
             attack = dest + dir
             self.__board[attack.y][attack.x] = None
 
+        # Get function
         def get_legalMoveList(self, pos: 'Chess.Position'):
             list = []
             piece_type = self.__board[pos.y][pos.x].piece.type
@@ -308,6 +342,37 @@ class Chess:
         def get_square(self, pos: 'Chess.Position'):
             return self.__board[pos.y][pos.x]
 
+
+        def castling_check(self, color: Literal[0, 1], isKingside: bool):
+            rank = (0 if color == self.Color['White'] else 7)
+            condition_1 = not self.castling_moveCheck_wb_qk[color][1 if isKingside else 0]
+            condition_2 = self.__board[rank][5].empty() and self.__board[rank][6].empty() if isKingside else \
+                self.__board[rank][3].empty() and self.__board[rank][2].empty() and self.__board[rank][1].empty()
+            op = Chess.Color['White'] if color == Chess.Color['Black'] else Chess.Color['Black']
+            condition_3 = self.__board[rank][5].attack_wb[op] == 0 and self.__board[rank][5].attack_wb[op] if isKingside else \
+                self.__board[rank][5].attack_wb[op] == 0 and self.__board[rank][5].attack_wb[op]
+            return condition_1 and condition_2 and condition_3
+
+        def en_passent_check(self, pos: 'Chess.Position'):
+            if pos.y != (4 if piece_color == Chess.Color['White'] else 3):
+                return 0
+            if self.prev_move.type != Chess.Type['Pawn']:
+                return 0
+            
+            piece_color = self.__board[pos.y][pos.x].piece.color
+            dir = (+2 if piece_color == Chess.Color['White'] else -2)
+            kingSide = (Chess.Position(pos.x + 1, pos.y + dir), Chess.Position(pos.x + 1, pos.y))
+            queenSide = (Chess.Position(pos.x - 1, pos.y + dir), Chess.Position(pos.x - 1, pos.y))
+
+            if kingSide[0].isEqual(self.prev_move.prev) and kingSide[1].isEqual(self.prev_move.now):
+                return 1
+            elif queenSide[0].isEqual(self.prev_move.prev) and queenSide[1].isEqual(self.prev_move.now):
+                return -1
+            else:
+                return 0
+
+
+        # Additional function
         def print_board(self):
             # white criteria
             for i in range(7, -1, -1):
@@ -333,10 +398,6 @@ class Chess:
         return chr(position.x + ord('a')) + chr(position.y + ord('1'))
 
 
-
-    def castling_Check(self, color: Literal[0, 1]):
-        return True
-        # TODO: Castling 조건 구현
 
     def castling(self, color: Literal[0, 1], side: Literal[2, 3]):
         if self.castling_Check(self): 
@@ -374,14 +435,14 @@ class Chess:
         isLegal = False
         legalMoveList = self.board.get_legalMoveList(cur)
         for move in legalMoveList:
-            if move.x == dest.x and move.y == dest.y:
+            if move.isEqual(dest):
                 isLegal = True
         
         if not isLegal:
             print('move()::it\'s illegal move')
             return False
-
-        ### move
+        
+        ### Move
         print(f'{cur} -> {dest}')
         self.board.move(cur, dest)
         self.turn = self.Color['White'] if self.turn == self.Color['Black'] else self.Color['Black']
@@ -427,7 +488,6 @@ class Chess:
                     continue
                 elif command == 3:
                     self.get_candidateMove()
-
                 break
 
 
