@@ -61,7 +61,7 @@ class Chess:
             self.piece = piece
         
         def isattacked(self, color: Literal[0, 1]):
-            return True if self.attack_wb[0 if color == 1 else 1] != 0 else False
+            return True if self.attack_wb[Chess.Color['White'] if color == Chess.Color['Black'] else Chess.Color['Black']] != 0 else False
             
         def empty(self):
             return True if self.piece == None else False
@@ -76,11 +76,11 @@ class Chess:
 
         def __isAlly(self, cur: 'Chess.Position', dest: 'Chess.Position'):
             return not self.__board[cur.y][cur.x].empty() and not self.__board[dest.y][dest.x].empty() and \
-                self.__board[cur.y][cur.x].piece.color == self.__board[cur.y][cur.x].piece.color
+                self.__board[cur.y][cur.x].piece.color == self.__board[dest.y][dest.x].piece.color
 
         def __isEnemy(self, cur: 'Chess.Position', dest: 'Chess.Position'):
             return not self.__board[cur.y][cur.x].empty() and not self.__board[dest.y][dest.x].empty() and \
-                self.__board[cur.y][cur.x].piece.color != self.__board[cur.y][cur.x].piece.color
+                self.__board[cur.y][cur.x].piece.color != self.__board[dest.y][dest.x].piece.color
 
         def __isCheck(self, color: Literal[0, 1]):
             king = self.king_position_wb[color]
@@ -88,14 +88,14 @@ class Chess:
 
         def __isThisMoveLegal(self, cur: 'Chess.Position', dest: 'Chess.Position'):
             color = self.__board[cur.y][cur.x].piece.color
-            temp_dest = self.__board[dest.y][dest.x]
+            temp_destPiece = self.__board[dest.y][dest.x].piece
 
             self.move(cur, dest)
 
             ret = not self.__isCheck(color)
 
             self.move(dest, cur)
-            self.__board[dest.y][dest.x] = temp_dest
+            self.__board[dest.y][dest.x].piece = temp_destPiece
 
             return ret
         
@@ -236,6 +236,7 @@ class Chess:
         def __init__(self):
             self.king_position_wb = []
             self.reset()
+            print(self.__isEnemy(Chess.Position(0, 0), Chess.Position(7, 7)))
         
         def reset(self):
             initList = ['Rook', 'Knight', 'Bishop', 'Queen', 'King', 'Bishop', 'Knight', 'Rook']
