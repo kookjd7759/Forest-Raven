@@ -178,6 +178,12 @@ class Chess:
             list = []
             for dir in Chess.dir_all:
                 self.__oneMove(list, pos, dir, legalMove)
+            
+            if self.castling_check(self.__board[pos.y][pos.x].piece.color, isKingside=True): # Check king side castling 
+                list.append(pos + Chess.Position(+2, 0)) # already guarantee the check free move
+            if self.castling_check(self.__board[pos.y][pos.x].piece.color, isKingside=False): # Check queen side castling 
+                list.append(pos + Chess.Position(-2, 0)) # already guarantee the check free move
+
             return list
 
         def __Queen(self, pos: 'Chess.Position', legalMove: bool):
@@ -277,34 +283,40 @@ class Chess:
             self.__board[cur.y][cur.x].piece = None
 
         def move(self, cur: 'Chess.Position', dest: 'Chess.Position'): 
+            isCastling = False
             ### king, rook moving check
             piece_color = self.__board[cur.y][cur.x].piece.color
             piece_type = self.__board[cur.y][cur.x].piece.type
-            if piece_type == self.Type['King']:
+            if piece_type == Chess.Type['King']:
                 self.castling_moveCheck_wb_qk[piece_color][0] = False
                 self.castling_moveCheck_wb_qk[piece_color][1] = False
-            elif piece_type == self.Type['Rook']:
+                if abs(dest.x - cur.x) == 2: # castling move
+                    isCastling = True
+            elif piece_type == Chess.Type['Rook']:
                 if cur.x == 0: # Queen side rook 
                     self.castling_moveCheck_wb_qk[piece_color][0] = False
                 elif cur.x == 7: # King side rook
                     self.castling_moveCheck_wb_qk[piece_color][1] = False
 
-            self.move_piece(cur, dest)
+            if isCastling:
+                self.castling_move(cur, dest)
+            else:
+                self.move_piece(cur, dest)
             self.__calAttackSquare()
             self.prev_move.set(piece_type, cur, dest)
 
-        def castling(self, cur: 'Chess.Position', dest: 'Chess.Position'):
+        def castling_move(self, cur: 'Chess.Position', dest: 'Chess.Position'):
             rank = (0 if self.__board[cur.y][cur.x].piece.color == Chess.Color['White'] else 7)
             if dest.x > cur.x: # King Side Castling
                 rook_pos = Chess.Position(7, rank)
-                self.move(cur, dest)
-                self.move(rook_pos, dest + Chess.Position(-1, 0))
+                self.move_piece(cur, dest)
+                self.move_piece(rook_pos, dest + Chess.Position(-1, 0))
             else: # Queen Side Castling
                 rook_pos = Chess.Position(0, rank)
-                self.move(cur, dest)
-                self.move(rook_pos, dest + Chess.Position(+1, 0))
+                self.move_piece(cur, dest)
+                self.move_piece(rook_pos, dest + Chess.Position(+1, 0))
 
-        def en_passent(self, cur: 'Chess.Position', dest: 'Chess.Position'):
+        def en_passent_move(self, cur: 'Chess.Position', dest: 'Chess.Position'):
             self.move(cur, dest)
             dir = Chess.Position(0, (-1 if self.__board[cur.y][cur.x].piece.color == Chess.Color['White'] else +1))
             attack = dest + dir
@@ -342,15 +354,16 @@ class Chess:
         def get_square(self, pos: 'Chess.Position'):
             return self.__board[pos.y][pos.x]
 
-
+        # Check function
         def castling_check(self, color: Literal[0, 1], isKingside: bool):
-            rank = (0 if color == self.Color['White'] else 7)
+            rank = (0 if color == Chess.Color['White'] else 7)
             condition_1 = not self.castling_moveCheck_wb_qk[color][1 if isKingside else 0]
             condition_2 = self.__board[rank][5].empty() and self.__board[rank][6].empty() if isKingside else \
                 self.__board[rank][3].empty() and self.__board[rank][2].empty() and self.__board[rank][1].empty()
             op = Chess.Color['White'] if color == Chess.Color['Black'] else Chess.Color['Black']
-            condition_3 = self.__board[rank][5].attack_wb[op] == 0 and self.__board[rank][5].attack_wb[op] if isKingside else \
-                self.__board[rank][5].attack_wb[op] == 0 and self.__board[rank][5].attack_wb[op]
+            condition_3 = self.__board[rank][5].attack_wb[op] == 0 and self.__board[rank][6].attack_wb[op] == 0 if isKingside else \
+                self.__board[rank][3].attack_wb[op] == 0 and self.__board[rank][2].attack_wb[op] == 0
+            print(f'{condition_1} {condition_2} {condition_3}')
             return condition_1 and condition_2 and condition_3
 
         def en_passent_check(self, pos: 'Chess.Position'):
@@ -370,7 +383,6 @@ class Chess:
                 return -1
             else:
                 return 0
-
 
         # Additional function
         def print_board(self):
