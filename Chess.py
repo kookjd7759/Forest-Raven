@@ -75,11 +75,11 @@ class Chess:
             return True if pos.x >= 0 and pos.x <= 7 and pos.y >= 0 and pos.y <= 7 else False
 
         def __isAlly(self, cur: 'Chess.Position', dest: 'Chess.Position'):
-            return self.__board[cur.y][cur.x].empty() == False and self.__board[dest.y][dest.x].empty() == False and \
+            return not self.__board[cur.y][cur.x].empty() and not self.__board[dest.y][dest.x].empty() and \
                 self.__board[cur.y][cur.x].piece.color == self.__board[cur.y][cur.x].piece.color
 
         def __isEnemy(self, cur: 'Chess.Position', dest: 'Chess.Position'):
-            return self.__board[cur.y][cur.x].empty() == False and self.__board[dest.y][dest.x].empty() == False and \
+            return not self.__board[cur.y][cur.x].empty() and not self.__board[dest.y][dest.x].empty() and \
                 self.__board[cur.y][cur.x].piece.color != self.__board[cur.y][cur.x].piece.color
 
         def __isCheck(self, color: Literal[0, 1]):
@@ -125,6 +125,9 @@ class Chess:
                     if not legalMove:
                         self.__appand(list, cur, next, legalMove)
                     return
+                else:
+                    print('ERROR, __repeatMove()::It\'s weird error check this out')
+                    exit(0)
 
         def __oneMove(self, list: list, cur: 'Chess.Position', dir: 'Chess.Position', legalMove: bool):
             next = cur + dir
@@ -197,23 +200,6 @@ class Chess:
 
             # TODO: en passant
 
-        def __get_moveList(self, pos: 'Chess.Position'):
-            list = []
-            piece_type = self.__board[pos.y][pos.x].piece.type
-            if piece_type == Chess.Type['King']:
-                list = self.__king(pos, True)
-            elif piece_type == Chess.Type['Queen']:
-                list = self.__Queen(pos, True)
-            elif piece_type == Chess.Type['Rook']:
-                list = self.__rook(pos, True)
-            elif piece_type == Chess.Type['Knight']:
-                list = self.__knight(pos, True)
-            elif piece_type == Chess.Type['Bishop']:
-                list = self.__bishop(pos, True)
-            elif piece_type == Chess.Type['Pawn']:
-                list = self.__pawn_move(pos) + self.__pawn_attack(pos, True)
-            return list
-
         def __get_attackList(self, pos: 'Chess.Position'):
             list = []
             piece_type = self.__board[pos.y][pos.x].piece.type
@@ -242,18 +228,14 @@ class Chess:
                     if not self.__board[y][x].empty():
                         posList = self.__get_attackList(Chess.Position(x, y))
                         color = self.__board[y][x].piece.color
-                        print(f'{x}, {y} / {Chess.Type_to_string[self.__board[y][x].piece.type]} - ', end='')
                         for pos in posList:
-                            print(f'({pos.x}, {pos.y}) ', end='')
                             self.__board[pos.y][pos.x].attack_wb[color] += 1
-                        print()
 
 
 
         def __init__(self):
             self.king_position_wb = []
             self.reset()
-            self.print_board()
         
         def reset(self):
             initList = ['Rook', 'Knight', 'Bishop', 'Queen', 'King', 'Bishop', 'Knight', 'Rook']
@@ -272,8 +254,10 @@ class Chess:
                 color = self.__board[cur.y][cur.x].piece.color
                 self.king_position_wb[color] = dest
             
-            self.__board[dest.y][dest.x] = self.__board[cur.y][cur.x]
-            self.__board[cur.y][cur.x] = None
+            self.__board[dest.y][dest.x].piece = self.__board[cur.y][cur.x].piece
+            self.__board[cur.y][cur.x].piece = None
+
+            self.__calAttackSquare()
 
         def castling(self, cur: 'Chess.Position', dest: 'Chess.Position'):
             rank = (0 if self.__board[cur.y][cur.x].piece.color == Chess.Color['White'] else 7)
@@ -292,19 +276,61 @@ class Chess:
             attack = dest + dir
             self.__board[attack.y][attack.x] = None
 
+        def get_legalMoveList(self, pos: 'Chess.Position'):
+            list = []
+            piece_type = self.__board[pos.y][pos.x].piece.type
+            if piece_type == Chess.Type['King']:
+                list = self.__king(pos, True)
+            elif piece_type == Chess.Type['Queen']:
+                list = self.__Queen(pos, True)
+            elif piece_type == Chess.Type['Rook']:
+                list = self.__rook(pos, True)
+            elif piece_type == Chess.Type['Knight']:
+                list = self.__knight(pos, True)
+            elif piece_type == Chess.Type['Bishop']:
+                list = self.__bishop(pos, True)
+            elif piece_type == Chess.Type['Pawn']:
+                list = self.__pawn_move(pos) + self.__pawn_attack(pos, True)
+            return list
+
+        def get_candidateMove(self, color: Literal[0, 1]):
+            list = []
+            for y in range(0, 8):
+                for x in range(0, 8):
+                    if not self.__board[y][x].empty() and self.__board[y][x].piece.color == color:
+                        posList = self.get_legalMoveList(Chess.Position(x, y))
+                        for pos in posList:
+                            list.append((Chess.Position(x, y), pos))
+
+            return list
+
+        def get_square(self, pos: 'Chess.Position'):
+            return self.__board[pos.y][pos.x]
+
         def print_board(self):
-            for _ in self.__board:
-                for square in _:
-                    if square.empty():
-                        print('-- ', end='')
-                    else:
+            # white criteria
+            for i in range(7, -1, -1):
+                for j in range(8):
+                    square = self.__board[i][j]
+                    if not square.empty():
                         print(f'{Chess.Color_to_string[square.piece.color]}{Chess.Type_to_string[square.piece.type]} ', end='')
+                    else:
+                        print('--', end=' ')
                 print()
-            print()
-            for _ in self.__board:
-                for square in _:
+
+            for i in range(7, -1, -1):
+                for j in range(8):
+                    square = self.__board[i][j]
                     print(f'({square.attack_wb[0]}, {square.attack_wb[1]})  ', end='')
                 print()
+
+
+    def to_position(self, notation: str):
+        return Chess.Position(ord(notation[0]) - ord('a'), ord(notation[1]) - ord('1'))
+    
+    def to_notation(self, position: 'Chess.Position'):
+        return chr(position.x + ord('a')) + chr(position.y + ord('1'))
+
 
 
     def castling_Check(self, color: Literal[0, 1]):
@@ -328,10 +354,83 @@ class Chess:
         self.turn = self.Color['White']
         self.player = self.Color['White']
 
+    def move(self, cur: str, dest: str):
+        cur = self.to_position(cur)
+        dest = self.to_position(dest)
+        square = self.board.get_square(cur)
+
+        ### piece existence check
+        if square.empty():
+            print('move()::there is no piece')
+            return False
+        
+        ### piece color check
+        if self.turn != square.piece.color:
+            print('move()::it\'s not their\'s turn')
+            return False
+        
+        ### move check
+        isLegal = False
+        legalMoveList = self.board.get_legalMoveList(cur)
+        for move in legalMoveList:
+            if move.x == dest.x and move.y == dest.y:
+                isLegal = True
+        
+        if not isLegal:
+            print('move()::it\'s illegal move')
+            return False
+
+        ### move
+        print(f'{cur} -> {dest}')
+        self.board.move(cur, dest)
+        self.turn = self.Color['White'] if self.turn == self.Color['Black'] else self.Color['Black']
+
+        return True
+
+    def get_legalMove(self, pos: str):
+        pos = self.to_position(pos)
+        square = self.board.get_square(pos)
+
+        ### piece existence check
+        if square.empty():
+            print('get_legalMove()::there is no piece')
+            return False
+        
+        list = self.board.get_legalMoveList(pos)
+        print(f'size : {len(list)}')
+        for next in list:
+            print(f'{self.to_notation(next)} ', end='')
+        print()
+
+    def get_candidateMove(self):
+        list = self.board.get_candidateMove(self.turn)
+        print(f'size : {len(list)}')
+        for move in list:
+            print(f'{self.to_notation(move[0])} -> {self.to_notation(move[1])} ')
+        print()
+
     def start(self):
-        print('game start')
+        while True:
+            self.board.print_board()
+            color = 'WHITE' if self.turn == self.Color['White'] else 'BLACK'
+            print(f'{color}\'s turn')
+            while True:
+                command = int(input('[1] move [2] get legal move [3] get candidate move \n -> '))
+                if command == 1:
+                    cur, dest = input().split()
+                    if not self.move(cur, dest):
+                        continue
+                elif command == 2:
+                    pos = input()
+                    self.get_legalMove(pos)
+                    continue
+                elif command == 3:
+                    self.get_candidateMove()
+
+                break
 
 
 
 if __name__ == '__main__':
     chess = Chess()
+    chess.start()
