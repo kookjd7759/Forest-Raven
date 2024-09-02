@@ -101,9 +101,13 @@ class Chess:
             king = self.king_position_wb[color]
             return True if self.__board[king.y][king.x].isattacked(color) else False
 
-        def __isThisMoveLegal(self, cur: 'Chess.Position', dest: 'Chess.Position'):
+        def __isThisMoveLegal(self, cur: 'Chess.Position', dest: 'Chess.Position', take: 'Chess.Position' = None):
             color = self.__board[cur.y][cur.x].piece.color
             temp_destPiece = self.__board[dest.y][dest.x].piece
+            temp_takePiece = None
+            if take != None:
+                temp_takePiece = self.__board[take.y][take.x].piece
+                self.__board[take.y][take.x].piece = None
 
             self.move_piece(cur, dest)
 
@@ -112,9 +116,12 @@ class Chess:
             self.move_piece(dest, cur)
             self.__board[dest.y][dest.x].piece = temp_destPiece
 
+            if take != None:
+                self.__board[take.y][take.x].piece = temp_takePiece
+
             return ret
         
-        def __appand(self, list: list, cur: 'Chess.Position', dest: 'Chess.Position', legalMove: bool):
+        def __appand(self, list: list, cur: 'Chess.Position', dest: 'Chess.Position', legalMove: bool, take: 'Chess.Position' = None):
             if not legalMove:
                 list.append(dest)
                 return
@@ -215,8 +222,13 @@ class Chess:
 
             color = self.__board[pos.y][pos.x].piece.color
             dir = +1 if color == Chess.Color['White'] else -1
-            add(pos + Chess.Position(-1, dir)) # king side 
-            add(pos + Chess.Position(+1, dir)) # queen side   
+            add(pos + Chess.Position(-1, dir)) # king side
+            add(pos + Chess.Position(+1, dir)) # queen side
+
+            en_passent_dir = self.en_passent_check(pos)
+            if en_passent_dir != 0:
+                dir = (+1 if self.__board[pos.y][pos.x].piece.color == Chess.Color['White'] else -1)
+                self.__appand(list, pos, Chess.Position(pos.x + en_passent_dir, pos.y + dir), legalMove, Chess.Position(pos.x + en_passent_dir, pos.y))
             return list
 
             # TODO: en passant
@@ -284,6 +296,7 @@ class Chess:
 
         def move(self, cur: 'Chess.Position', dest: 'Chess.Position'): 
             isCastling = False
+            en_passent = False
             ### king, rook moving check
             piece_color = self.__board[cur.y][cur.x].piece.color
             piece_type = self.__board[cur.y][cur.x].piece.type
@@ -317,10 +330,10 @@ class Chess:
                 self.move_piece(rook_pos, dest + Chess.Position(+1, 0))
 
         def en_passent_move(self, cur: 'Chess.Position', dest: 'Chess.Position'):
-            self.move(cur, dest)
+            self.move_piece(cur, dest)
             dir = Chess.Position(0, (-1 if self.__board[cur.y][cur.x].piece.color == Chess.Color['White'] else +1))
             attack = dest + dir
-            self.__board[attack.y][attack.x] = None
+            self.__board[attack.y][attack.x].piece = None
 
         # Get function
         def get_legalMoveList(self, pos: 'Chess.Position'):
@@ -367,19 +380,19 @@ class Chess:
             return condition_1 and condition_2 and condition_3
 
         def en_passent_check(self, pos: 'Chess.Position'):
+            piece_color = self.__board[pos.y][pos.x].piece.color
             if pos.y != (4 if piece_color == Chess.Color['White'] else 3):
                 return 0
             if self.prev_move.type != Chess.Type['Pawn']:
                 return 0
             
-            piece_color = self.__board[pos.y][pos.x].piece.color
             dir = (+2 if piece_color == Chess.Color['White'] else -2)
             kingSide = (Chess.Position(pos.x + 1, pos.y + dir), Chess.Position(pos.x + 1, pos.y))
             queenSide = (Chess.Position(pos.x - 1, pos.y + dir), Chess.Position(pos.x - 1, pos.y))
 
-            if kingSide[0].isEqual(self.prev_move.prev) and kingSide[1].isEqual(self.prev_move.now):
+            if self.__boundaryCheck(kingSide[0]) and kingSide[0].isEqual(self.prev_move.prev) and kingSide[1].isEqual(self.prev_move.now):
                 return 1
-            elif queenSide[0].isEqual(self.prev_move.prev) and queenSide[1].isEqual(self.prev_move.now):
+            elif self.__boundaryCheck(queenSide[0]) and queenSide[0].isEqual(self.prev_move.prev) and queenSide[1].isEqual(self.prev_move.now):
                 return -1
             else:
                 return 0
