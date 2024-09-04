@@ -64,7 +64,7 @@ class Window(QWidget):
 ### Utility
     def convert_position(self, pos: chess.Position): # UI to Board / Board to UI position converting
         return chess.Position(pos.x, 7 - pos.y) if self.chess.player == self.chess.Color['White'] else chess.Position(7 - pos.x, pos.y)
-    
+
 ### load
     def load_img(self):
         self.img = {
@@ -127,7 +127,7 @@ class Window(QWidget):
     def on_legalMove_light(self):
         for pos in self.legalMove:
             self.on_light(chess.Position(pos.x, pos.y), isSelectedLight=False)
-    
+
     def off_legalMove_light(self):
         for pos in self.legalMove:
             self.off_light(chess.Position(pos.x, pos.y))
@@ -151,7 +151,7 @@ class Window(QWidget):
         for UIx in range(8):
             for UIy in range(8):
                 self.highlight[UIy][UIx] = HighLightSquare(self, chess.Position(UIx, UIy))
-    
+
     def UIinit(self):
             self.setFixedSize(BOARD_SIZE, 585) # size of the windows
             self.setWindowTitle('Chess')
@@ -209,12 +209,11 @@ class Window(QWidget):
 
             self.setLayout(vbox)
 
-
 ### piece
     def create_piece(self, img_key, pos: chess.Position, color: Literal[0, 1]): # Get Board Position
         UIpos = self.convert_position(pos) # Board to UI Position
         self.board[pos.y][pos.x] = ChessPiece(self, self.img[img_key], UIpos, color, self.piece_callback_press)
-   
+
     def init_pieces(self):
         for i in range(8): 
             for j in range(8): 
