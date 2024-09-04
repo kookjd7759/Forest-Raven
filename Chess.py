@@ -112,6 +112,17 @@ class Chess:
             king = self.king_position_wb[color]
             return True if self.__board[king.y][king.x].isattacked(color) else False
 
+        def __count_candidateMove(self, color: Literal[0, 1]):
+            count = 0
+            for y in range(0, 8):
+                for x in range(0, 8):
+                    if not self.__board[y][x].empty() and self.__board[y][x].piece.color == color:
+                        posList = self.get_legalMoveList(Position(x, y))
+                        count += len(posList)
+            return count
+
+
+
         def __isThisMoveLegal(self, cur: Position, dest: Position, take: Position = None):
             color = self.__board[cur.y][cur.x].piece.color
             temp_destPiece = self.__board[dest.y][dest.x].piece
@@ -280,8 +291,8 @@ class Chess:
 
 
         def __init__(self):
-            self.king_position_wb = []
-            self.castling_moveCheck_wb_qk = [[False, False],[False, False]]
+            self.king_position_wb = list[Position]
+            self.castling_moveCheck_wb_qk = list[list[bool]]
             self.prev_move = Chess.PreviousMove()
             self.reset()
         
@@ -294,8 +305,20 @@ class Chess:
                 self.__board[7][i].set(Chess.Piece(Chess.Type[Chess.initList[i]], Chess.Color['Black'])) # Black's backrank pieces
                 
             self.king_position_wb = [Position(4, 0), Position(4, 7)]
+            self.castling_moveCheck_wb_qk = [[False, False],[False, False]]
+            self.prev_move = Chess.PreviousMove()
             self.__calAttackSquare()
-
+       
+        # game function
+        def gameEnd_check(self, color: Literal[0, 1]): # (0) None (1) CheckMate (2) StaleMate
+            if self.__count_candidateMove(color) != 0:
+                return 0
+            
+            if self.__isCheck(color):
+                return 1
+            else:
+                return 2
+            
         # Move function
         def move_piece(self, cur: Position, dest: Position):
             if self.__board[cur.y][cur.x].piece.type == Chess.Type['King']:
@@ -384,7 +407,7 @@ class Chess:
 
         def get_square(self, pos: Position):
             return self.__board[pos.y][pos.x]
-
+        
         # Check function
         def castling_check(self, color: Literal[0, 1], isKingside: bool):
             rank = (0 if color == Chess.Color['White'] else 7)
@@ -437,20 +460,23 @@ class Chess:
         self.turn = self.Color['White']
         self.player = self.Color['White']
 
+    def restart(self):
+        self.board.reset()
+        self.turn = self.Color['White']
+        self.player = self.Color['White']
 
-
-    def move(self, cur: Position, dest: Position):
+    def move(self, cur: Position, dest: Position): # (-1) can't move (0) None (1) CheckMate (2) StaleMate
         square = self.board.get_square(cur)
 
         ### piece existence check
         if square.empty():
             print('move()::there is no piece')
-            return False
+            return -1
         
         ### piece color check
         if self.turn != square.piece.color:
             print('move()::it\'s not their\'s turn')
-            return False
+            return -1
         
         ### move check
         isLegal = False
@@ -461,13 +487,15 @@ class Chess:
         
         if not isLegal:
             print('move()::it\'s illegal move')
-            return False
+            return -1
         
         ### Move
         self.board.move(cur, dest)
         self.turn = self.Color['White'] if self.turn == self.Color['Black'] else self.Color['Black']
         self.board.print_board()
-        return True
+
+        ### game end check
+        return self.board.gameEnd_check(self.turn)
 
     def get_legalMove(self, pos: Position):
         square = self.board.get_square(pos)

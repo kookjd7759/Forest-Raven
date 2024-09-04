@@ -4,11 +4,45 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from typing import Literal
 
+import time
 import Path
 import chess
 
 CELL_SIZE = 60
 BOARD_SIZE = 480
+
+
+class GameEndWindow(QDialog): 
+    # winner = 0.draw 1.white 2.black
+    def __init__(self, parent, callback, winner:Literal[0, 1] = None): 
+        super().__init__(parent)
+        self.winner = winner
+        self.callback = callback
+        self.initUI()
+
+    def initUI(self):
+        self.setFixedSize(170, 100)
+        label = QLabel('test', self)
+        label.setAlignment(Qt.AlignCenter)  # 텍스트를 가로축, 세로축 중앙 정렬
+        if self.winner == None:
+            self.setWindowTitle('Draw')
+            label.setText('draw')
+        else:
+            self.setWindowTitle('CheckMate')
+            label.setText(f'CheckMate, {"White" if self.winner == 0 else "Black"} WIN !')
+
+        btn = QPushButton('Restart', self)
+        btn.clicked.connect(self.btn_function)
+        vbox = QVBoxLayout()
+        vbox.addWidget(label)
+        vbox.addWidget(btn)
+        self.setLayout(vbox)
+        self.show()
+    
+    def btn_function(self):
+        self.callback()
+        self.close()
+
 
 class HighLightSquare(QLabel):
 
@@ -34,6 +68,7 @@ class HighLightSquare(QLabel):
 class ChessPiece(QLabel):
 
     def die(self):
+        self.hide()
         self.deleteLater()
 
     def move_direct(self, UIpos: chess.Position):
@@ -135,6 +170,11 @@ class Window(QWidget):
         for pos in self.legalMove:
             self.off_light(chess.Position(pos.x, pos.y))
 
+    def off_all_light(self):
+        for _ in self.highlight:
+            for light in _:
+                light.off()
+
 ### Window initalize
     def __init__(self):
         super().__init__()
@@ -150,13 +190,20 @@ class Window(QWidget):
         self.init_pieces()
 
         # Initialize Highlight sheet
-        self.highlight = [[None for _ in range(8)] for _ in range(8)]
+        self.highlight: list[list[HighLightSquare]] = [[None for _ in range(8)] for _ in range(8)]
         for UIx in range(8):
             for UIy in range(8):
                 self.highlight[UIy][UIx] = HighLightSquare(self, chess.Position(UIx, UIy))
 
+    def reset(self):
+        self.selected = chess.Position(-1, -1)
+        self.legalMove: list[chess.Position] = []
+        self.chess.restart()
+        self.init_pieces()
+        self.off_all_light()
+
     def UIinit(self):
-            self.setFixedSize(BOARD_SIZE, 585) # size of the windows
+            self.setFixedSize(BOARD_SIZE, 560) # size of the windows
             self.setWindowTitle('Chess')
             vbox = QVBoxLayout()
 
@@ -173,7 +220,7 @@ class Window(QWidget):
             btn_changePlayer = QPushButton('Change my color', self)
             btn_changePlayer.clicked.connect(self.btn_test_function)
             btn_restart = QPushButton('Game Restart', self)
-            btn_restart.clicked.connect(self.btn_test_function)
+            btn_restart.clicked.connect(self.btn_restart_function)
             hbox_player.addWidget(lbl_player)
             hbox_player.addWidget(line_player)
             hbox_player.addWidget(btn_changePlayer)
@@ -187,14 +234,6 @@ class Window(QWidget):
             hbox_selected.addWidget(lbl_selected)
             hbox_selected.addWidget(self.line_selected)
 
-            # Turn
-            hbox_turn = QHBoxLayout()
-            lbl_turn = QLabel('<b>[Turn]</b>', self)
-            line_turn = QLineEdit('White', self)
-            line_turn.setReadOnly(True)
-            hbox_turn.addWidget(lbl_turn)
-            hbox_turn.addWidget(line_turn)
-
             # TestButton
             hbox_test = QHBoxLayout()
             lbl_test = QLabel('<b>[test]</b>', self)
@@ -206,11 +245,16 @@ class Window(QWidget):
             vbox.addWidget(lbl_board)
             vbox.addLayout(hbox_player)
             vbox.addLayout(hbox_selected)
-            vbox.addLayout(hbox_turn)
             vbox.addLayout(hbox_test)
             vbox.setContentsMargins(0,0,0,0)
 
             self.setLayout(vbox)
+    
+    def gameEnd(self, winner:Literal[0, 1] = None):
+        self.setEnabled(False)
+        gameEnd_window = GameEndWindow(self, winner, self.btn_test_function)
+        gameEnd_window.exec_() 
+        self.setEnabled(True)
 
 ### piece
     def create_piece(self, piece_type, img_key, pos: chess.Position, color: Literal[0, 1]): # Get Board Position
@@ -232,13 +276,18 @@ class Window(QWidget):
             self.create_piece(self.chess.initList[i], 'b' + initPos[i], chess.Position(i, 7), self.chess.Color['Black']) # Black other pieces
 
 ### move
+    def capture(self, pos: chess.Position):
+        if self.board[pos.y][pos.x] != None:
+            self.board[pos.y][pos.x].die()
+        self.board[pos.y][pos.x] = None
+        QApplication.processEvents()
+
     def move_piece(self, cur: chess.Position, dest: chess.Position):
         if self.board[cur.y][cur.x] == None:
             print('ERROR::move_piece(), there is no piece')
             exit(0)
         
-        if self.board[dest.y][dest.x] != None:
-            self.board[dest.y][dest.x].die()
+        self.capture(dest)
 
         UIpos = self.convert_position(dest)
         self.board[cur.y][cur.x].move_direct(UIpos)
@@ -256,16 +305,20 @@ class Window(QWidget):
                 if self.board[dest.y][dest.x] == None: # en_passent move
                     dir = chess.Position(0, (-1 if self.board[cur.y][cur.x].color == self.chess.Color['White'] else +1))
                     attack = dest + dir
-                    self.board[attack.y][attack.x].die()
-                    self.board[attack.y][attack.x].piece = None
+                    self.capture(attack)
 
         self.board[dest.y][dest.x] = self.board[cur.y][cur.x]
         self.board[cur.y][cur.x] = None
-        
 
     def play_move(self, dest: chess.Position):
-        if self.chess.move(self.selected, dest):
+        check = self.chess.move(self.selected, dest) 
+        # (-1) can't move (0) None (1) CheckMate (2) StaleMate
+        if check != -1:
             self.move_piece(self.selected, dest)
+            if check == 1:
+                self.gameEnd(self.chess.Color['Black'] if self.chess.turn == self.chess.Color['White'] else self.chess.Color['White'])
+            elif check == 2:
+                self.gameEnd()
         self.delSelect()
 
 ### Mouse event
@@ -294,6 +347,9 @@ class Window(QWidget):
 ### Button function 
     def btn_test_function(self):
         print('test Button')
+
+    def btn_restart_function(self):
+        self.reset()
 
 
 if __name__ == '__main__':
