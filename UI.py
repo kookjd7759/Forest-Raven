@@ -149,7 +149,6 @@ class Window(QWidget):
         if self.isSelected():
             self.off_light(self.selected)
             self.del_legalMove()
-        self.selected = chess.Position(-1, -1)
 
 ### Highlight
     def off_light(self, pos: chess.Position):
@@ -184,6 +183,7 @@ class Window(QWidget):
         self.selected = chess.Position(-1, -1)
         self.chess = chess.Chess()
         self.legalMove: list[chess.Position] = []
+        self.playing = True
         
         # Initialize pieces
         self.board: list[list[ChessPiece]] = [[None for _ in range(8)] for _ in range(8)]
@@ -198,6 +198,7 @@ class Window(QWidget):
     def reset(self):
         self.selected = chess.Position(-1, -1)
         self.legalMove: list[chess.Position] = []
+        self.playing = True
         self.chess.restart()
         self.init_pieces()
         self.off_all_light()
@@ -280,7 +281,6 @@ class Window(QWidget):
         if self.board[pos.y][pos.x] != None:
             self.board[pos.y][pos.x].die()
         self.board[pos.y][pos.x] = None
-        QApplication.processEvents()
 
     def move_piece(self, cur: chess.Position, dest: chess.Position):
         if self.board[cur.y][cur.x] == None:
@@ -312,6 +312,7 @@ class Window(QWidget):
 
     def play_move(self, dest: chess.Position):
         check = self.chess.move(self.selected, dest) 
+        self.delSelect()
         # (-1) can't move (0) None (1) CheckMate (2) StaleMate
         if check != -1:
             self.move_piece(self.selected, dest)
@@ -319,7 +320,7 @@ class Window(QWidget):
                 self.gameEnd(self.chess.Color['Black'] if self.chess.turn == self.chess.Color['White'] else self.chess.Color['White'])
             elif check == 2:
                 self.gameEnd()
-        self.delSelect()
+        self.selected = chess.Position(-1, -1)
 
 ### Mouse event
     def mousePressEvent(self, event):
