@@ -47,6 +47,7 @@ class Chess:
         'En_passent': 13,
         'Pomotion': 14,
     }
+    initList = ('Rook', 'Knight', 'Bishop', 'Queen', 'King', 'Bishop', 'Knight', 'Rook')
 
     Color_to_string = { # 'White : 0, 'Black' : 1
         0: 'w',
@@ -285,13 +286,12 @@ class Chess:
             self.reset()
         
         def reset(self):
-            initList = ['Rook', 'Knight', 'Bishop', 'Queen', 'King', 'Bishop', 'Knight', 'Rook']
             self.__board = [[Chess.Square() for x in range(8)] for y in range(8)]
             for i in range(8): 
                 self.__board[1][i].set(Chess.Piece(Chess.Type['Pawn'], Chess.Color['White'])) # White's pawns
-                self.__board[0][i].set(Chess.Piece(Chess.Type[initList[i]], Chess.Color['White'])) # White's backrank pieces
+                self.__board[0][i].set(Chess.Piece(Chess.Type[Chess.initList[i]], Chess.Color['White'])) # White's backrank pieces
                 self.__board[6][i].set(Chess.Piece(Chess.Type['Pawn'], Chess.Color['Black'])) # Black's pawns
-                self.__board[7][i].set(Chess.Piece(Chess.Type[initList[i]], Chess.Color['Black'])) # Black's backrank pieces
+                self.__board[7][i].set(Chess.Piece(Chess.Type[Chess.initList[i]], Chess.Color['Black'])) # Black's backrank pieces
                 
             self.king_position_wb = [Position(4, 0), Position(4, 7)]
             self.__calAttackSquare()

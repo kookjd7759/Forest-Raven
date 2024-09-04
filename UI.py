@@ -32,7 +32,7 @@ class HighLightSquare(QLabel):
 
 
 class ChessPiece(QLabel):
- 
+
     def die(self):
         self.deleteLater()
 
@@ -40,10 +40,12 @@ class ChessPiece(QLabel):
         self.move(UIpos.x * CELL_SIZE, UIpos.y * CELL_SIZE)
         self.UIpos = UIpos
 
-    def __init__(self, parent, image_path: str, UIpos: chess.Position, color: Literal[0, 1], callback_press): # Get UI Position
+    def __init__(self, parent, piece_type: Literal['King', 'Queen', 'Rook', 'Knight', 'Bishop', 'Pawn'], 
+                image_path: str, UIpos: chess.Position, color: Literal[0, 1], callback_press): # Get UI Position
         super().__init__(parent)
         self.UIpos = UIpos
         self.color = color
+        self.piece_type = piece_type
         self.move(UIpos.x * CELL_SIZE, UIpos.y * CELL_SIZE)
         self.callback_press = callback_press
 
@@ -109,9 +111,10 @@ class Window(QWidget):
 
     def delSelect(self):
         self.line_selected.setText('None')
-        self.off_light(self.selected)
+        if self.isSelected():
+            self.off_light(self.selected)
+            self.del_legalMove()
         self.selected = chess.Position(-1, -1)
-        self.del_legalMove()
 
 ### Highlight
     def off_light(self, pos: chess.Position):
@@ -210,9 +213,9 @@ class Window(QWidget):
             self.setLayout(vbox)
 
 ### piece
-    def create_piece(self, img_key, pos: chess.Position, color: Literal[0, 1]): # Get Board Position
+    def create_piece(self, piece_type, img_key, pos: chess.Position, color: Literal[0, 1]): # Get Board Position
         UIpos = self.convert_position(pos) # Board to UI Position
-        self.board[pos.y][pos.x] = ChessPiece(self, self.img[img_key], UIpos, color, self.piece_callback_press)
+        self.board[pos.y][pos.x] = ChessPiece(self, piece_type, self.img[img_key], UIpos, color, self.piece_callback_press)
 
     def init_pieces(self):
         for i in range(8): 
@@ -223,10 +226,10 @@ class Window(QWidget):
         
         initPos = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r']
         for i in range(8): 
-            self.create_piece('wp', chess.Position(i, 1), self.chess.Color['White'])  # White pawns
-            self.create_piece('w' + initPos[i], chess.Position(i, 0), self.chess.Color['White']) # White other pieces
-            self.create_piece('bp', chess.Position(i, 6), self.chess.Color['Black'])  # Black pawns
-            self.create_piece('b' + initPos[i], chess.Position(i, 7), self.chess.Color['Black']) # Black other pieces
+            self.create_piece('Pawn', 'wp', chess.Position(i, 1), self.chess.Color['White'])  # White pawns
+            self.create_piece(self.chess.initList[i],'w' + initPos[i], chess.Position(i, 0), self.chess.Color['White']) # White other pieces
+            self.create_piece('Pawn', 'bp', chess.Position(i, 6), self.chess.Color['Black'])  # Black pawns
+            self.create_piece(self.chess.initList[i], 'b' + initPos[i], chess.Position(i, 7), self.chess.Color['Black']) # Black other pieces
 
 ### move
     def move_piece(self, cur: chess.Position, dest: chess.Position):
@@ -240,8 +243,25 @@ class Window(QWidget):
         UIpos = self.convert_position(dest)
         self.board[cur.y][cur.x].move_direct(UIpos)
 
+        if self.board[cur.y][cur.x].piece_type == 'King' and abs(dest.x - cur.x) == 2: # Castling
+            rank = (0 if self.board[cur.y][cur.x].color == self.chess.Color['White'] else 7)
+            if dest.x > cur.x: # King Side Castling
+                print('# King Side Castling')
+                self.move_piece(chess.Position(7, rank), dest + chess.Position(-1, 0))
+            else: # Queen Side Castling
+                print('# Queen Side Castling')
+                self.move_piece(chess.Position(0, rank), dest + chess.Position(+1, 0))
+        elif self.board[cur.y][cur.x].piece_type == 'Pawn': # En passent
+            if cur.x != dest.x: # Pawn takes somthing
+                if self.board[dest.y][dest.x] == None: # en_passent move
+                    dir = chess.Position(0, (-1 if self.board[cur.y][cur.x].color == self.chess.Color['White'] else +1))
+                    attack = dest + dir
+                    self.board[attack.y][attack.x].die()
+                    self.board[attack.y][attack.x].piece = None
+
         self.board[dest.y][dest.x] = self.board[cur.y][cur.x]
         self.board[cur.y][cur.x] = None
+        
 
     def play_move(self, dest: chess.Position):
         if self.chess.move(self.selected, dest):
@@ -262,6 +282,8 @@ class Window(QWidget):
 ### callback 
     def piece_callback_press(self, UIpos: chess.Position):
         pos = self.convert_position(UIpos)
+        #if self.board[pos.y][pos.x].color != self.chess.player and not self.isSelected():
+        #    return
         if self.board[pos.y][pos.x].color != self.chess.turn and not self.isSelected():
             return
         elif self.board[pos.y][pos.x].color != self.chess.turn and self.isSelected():
