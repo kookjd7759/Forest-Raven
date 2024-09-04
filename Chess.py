@@ -120,6 +120,7 @@ class Chess:
                 self.__board[take.y][take.x].piece = None
 
             self.move_piece(cur, dest)
+            self.__calAttackSquare()
 
             ret = not self.__isCheck(color)
 
@@ -128,6 +129,7 @@ class Chess:
 
             if take != None:
                 self.__board[take.y][take.x].piece = temp_takePiece
+            self.__calAttackSquare()
 
             return ret
         
@@ -464,7 +466,7 @@ class Chess:
         ### Move
         self.board.move(cur, dest)
         self.turn = self.Color['White'] if self.turn == self.Color['Black'] else self.Color['Black']
-
+        self.board.print_board()
         return True
 
     def get_legalMove(self, pos: Position):
