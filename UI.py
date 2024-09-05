@@ -66,6 +66,7 @@ class PromotionWindow(QLabel):
             'b': parent.img[team + 'b']
         }
     
+    finished = pyqtSignal()
     def __init__(self, parent, player: Literal[0, 1], callback):
         super().__init__(parent)
         self.player = player
@@ -107,10 +108,12 @@ class PromotionWindow(QLabel):
         window.raise_()
     
     def on(self):
-        print('on !')
+        self.setEnabled(True)
+        self.raise_()
         self.show()
 
     def off(self):
+        self.setEnabled(False)
         self.hide()
 
     # (0)Q (1)R (2)B (3)N
@@ -123,6 +126,8 @@ class PromotionWindow(QLabel):
                 self.callback(idx)
             else:
                 self.callback(-1)
+        self.finished.emit()
+        self.off()
 
 
 class HighLightSquare(QLabel):
@@ -264,7 +269,8 @@ class Window(QWidget):
         self.selected = chess.Position(-1, -1)
         self.chess = chess.Chess()
         self.legalMove: list[chess.Position] = []
-        self.playing = True
+        self.playing: bool = True
+        self.promotion_num: int = -1
         
         # Initialize pieces
         self.board: list[list[ChessPiece]] = [[None for _ in range(8)] for _ in range(8)]
@@ -372,7 +378,7 @@ class Window(QWidget):
         
         UIpos = self.convert_position(dest)
         self.board[cur.y][cur.x].move_direct(UIpos)
-
+        isPromotion = False
         if self.board[cur.y][cur.x].piece_type == 'King' and abs(dest.x - cur.x) == 2: # Castling
             rank = (0 if self.board[cur.y][cur.x].color == self.chess.Color['White'] else 7)
             if dest.x > cur.x: # King Side Castling
@@ -381,7 +387,9 @@ class Window(QWidget):
             else: # Queen Side Castling
                 print('# Queen Side Castling')
                 self.move_piece(chess.Position(0, rank), dest + chess.Position(+1, 0))
-        elif self.board[cur.y][cur.x].piece_type == 'Pawn': # En passent
+        elif self.board[cur.y][cur.x].piece_type == 'Pawn':
+            if dest.y == (7 if self.board[cur.y][cur.x].color == self.chess.Color['White'] else 0): # promotion
+                isPromotion = True
             if cur.x != dest.x: # Pawn takes somthing
                 if self.board[dest.y][dest.x] == None: # en_passent move
                     dir = chess.Position(0, (-1 if self.board[cur.y][cur.x].color == self.chess.Color['White'] else +1))
@@ -392,17 +400,51 @@ class Window(QWidget):
         self.board[dest.y][dest.x] = self.board[cur.y][cur.x]
         self.board[cur.y][cur.x] = None
 
+        if isPromotion: # Promotion
+            # (0)Queen (1)Rook (2)Bishop (3)Knight
+            self.board[dest.y][dest.x].die() # delete Piece
+            self.board[dest.y][dest.x] = None
+            type_text = ''
+            img_key_text = 'w' if self.chess.player == self.chess.Color['White'] else 'b'
+            if self.promotion_num == 0: # Queen promotion
+                type_text = 'Queen'
+                img_key_text += 'q'
+            elif self.promotion_num == 1:
+                type_text = 'Rook'
+                img_key_text += 'r'
+            elif self.promotion_num == 2:
+                type_text = 'Bishop'
+                img_key_text += 'b'
+            elif self.promotion_num == 3:
+                type_text = 'Knight'
+                img_key_text += 'n'
+            self.create_piece(type_text, img_key_text, dest, self.chess.player)
+
     def play_move(self, dest: chess.Position):
         check = self.chess.move(self.selected, dest) 
+        print(f'get {check}')
         self.delSelect()
-        # (-1) can't move (0) None (1) CheckMate (2) StaleMate (3) By Repetition (4) Piece Shortage -> TODO
+        # (-1) can't move (0) None (1) CheckMate (2) StaleMate (3) Promotion (4) By Repetition (5) Piece Shortage -> TODO
         if check != -1:
-            self.move_piece(self.selected, dest)
-            if check == 1:
+            if check == 0:
+                self.move_piece(self.selected, dest)
+            elif check == 1:
                 self.gameEnd(0 if self.chess.turn == 1 else 1) # White <-> Black Change
             elif check == 2:
                 self.gameEnd(2)
+            elif check == 3:
+                self.promotion()
+                if self.promotion_num != -1: # promotion
+                    self.move_piece(self.selected, dest)
         self.selected = chess.Position(-1, -1)
+
+    def promotion(self):
+        print('promotion waiting')
+        self.promotion_window.finished.connect(self.promotion_finished)
+        self.promotion_window.on()
+        self.event_loop = QEventLoop()
+        self.event_loop.exec_()
+        print('promotion waiting end !')
 
 ### Mouse event
     def mousePressEvent(self, event):
@@ -426,14 +468,17 @@ class Window(QWidget):
             self.play_move(pos)
         else:
             self.setSelect(pos)
-
+    
     def promotion_callback(self, piece: int):
-        print(f'promotion to {piece}')
+        print(f'promotion -> {piece}')
+        self.promotion_num = piece
+
+    def promotion_finished(self):
+        self.event_loop.quit()
 
 ### Button function 
     def btn_test_function(self):
         print('test function')
-        self.promotion_window.on()
 
     def btn_restart_function(self):
         self.reset()

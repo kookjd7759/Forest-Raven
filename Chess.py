@@ -40,13 +40,6 @@ class Chess:
         'Bishop' : 8, 
         'Pawn' : 9
     }
-    Movement_type = { # 'Move': 10, 'Capture': 11, 'Castling': 12, 'En_passent': 13, 'Pomotion': 14
-        'Move': 10,
-        'Capture': 11,
-        'Castling': 12,
-        'En_passent': 13,
-        'Pomotion': 14,
-    }
     initList = ('Rook', 'Knight', 'Bishop', 'Queen', 'King', 'Bishop', 'Knight', 'Rook')
 
     Color_to_string = { # 'White : 0, 'Black' : 1
@@ -493,6 +486,9 @@ class Chess:
             print('move()::it\'s illegal move')
             return -1
         
+        if dest.y == (7 if square.piece.color == Chess.Color['White'] else 0): # promotion
+            print('promotion signal !!')
+            return 3
         ### Move
         self.board.move(cur, dest)
         self.turn = self.Color['White'] if self.turn == self.Color['Black'] else self.Color['Black']
