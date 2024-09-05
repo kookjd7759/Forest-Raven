@@ -72,6 +72,7 @@ class PromotionWindow(QLabel):
         self.callback = callback
         self.loadImages()
         self.UIinit()
+        self.off()
 
     def UIinit(self):
         self.resize(BOARD_SIZE, BOARD_SIZE)
@@ -105,8 +106,8 @@ class PromotionWindow(QLabel):
         window.setLayout(layout)
         window.raise_()
     
-    def on(self, now_x, now_y, dest_x, dest_y):
-        self.raise_()
+    def on(self):
+        print('on !')
         self.show()
 
     def off(self):
@@ -119,9 +120,9 @@ class PromotionWindow(QLabel):
             x, y = mousePos.x(), mousePos.y()
             if x >= self.window_point['LU'][0] and y >= self.window_point['LU'][1] and x <= self.window_point['RD'][0] and y <= self.window_point['RD'][1]:
                 idx = (0 if x < BOARD_SIZE // 2 else 1) + (0 if y < BOARD_SIZE // 2 else 2)
-                print(idx)
+                self.callback(idx)
             else:
-                print('NO')
+                self.callback(-1)
 
 
 class HighLightSquare(QLabel):
@@ -275,7 +276,7 @@ class Window(QWidget):
             for UIy in range(8):
                 self.highlight[UIy][UIx] = HighLightSquare(self, chess.Position(UIx, UIy))
                 
-        self.promotion_window = PromotionWindow(self, self.chess.player, self.btn_test_function)
+        self.promotion_window = PromotionWindow(self, self.chess.player, self.promotion_callback)
 
     def reset(self):
         self.selected = chess.Position(-1, -1)
@@ -426,9 +427,13 @@ class Window(QWidget):
         else:
             self.setSelect(pos)
 
+    def promotion_callback(self, piece: int):
+        print(f'promotion to {piece}')
+
 ### Button function 
     def btn_test_function(self):
         print('test function')
+        self.promotion_window.on()
 
     def btn_restart_function(self):
         self.reset()
