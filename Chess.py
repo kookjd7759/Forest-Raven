@@ -286,13 +286,17 @@ class Chess:
                         posList = self.__get_attackList(Position(x, y))
                         color = self.__board[y][x].piece.color
                         for pos in posList:
-                            self.__board[pos.y][pos.x].attack_wb[color] += 1
+                            try:
+                                self.__board[pos.y][pos.x].attack_wb[color] += 1
+                            except :
+                                print(Chess.Type_to_string[self.__board[y][x].piece.type], end=' ')
+                                print(f'({pos.x}, {pos.y}) ', end='')
 
 
 
         def __init__(self):
             self.king_position_wb = list[Position]
-            self.castling_moveCheck_wb_qk = list[list[bool]]
+            self.kr_moveCheck_wb_qk = list[list[bool]]
             self.prev_move = Chess.PreviousMove()
             self.reset()
         
@@ -305,10 +309,10 @@ class Chess:
                 self.__board[7][i].set(Chess.Piece(Chess.Type[Chess.initList[i]], Chess.Color['Black'])) # Black's backrank pieces
                 
             self.king_position_wb = [Position(4, 0), Position(4, 7)]
-            self.castling_moveCheck_wb_qk = [[False, False],[False, False]]
+            self.kr_moveCheck_wb_qk = [[False, False],[False, False]]
             self.prev_move = Chess.PreviousMove()
             self.__calAttackSquare()
-       
+
         # game function
         def gameEnd_check(self, color: Literal[0, 1]): # (0) None (1) CheckMate (2) StaleMate
             if self.__count_candidateMove(color) != 0:
@@ -335,15 +339,15 @@ class Chess:
             piece_color = self.__board[cur.y][cur.x].piece.color
             piece_type = self.__board[cur.y][cur.x].piece.type
             if piece_type == Chess.Type['King']:
-                self.castling_moveCheck_wb_qk[piece_color][0] = False
-                self.castling_moveCheck_wb_qk[piece_color][1] = False
+                self.kr_moveCheck_wb_qk[piece_color][0] = True
+                self.kr_moveCheck_wb_qk[piece_color][1] = True
                 if abs(dest.x - cur.x) == 2: # castling move
                     isCastling = True
             elif piece_type == Chess.Type['Rook']:
                 if cur.x == 0: # Queen side rook 
-                    self.castling_moveCheck_wb_qk[piece_color][0] = False
+                    self.kr_moveCheck_wb_qk[piece_color][0] = True
                 elif cur.x == 7: # King side rook
-                    self.castling_moveCheck_wb_qk[piece_color][1] = False
+                    self.kr_moveCheck_wb_qk[piece_color][1] = True
             elif piece_type == Chess.Type['Pawn']:
                 if cur.x != dest.x: # Pawn takes somthing
                     if self.__board[dest.y][dest.x].empty(): # en_passent move
@@ -411,7 +415,7 @@ class Chess:
         # Check function
         def castling_check(self, color: Literal[0, 1], isKingside: bool):
             rank = (0 if color == Chess.Color['White'] else 7)
-            condition_1 = not self.castling_moveCheck_wb_qk[color][1 if isKingside else 0]
+            condition_1 = not self.kr_moveCheck_wb_qk[color][1 if isKingside else 0]
             condition_2 = self.__board[rank][5].empty() and self.__board[rank][6].empty() if isKingside else \
                 self.__board[rank][3].empty() and self.__board[rank][2].empty() and self.__board[rank][1].empty()
             op = Chess.Color['White'] if color == Chess.Color['Black'] else Chess.Color['Black']
@@ -444,14 +448,14 @@ class Chess:
                     if not square.empty():
                         print(f'{Chess.Color_to_string[square.piece.color]}{Chess.Type_to_string[square.piece.type]} ', end='')
                     else:
-                        print('--', end=' ')
-                print()
-
-            for i in range(7, -1, -1):
+                        print('-- ', end='')
+                print('  ', end='')
                 for j in range(8):
                     square = self.__board[i][j]
-                    print(f'({square.attack_wb[0]}, {square.attack_wb[1]})  ', end='')
+                    print(f'{square.attack_wb[0]}{square.attack_wb[1]} ', end='')
                 print()
+            print(f'Castling : [White].Q (={self.castling_check(0, False)}) [White].K (={self.castling_check(0, True)})')
+            print(f'           [Black].Q (={self.castling_check(1, False)}) [Black].K (={self.castling_check(1, True)})')
 
 
 

@@ -4,7 +4,6 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from typing import Literal
 
-import time
 import Path
 import chess
 
@@ -13,23 +12,29 @@ BOARD_SIZE = 480
 
 
 class GameEndWindow(QDialog): 
-    # winner = 0.draw 1.white 2.black
-    def __init__(self, parent, callback, winner:Literal[0, 1] = None): 
+    # loser = 0.win-white 1.win-black 2.Draw-staleMate 3.Draw-piece shortage
+    def __init__(self, parent, callback, ret:Literal[0, 1, 2, 3]): 
         super().__init__(parent)
-        self.winner = winner
+        self.ret = ret
         self.callback = callback
         self.initUI()
 
     def initUI(self):
         self.setFixedSize(170, 100)
         label = QLabel('test', self)
-        label.setAlignment(Qt.AlignCenter)  # 텍스트를 가로축, 세로축 중앙 정렬
-        if self.winner == None:
+        label.setAlignment(Qt.AlignCenter)
+        if self.ret != 0 and self.ret != 1:
             self.setWindowTitle('Draw')
-            label.setText('draw')
+            text = 'Draw\n'
+            if self.ret == 2:
+                text += 'StaleMate'
+            elif self.ret == 3:
+                text += 'Piece Shortage'
+            label.setText(text)
         else:
             self.setWindowTitle('CheckMate')
-            label.setText(f'CheckMate, {"White" if self.winner == 0 else "Black"} WIN !')
+            print(f'result : {self.ret}')
+            label.setText(f'CheckMate\n {"White" if self.ret == 0 else "Black"} WIN !')
 
         btn = QPushButton('Restart', self)
         btn.clicked.connect(self.btn_function)
@@ -40,8 +45,8 @@ class GameEndWindow(QDialog):
         self.show()
     
     def btn_function(self):
-        self.callback()
         self.close()
+        self.callback()
 
 
 class HighLightSquare(QLabel):
@@ -251,9 +256,9 @@ class Window(QWidget):
 
             self.setLayout(vbox)
     
-    def gameEnd(self, winner:Literal[0, 1] = None):
+    def gameEnd(self, ret:Literal[0, 1, 2, 3] = None):
         self.setEnabled(False)
-        gameEnd_window = GameEndWindow(self, winner, self.btn_test_function)
+        gameEnd_window = GameEndWindow(self, self.btn_restart_function, ret)
         gameEnd_window.exec_() 
         self.setEnabled(True)
 
@@ -287,8 +292,6 @@ class Window(QWidget):
             print('ERROR::move_piece(), there is no piece')
             exit(0)
         
-        self.capture(dest)
-
         UIpos = self.convert_position(dest)
         self.board[cur.y][cur.x].move_direct(UIpos)
 
@@ -307,19 +310,20 @@ class Window(QWidget):
                     attack = dest + dir
                     self.capture(attack)
 
+        self.capture(dest)
         self.board[dest.y][dest.x] = self.board[cur.y][cur.x]
         self.board[cur.y][cur.x] = None
 
     def play_move(self, dest: chess.Position):
         check = self.chess.move(self.selected, dest) 
         self.delSelect()
-        # (-1) can't move (0) None (1) CheckMate (2) StaleMate
+        # (-1) can't move (0) None (1) CheckMate (2) StaleMate (3) Piece Shortage -> TODO
         if check != -1:
             self.move_piece(self.selected, dest)
             if check == 1:
-                self.gameEnd(self.chess.Color['Black'] if self.chess.turn == self.chess.Color['White'] else self.chess.Color['White'])
+                self.gameEnd(0 if self.chess.turn == 1 else 1) # White <-> Black Change
             elif check == 2:
-                self.gameEnd()
+                self.gameEnd(2)
         self.selected = chess.Position(-1, -1)
 
 ### Mouse event
