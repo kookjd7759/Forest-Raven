@@ -325,9 +325,10 @@ class Chess:
             self.__board[dest.y][dest.x].piece = self.__board[cur.y][cur.x].piece
             self.__board[cur.y][cur.x].piece = None
 
-        def move(self, cur: Position, dest: Position): 
+        def move(self, cur: Position, dest: Position, promotion: Literal[0, 1, 2, 3] = None): 
             isCastling = False
             isEn_passent = False
+            isPromotion = False
             ### king, rook moving check
             piece_color = self.__board[cur.y][cur.x].piece.color
             piece_type = self.__board[cur.y][cur.x].piece.type
@@ -342,6 +343,8 @@ class Chess:
                 elif cur.x == 7: # King side rook
                     self.kr_moveCheck_wb_qk[piece_color][1] = True
             elif piece_type == Chess.Type['Pawn']:
+                if dest.y == (7 if self.__board[cur.y][cur.x].piece.color == Chess.Color['White'] else 0):
+                    isPromotion = True
                 if cur.x != dest.x: # Pawn takes somthing
                     if self.__board[dest.y][dest.x].empty(): # en_passent move
                         isEn_passent = True
@@ -352,6 +355,17 @@ class Chess:
                 self.en_passent_move(cur, dest)
             else:
                 self.move_piece(cur, dest)
+                if isPromotion:
+                    promotion_type = ''
+                    if promotion == 0:
+                        promotion_type = 'Queen'
+                    elif promotion == 1:
+                        promotion_type = 'Rook'
+                    elif promotion == 2:
+                        promotion_type = 'Bishop'
+                    elif promotion == 3:
+                        promotion_type = 'Knight'
+                    self.__board[dest.y][dest.x].set(Chess.Piece(Chess.Type[promotion_type], piece_color))
 
             self.__calAttackSquare()
             self.prev_move.set(piece_type, cur, dest)
@@ -462,7 +476,7 @@ class Chess:
         self.turn = self.Color['White']
         self.player = self.Color['White']
 
-    def move(self, cur: Position, dest: Position): # (-1) can't move (0) None (1) CheckMate (2) StaleMate
+    def move(self, cur: Position, dest: Position, promotion: Literal[0, 1, 2, 3] = None): # (-1) can't move (0) None (1) CheckMate (2) StaleMate
         square = self.board.get_square(cur)
 
         ### piece existence check
@@ -486,11 +500,12 @@ class Chess:
             print('move()::it\'s illegal move')
             return -1
         
-        if dest.y == (7 if square.piece.color == Chess.Color['White'] else 0): # promotion
+        if promotion != None and dest.y == (7 if square.piece.color == Chess.Color['White'] else 0): # promotion check
             print('promotion signal !!')
             return 3
+        
         ### Move
-        self.board.move(cur, dest)
+        self.board.move(cur, dest, promotion)
         self.turn = self.Color['White'] if self.turn == self.Color['Black'] else self.Color['Black']
         self.board.print_board()
 

@@ -436,15 +436,14 @@ class Window(QWidget):
                 self.promotion()
                 if self.promotion_num != -1: # promotion
                     self.move_piece(self.selected, dest)
+                    self.chess.move(self.selected, dest, self.promotion_num)
         self.selected = chess.Position(-1, -1)
 
     def promotion(self):
-        print('promotion waiting')
         self.promotion_window.finished.connect(self.promotion_finished)
         self.promotion_window.on()
         self.event_loop = QEventLoop()
         self.event_loop.exec_()
-        print('promotion waiting end !')
 
 ### Mouse event
     def mousePressEvent(self, event):
@@ -470,7 +469,6 @@ class Window(QWidget):
             self.setSelect(pos)
     
     def promotion_callback(self, piece: int):
-        print(f'promotion -> {piece}')
         self.promotion_num = piece
 
     def promotion_finished(self):
