@@ -421,22 +421,21 @@ class Window(QWidget):
             self.create_piece(type_text, img_key_text, dest, self.chess.player)
 
     def play_move(self, dest: chess.Position):
-        check = self.chess.move(self.selected, dest) 
-        print(f'get {check}')
+        check = self.chess.move(self.selected, dest)
         self.delSelect()
         # (-1) can't move (0) None (1) CheckMate (2) StaleMate (3) Promotion (4) By Repetition (5) Piece Shortage -> TODO
         if check != -1:
-            if check == 0:
-                self.move_piece(self.selected, dest)
-            elif check == 1:
-                self.gameEnd(0 if self.chess.turn == 1 else 1) # White <-> Black Change
-            elif check == 2:
-                self.gameEnd(2)
-            elif check == 3:
+            if check == 3:
                 self.promotion()
                 if self.promotion_num != -1: # promotion
                     self.move_piece(self.selected, dest)
                     self.chess.move(self.selected, dest, self.promotion_num)
+            else:
+                self.move_piece(self.selected, dest)
+                if check == 1:
+                    self.gameEnd(0 if self.chess.turn == 1 else 1) # White <-> Black Change
+                elif check == 2:
+                    self.gameEnd(2)
         self.selected = chess.Position(-1, -1)
 
     def promotion(self):

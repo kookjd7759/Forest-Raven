@@ -355,6 +355,7 @@ class Chess:
                 self.en_passent_move(cur, dest)
             else:
                 self.move_piece(cur, dest)
+                print(f'promotion -> {promotion}')
                 if isPromotion:
                     promotion_type = ''
                     if promotion == 0:
@@ -500,7 +501,7 @@ class Chess:
             print('move()::it\'s illegal move')
             return -1
         
-        if promotion != None and dest.y == (7 if square.piece.color == Chess.Color['White'] else 0): # promotion check
+        if square.piece.type == self.Type['Pawn'] and dest.y == (7 if square.piece.color == Chess.Color['White'] else 0) and promotion == None: # promotion check
             print('promotion signal !!')
             return 3
         
