@@ -29,8 +29,8 @@ const Position dir_diagonal[4]{ Position(1, 1), Position(1, -1), Position(-1, -1
 const Position dir_all[8]{ Position(0, 1), Position(0, -1), Position(1, 0), Position(-1, 0), Position(1, 1), Position(1, -1), Position(-1, -1), Position(-1, 1) };
 const Position dir_knight[8]{ Position(1, 2), Position(-1, 2), Position(2, 1), Position(-2, 1), Position(2, -1), Position(-2, -1), Position(1, -2), Position(-1, -2) };
 
-const char typeToChar[7] = { '-', 'P', 'N', 'B', 'R', 'Q', 'K' };
-const char colorToChar[3] = { '-', 'w', 'b' };
+const char typeToChar[7] = { 'P', 'N', 'B', 'R', 'Q', 'K', '-' };
+const char colorToChar[3] = { 'w', 'b', '-' };
 
 bool notationCheck(const string& st);
 Position convertPos(const string& st);

@@ -1,4 +1,7 @@
 #include <set>
+#include <string>
+#include <vector>
+#include <sstream>
 #include <windows.h>
 #include "utility.h"
 
@@ -354,21 +357,35 @@ public:
     }
 
     void start() {
-        board.print_board();
+        while (true) {
+            board.print_board();
+            get_opponent_move();
+        }
     }
+
+    void get_opponent_move() {
+        string line; getline(cin, line);
+        // string format = "{Position.cur} {Position.dest} {int.promotion_type}" 
+        // promotion_type = [-1, 0, 1, 2, 3]
+        // (-1) None, (0) Queen (1) Rook (2) Bishop (3) Knight
+        stringstream ss(line); string word;
+        getline(ss, word, ' ');
+        Position cur = convertPos(word);
+        getline(ss, word, ' ');
+        Position dest = convertPos(word);
+        getline(ss, word, ' ');
+        int promotion = stoi(word);
+
+        cout << cur.x << ", " << cur.y << " -> " << dest.x << ", " << dest.y << " and promotion is " << promotion << "\n";
+    }
+
+    void send_my_move() {
+
+    }
+
 };
 
 int main() {
     AI* chess = new AI();
     chess->start();
 }
-
-/*
-1 g2 g4
-1 g4 g5
-1 g5 g6
-1 g6 h7
-1 h7 g8 
-2
-6
-*/
