@@ -20,23 +20,14 @@ def read():
     print(f'game.cpp :: {output}')
     return output.strip()
 
-def sendMY_move(now, next):
-    send(f'1 {now} {next}')
-
-def sendMY_move_promotion(now, next, num):
-    send(f'1 {now} {next} {num}')
+def sendMY_move(now, next, promotion = -1):
+    send(f'1 {now} {next} {promotion}')
 
 def getAI_move(callback):
     send('3')
     output = read()
     now_x, now_y, next_x, next_y = map(int, output.split())
     callback(now_x, now_y, next_x, next_y)
-
-def get_legalMove(notation):
-    send(f'2 {notation}')
-    output = read()
-    result = list(map(int, output.split()))
-    return result
 
 def restart():
     send('4')
@@ -45,5 +36,4 @@ def changeColor():
     send('5')
 
 if __name__ == '__main__':
-    legalMoveList = get_legalMove('a1')
-    print(legalMoveList)
+    print('')

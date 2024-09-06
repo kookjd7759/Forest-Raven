@@ -79,7 +79,7 @@ class Chess:
         def set(self, piece: 'Chess.Piece'):
             self.piece = piece
         
-        def isattacked(self, color: Literal[0, 1]):
+        def isAttacked(self, color: Literal[0, 1]):
             return True if self.attack_wb[Chess.Color['White'] if color == Chess.Color['Black'] else Chess.Color['Black']] != 0 else False
             
         def empty(self):
@@ -103,7 +103,7 @@ class Chess:
 
         def __isCheck(self, color: Literal[0, 1]):
             king = self.king_position_wb[color]
-            return True if self.__board[king.y][king.x].isattacked(color) else False
+            return self.__board[king.y][king.x].isAttacked(color)
 
         def __count_candidateMove(self, color: Literal[0, 1]):
             count = 0
@@ -138,12 +138,8 @@ class Chess:
 
             return ret
         
-        def __appand(self, list: list, cur: Position, dest: Position, legalMove: bool, take: Position = None):
-            if not legalMove:
-                list.append(dest)
-                return
-            
-            if self.__isThisMoveLegal(cur, dest):
+        def __append(self, list: list, cur: Position, dest: Position, legalMove: bool, take: Position = None):
+            if not legalMove or self.__isThisMoveLegal(cur, dest, take):
                 list.append(dest)
 
 
@@ -156,13 +152,13 @@ class Chess:
                     return
                 
                 if self.__board[next.y][next.x].empty():
-                    self.__appand(list, cur, next, legalMove)
+                    self.__append(list, cur, next, legalMove)
                 elif self.__isEnemy(cur, next):
-                    self.__appand(list, cur, next, legalMove)
+                    self.__append(list, cur, next, legalMove)
                     return
                 elif self.__isAlly(cur, next):
                     if not legalMove:
-                        self.__appand(list, cur, next, legalMove)
+                        self.__append(list, cur, next, legalMove)
                     return
                 else:
                     print('ERROR, __repeatMove()::It\'s weird error check this out')
@@ -172,13 +168,9 @@ class Chess:
             next = cur + dir
             if self.__boundaryCheck(next):
                 if self.__board[next.y][next.x].empty() or self.__isEnemy(cur, next):
-                    self.__appand(list, cur, next, legalMove)
-                elif self.__isAlly(cur, next):
-                    if not legalMove:
-                        self.__appand(list, cur, next, legalMove)
-                    return
-            
-            # TODO: legalMove function
+                    self.__append(list, cur, next, legalMove)
+                elif self.__isAlly(cur, next) and not legalMove:
+                    self.__append(list, cur, next, legalMove)
 
         def __rook(self, pos: Position, legalMove: bool):
             list = []
@@ -223,11 +215,11 @@ class Chess:
 
             next = pos + dir
             if self.__board[next.y][next.x].empty():
-                self.__appand(list, pos, next, True)
+                self.__append(list, pos, next, True)
                 if pos.y == (1 if color == Chess.Color['White'] else 6): # first move
                     next += dir
                     if self.__board[next.y][next.x].empty():
-                        self.__appand(list, pos, next, True)
+                        self.__append(list, pos, next, True)
             return list
 
         def __pawn_attack(self, pos: Position, legalMove: bool):
@@ -235,7 +227,7 @@ class Chess:
             def add(next: Position):
                 if self.__boundaryCheck(next):
                     if (not legalMove) or (legalMove and self.__isEnemy(pos, next)):
-                        self.__appand(list, pos, next, legalMove)
+                        self.__append(list, pos, next, legalMove)
 
             color = self.__board[pos.y][pos.x].piece.color
             dir = +1 if color == Chess.Color['White'] else -1
@@ -244,11 +236,9 @@ class Chess:
 
             en_passent_dir = self.en_passent_check(pos)
             if en_passent_dir != 0:
-                dir = (+1 if self.__board[pos.y][pos.x].piece.color == Chess.Color['White'] else -1)
-                self.__appand(list, pos, Position(pos.x + en_passent_dir, pos.y + dir), legalMove, Position(pos.x + en_passent_dir, pos.y))
+                dir = (+1 if color == Chess.Color['White'] else -1)
+                self.__append(list, pos, Position(pos.x + en_passent_dir, pos.y + dir), legalMove, Position(pos.x + en_passent_dir, pos.y))
             return list
-
-            # TODO: en passant
 
         def __get_attackList(self, pos: Position):
             list = []
@@ -279,11 +269,7 @@ class Chess:
                         posList = self.__get_attackList(Position(x, y))
                         color = self.__board[y][x].piece.color
                         for pos in posList:
-                            try:
-                                self.__board[pos.y][pos.x].attack_wb[color] += 1
-                            except :
-                                print(Chess.Type_to_string[self.__board[y][x].piece.type], end=' ')
-                                print(f'({pos.x}, {pos.y}) ', end='')
+                            self.__board[pos.y][pos.x].attack_wb[color] += 1
 
 
 
@@ -315,7 +301,7 @@ class Chess:
                 return 1
             else:
                 return 2
-            
+        
         # Move function
         def move_piece(self, cur: Position, dest: Position):
             if self.__board[cur.y][cur.x].piece.type == Chess.Type['King']:
@@ -343,9 +329,9 @@ class Chess:
                 elif cur.x == 7: # King side rook
                     self.kr_moveCheck_wb_qk[piece_color][1] = True
             elif piece_type == Chess.Type['Pawn']:
-                if dest.y == (7 if self.__board[cur.y][cur.x].piece.color == Chess.Color['White'] else 0):
+                if dest.y == (7 if piece_color == Chess.Color['White'] else 0):
                     isPromotion = True
-                if cur.x != dest.x: # Pawn takes somthing
+                if cur.x != dest.x: # Pawn takes something
                     if self.__board[dest.y][dest.x].empty(): # en_passent move
                         isEn_passent = True
 
@@ -383,8 +369,7 @@ class Chess:
                 self.move_piece(rook_pos, dest + Position(+1, 0))
 
         def en_passent_move(self, cur: Position, dest: Position):
-            dir = Position(0, (-1 if self.__board[cur.y][cur.x].piece.color == Chess.Color['White'] else +1))
-            attack = dest + dir
+            attack = dest + Position(0, (-1 if self.__board[cur.y][cur.x].piece.color == Chess.Color['White'] else +1))
             self.__board[attack.y][attack.x].piece = None
             self.move_piece(cur, dest)
 
@@ -426,9 +411,8 @@ class Chess:
             condition_1 = not self.kr_moveCheck_wb_qk[color][1 if isKingside else 0]
             condition_2 = self.__board[rank][5].empty() and self.__board[rank][6].empty() if isKingside else \
                 self.__board[rank][3].empty() and self.__board[rank][2].empty() and self.__board[rank][1].empty()
-            op = Chess.Color['White'] if color == Chess.Color['Black'] else Chess.Color['Black']
-            condition_3 = self.__board[rank][5].attack_wb[op] == 0 and self.__board[rank][6].attack_wb[op] == 0 if isKingside else \
-                self.__board[rank][3].attack_wb[op] == 0 and self.__board[rank][2].attack_wb[op] == 0
+            condition_3 = not self.__board[rank][5].isAttacked(color) and not self.__board[rank][6].isAttacked(color) if isKingside else \
+                not self.__board[rank][3].isAttacked(color) and not self.__board[rank][2].isAttacked(color)
             return condition_1 and condition_2 and condition_3
 
         def en_passent_check(self, pos: Position):
