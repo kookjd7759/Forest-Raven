@@ -1,8 +1,8 @@
 import subprocess
-import Path
+import path
 
 process = subprocess.Popen(
-    [Path.getGameexeFile()],
+    [path.getGameexeFile()],
     stdin = subprocess.PIPE,
     stdout = subprocess.PIPE, 
     stderr = subprocess.PIPE,

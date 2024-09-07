@@ -4,7 +4,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from typing import Literal
 
-import Path
+import path
 import chess
 
 CELL_SIZE = 60
@@ -259,21 +259,21 @@ class Window(QWidget):
 ### Load
     def load_img(self):
         self.img = {
-            'board': Path.getImgFolder() + 'Ground.png',
+            'board': path.getImgFolder() + 'Ground.png',
             
-            'bb': Path.getImgFolder() + 'bb.png',
-            'bk': Path.getImgFolder() + 'bk.png',
-            'bn': Path.getImgFolder() + 'bn.png',
-            'bq': Path.getImgFolder() + 'bq.png',
-            'br': Path.getImgFolder() + 'br.png',
-            'bp': Path.getImgFolder() + 'bp.png',
+            'bb': path.getImgFolder() + 'bb.png',
+            'bk': path.getImgFolder() + 'bk.png',
+            'bn': path.getImgFolder() + 'bn.png',
+            'bq': path.getImgFolder() + 'bq.png',
+            'br': path.getImgFolder() + 'br.png',
+            'bp': path.getImgFolder() + 'bp.png',
             
-            'wb': Path.getImgFolder() + 'wb.png',
-            'wk': Path.getImgFolder() + 'wk.png',
-            'wn': Path.getImgFolder() + 'wn.png',
-            'wq': Path.getImgFolder() + 'wq.png',
-            'wr': Path.getImgFolder() + 'wr.png',
-            'wp': Path.getImgFolder() + 'wp.png'
+            'wb': path.getImgFolder() + 'wb.png',
+            'wk': path.getImgFolder() + 'wk.png',
+            'wn': path.getImgFolder() + 'wn.png',
+            'wq': path.getImgFolder() + 'wq.png',
+            'wr': path.getImgFolder() + 'wr.png',
+            'wp': path.getImgFolder() + 'wp.png'
         }
 
 ### Legal move
