@@ -66,7 +66,6 @@ private:
                 board[a.y][a.x].piece.color != board[b.y][b.x].piece.color);
         }
         const bool isCheck(const Color& color) const { return board[king_position_wb[color].y][king_position_wb[color].x].isAttacked(color);}
-        // ?? count_candidateMove()
         
         const bool isThisMoveLegal(const Position& cur, const Position& dest, const Position& take = Position(-1, -1)) {
             return true;
@@ -213,6 +212,7 @@ private:
         }
 
     public:
+        Color turn, myColor;
 
         Board() {
             reset();
@@ -226,6 +226,7 @@ private:
                 board[6][i].set(Piece(PAWN, BLACK));
                 board[7][i].set(Piece(initList[i], BLACK));
             }
+            turn = WHITE, myColor = WHITE;
             king_position_wb[0] = Position(4, 0), king_position_wb[1] = Position(4, 7);
             for (int i = 0; i < 4; i++) kr_moveCheck_wb_qk[i / 2][i % 2] = false;
             prevMove.clear();
@@ -266,12 +267,13 @@ private:
             else {
                 move_piece(cur, dest);
                 if (isPromotion) {
-                    Type promotion_type;
+                    Type promotion_type = NOTYPE;
                     switch (promotion) {
                     case 0: promotion_type = QUEEN; break;
                     case 1: promotion_type = ROOK; break;
                     case 2: promotion_type = BISHOP; break;
                     case 3: promotion_type = KNIGHT; break;
+                    default: break;
                     }
                     board[dest.y][dest.x].set(Piece(promotion_type, color));
                 }
@@ -279,6 +281,7 @@ private:
 
             calAttackSquare();
             prevMove.set(type, cur, dest);
+            turn = turn == WHITE ? BLACK : WHITE;
         }
         void castling_move(const Position& cur, const Position& dest) {
             int rank = board[cur.y][cur.x].piece.color == WHITE ? 0 : 7;
@@ -309,7 +312,6 @@ private:
                 }
             return move_s;
         }
-        // ?? get_square()
 
         const bool castling_check(const Color& color, const bool& isKingside) {
             int rank = (color == WHITE ? 0 : 7);
@@ -347,7 +349,6 @@ private:
                 cout << "\n";
             }
         }
-
     };
 
     Board board;
@@ -357,32 +358,41 @@ public:
     }
 
     void start() {
+        // board.print_board();
         while (true) {
-            board.print_board();
-            get_opponent_move();
+            if (board.turn != board.myColor) // opponent's turn
+                opponent_move();
+            else
+                move();
+            // board.print_board();
         }
     }
 
-    void get_opponent_move() {
+    // move format = "{Position.cur} {Position.dest} {int.promotion_type}" 
+    // promotion_type = [-1, 0, 1, 2, 3]
+    // (-1) None, (0) Queen (1) Rook (2) Bishop (3) Knight
+    void opponent_move() {
         string line; getline(cin, line);
-        // string format = "{Position.cur} {Position.dest} {int.promotion_type}" 
-        // promotion_type = [-1, 0, 1, 2, 3]
-        // (-1) None, (0) Queen (1) Rook (2) Bishop (3) Knight
         stringstream ss(line); string word;
-        getline(ss, word, ' ');
-        Position cur = convertPos(word);
-        getline(ss, word, ' ');
-        Position dest = convertPos(word);
-        getline(ss, word, ' ');
-        int promotion = stoi(word);
-
-        cout << cur.x << ", " << cur.y << " -> " << dest.x << ", " << dest.y << " and promotion is " << promotion << "\n";
+        getline(ss, word, ' '); Position cur = convertPos(word);
+        getline(ss, word, ' '); Position dest = convertPos(word);
+        getline(ss, word, ' '); int promotion = stoi(word);
+        board.move(cur, dest, promotion);
+    }
+    void send_my_move(const Position& cur_pos, const Position& dest_pos, const int& promotion = -1) {
+        string cur = convertPos(cur_pos), dest = convertPos(dest_pos);
+        cout << cur << ' ' << dest << ' ' << promotion;
     }
 
-    void send_my_move() {
-
+    void move() {
+        set<pair<Position, Position>>* moveList = board.get_candidateMove(board.myColor);
+        int idx = get_random(0, moveList->size());
+        auto it = moveList->begin();
+        advance(it, idx);
+        Position cur = (*it).first, dest = (*it).second;
+        // cout << convertPos(cur) << " -> " << convertPos(dest) << "\n";
+        board.move(cur, dest, -1);
     }
-
 };
 
 int main() {

@@ -462,6 +462,7 @@ class Chess:
         self.player = self.Color['White']
 
     def move(self, cur: Position, dest: Position, promotion: Literal[0, 1, 2, 3] = None): # (-1) can't move (0) None (1) CheckMate (2) StaleMate
+        print('chess.move function')
         square = self.board.get_square(cur)
 
         ### piece existence check
@@ -493,6 +494,7 @@ class Chess:
         self.board.move(cur, dest, promotion)
         self.turn = self.Color['White'] if self.turn == self.Color['Black'] else self.Color['Black']
         self.board.print_board()
+        print(f'turn : {"WHITE" if self.turn == 0 else "BLACK"}')
 
         ### game end check
         return self.board.gameEnd_check(self.turn)
@@ -505,10 +507,6 @@ class Chess:
             print('get_legalMove()::there is no piece')
         
         list = self.board.get_legalMoveList(pos)
-        print(f'size : {len(list)}')
-        for next in list:
-            print(f'{to_notation(next)} ', end='')
-        print()
         return list
 
     def get_candidateMove(self):

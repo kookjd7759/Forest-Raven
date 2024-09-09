@@ -8,6 +8,6 @@ project(
   
 project(${PROJECT_NAME})
 add_executable(${PROJECT_NAME}
-    game.cpp
+    AI.cpp
     utility.cpp utility.h
     )

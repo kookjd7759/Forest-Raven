@@ -316,7 +316,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="C:\WorkSpace\Visual Studio Code Workspace\Chess\game\game.cpp" />
+    <ClCompile Include="C:\WorkSpace\Visual Studio Code Workspace\Chess\game\AI.cpp" />
     <ClCompile Include="C:\WorkSpace\Visual Studio Code Workspace\Chess\game\utility.cpp" />
     <ClInclude Include="C:\WorkSpace\Visual Studio Code Workspace\Chess\game\utility.h" />
   </ItemGroup>
