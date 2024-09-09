@@ -7,9 +7,15 @@
     <ClCompile Include="C:\WorkSpace\Visual Studio Code Workspace\Chess\AI\utility.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="C:\WorkSpace\Visual Studio Code Workspace\Chess\AI\Chess.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="C:\WorkSpace\Visual Studio Code Workspace\Chess\AI\utility.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\WorkSpace\Visual Studio Code Workspace\Chess\AI\Chess.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

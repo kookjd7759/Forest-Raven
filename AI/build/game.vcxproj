@@ -319,6 +319,8 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="C:\WorkSpace\Visual Studio Code Workspace\Chess\AI\AI.cpp" />
     <ClCompile Include="C:\WorkSpace\Visual Studio Code Workspace\Chess\AI\utility.cpp" />
     <ClInclude Include="C:\WorkSpace\Visual Studio Code Workspace\Chess\AI\utility.h" />
+    <ClCompile Include="C:\WorkSpace\Visual Studio Code Workspace\Chess\AI\Chess.cpp" />
+    <ClInclude Include="C:\WorkSpace\Visual Studio Code Workspace\Chess\AI\Chess.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="C:\WorkSpace\Visual Studio Code Workspace\Chess\AI\build\ZERO_CHECK.vcxproj">
