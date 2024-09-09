@@ -67,8 +67,24 @@ private:
         const bool isCheck(const Color& color) const { return board[king_position_wb[color].y][king_position_wb[color].x].isAttacked(color);}
         
         const bool isThisMoveLegal(const Position& cur, const Position& dest, const Position& take = Position(-1, -1)) {
-            return true;
-            // TODO -> Legal checking function
+            Color color = board[cur.y][cur.x].piece.color;
+            Piece temp_destPiece = board[dest.y][dest.x].piece, temp_takePiece = Piece(NOTYPE,NOCOLOR);
+            if (take.x != -1) {
+                temp_takePiece = board[take.y][take.x].piece;
+                board[take.y][take.x].clear();
+            }
+
+            move_piece(cur, dest);
+            calAttackSquare();
+            bool ret = !isCheck(color);
+            move_piece(dest, cur);
+            board[dest.y][dest.x].piece = temp_destPiece;
+
+            if (take.x != -1)
+                board[take.y][take.x].piece = temp_takePiece;
+            calAttackSquare();
+
+            return ret;
         }
         void append(set<Position>* set, const Position& cur, const Position& dest, const bool& legalMove, const Position& take = Position(-1, -1)) {
             if (!legalMove || isThisMoveLegal(cur, dest)) set->insert(dest);
@@ -232,8 +248,6 @@ private:
             calAttackSquare();
         }
 
-        // gameEnd_Check()
-
         void move_piece(const Position& cur, const Position& dest) {
             if (board[cur.y][cur.x].piece.type == KING) // king position recording
                 king_position_wb[board[cur.y][cur.x].piece.color] = dest;
@@ -373,7 +387,7 @@ public:
         }
     }
 
-    // move format = "{cur.x} {cur.y} {dest.x} {dest.x} {promotion_type(int)}" 
+    // move format = "{cur.x} {cur.y} {dest.x} {dest.x} {promotion_type(int)}"
     // promotion_type = [-1, 0, 1, 2, 3] (-1) None, (0) Queen (1) Rook (2) Bishop (3) Knight
     void opponent_move() {
         string line; getline(cin, line);
@@ -399,10 +413,15 @@ public:
     void send_move(const Position& cur_pos, const Position& dest_pos, const int& promotion = -1) {
         cout << cur_pos.x << ' ' << cur_pos.y << ' ' << dest_pos.x << ' ' << dest_pos.y << ' ' << promotion << "\n";
     }
-
 };
 
 int main() {
     AI* chess = new AI();
     chess->start();
 }
+
+/*
+4 1 4 3 -1
+3 0 5 2 -1
+5 2 5 6 -1
+*/
