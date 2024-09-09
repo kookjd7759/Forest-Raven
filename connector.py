@@ -12,16 +12,15 @@ process = subprocess.Popen(
 )
 
 def send(st):
-    print(f'send {st}')
+    print(f'connector.send {st}')
     process.stdin.write(st + '\n')
     process.stdin.flush()
 
 def read():
-    print('read')
     output = process.stdout.readline()
     while output == '':
         output = process.stdout.readline()
-    print(f'game.cpp :: {output}')
+        print(f'connector.read {output}')
     return output.strip()
 
 def send_move(cur_x: int, cur_y: int, dest_x: int, dest_y: int, promotion):

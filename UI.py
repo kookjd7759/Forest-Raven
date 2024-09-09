@@ -419,17 +419,17 @@ class Window(QWidget):
         self.board[pos.y][pos.x] = ChessPiece(self, piece_type, self.img[img_key], UIpos, color, self.piece_callback_press, self.piece_callback_land)
 
     def init_pieces(self):
-        for i in range(8): 
-            for j in range(8): 
+        for i in range(8):
+            for j in range(8):
                 if self.board[i][j] != None:
                     self.board[i][j].die() # delete Piece
                     self.board[i][j] = None
         
         initPos = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r']
-        for i in range(8): 
-            self.create_piece('Pawn', 'wp', chess.Position(i, 1), self.chess.Color['White'])  # White pawns
+        for i in range(8):
+            self.create_piece('Pawn', 'wp', chess.Position(i, 1), self.chess.Color['White']) # White pawns
             self.create_piece(self.chess.initList[i],'w' + initPos[i], chess.Position(i, 0), self.chess.Color['White']) # White other pieces
-            self.create_piece('Pawn', 'bp', chess.Position(i, 6), self.chess.Color['Black'])  # Black pawns
+            self.create_piece('Pawn', 'bp', chess.Position(i, 6), self.chess.Color['Black']) # Black pawns
             self.create_piece(self.chess.initList[i], 'b' + initPos[i], chess.Position(i, 7), self.chess.Color['Black']) # Black other pieces
 
 ### move
