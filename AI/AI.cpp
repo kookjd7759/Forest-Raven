@@ -363,40 +363,41 @@ public:
     }
 
     void start() {
-        // board.print_board();
+        //board.print_board();
         while (true) {
             if (board.turn != board.myColor) // opponent's turn
                 opponent_move();
             else
                 move();
-            // board.print_board();
+            //board.print_board();
         }
     }
 
-    // move format = "{Position.cur} {Position.dest} {int.promotion_type}" 
-    // promotion_type = [-1, 0, 1, 2, 3]
-    // (-1) None, (0) Queen (1) Rook (2) Bishop (3) Knight
+    // move format = "{cur.x} {cur.y} {dest.x} {dest.x} {promotion_type(int)}" 
+    // promotion_type = [-1, 0, 1, 2, 3] (-1) None, (0) Queen (1) Rook (2) Bishop (3) Knight
     void opponent_move() {
         string line; getline(cin, line);
         stringstream ss(line); string word;
-        getline(ss, word, ' '); Position cur = convertPos(word);
-        getline(ss, word, ' '); Position dest = convertPos(word);
+        int x, y; 
+        getline(ss, word, ' '); x = stoi(word); getline(ss, word, ' '); y = stoi(word);
+        Position cur = Position(x, y);
+        getline(ss, word, ' '); x = stoi(word); getline(ss, word, ' '); y = stoi(word);
+        Position dest = Position(x, y);
         getline(ss, word, ' '); int promotion = stoi(word);
         board.move(cur, dest, promotion);
     }
     void move() {
         set<pair<Position, Position>>* moveList = board.get_candidateMove(board.myColor);
-        int idx = get_random(0, moveList->size());
+        int idx = get_random(0, moveList->size() - 1);
         auto it = moveList->begin();
         advance(it, idx);
-        Position cur = (*it).first, dest = (*it).second;
+        Position cur = it->first, dest = it->second;
         // cout << convertPos(cur) << " -> " << convertPos(dest) << "\n";
         board.move(cur, dest);
-        send_my_move(cur, dest);
+        send_move(cur, dest);
     }
-    void send_my_move(const Position& cur_pos, const Position& dest_pos, const int& promotion = -1) {
-        string cur = convertPos(cur_pos), dest = convertPos(dest_pos);
-        cout << cur << ' ' << dest << ' ' << promotion;
+    void send_move(const Position& cur_pos, const Position& dest_pos, const int& promotion = -1) {
+        cout << cur_pos.x << ' ' << cur_pos.y << ' ' << dest_pos.x << ' ' << dest_pos.y << ' ' << promotion << "\n";
     }
 
 };

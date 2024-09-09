@@ -1,5 +1,7 @@
 import subprocess
 import path
+import time
+from typing import Literal
 
 process = subprocess.Popen(
     [path.getGameexeFile()],
@@ -9,31 +11,32 @@ process = subprocess.Popen(
     text = True
 )
 
-
-
 def send(st):
+    print(f'send {st}')
     process.stdin.write(st + '\n')
     process.stdin.flush()
 
 def read():
+    print('read')
     output = process.stdout.readline()
+    while output == '':
+        output = process.stdout.readline()
     print(f'game.cpp :: {output}')
     return output.strip()
 
-def sendMY_move(now, next, promotion = -1):
-    send(f'1 {now} {next} {promotion}')
+def send_move(cur_x: int, cur_y: int, dest_x: int, dest_y: int, promotion):
+    send(f'{cur_x} {cur_y} {dest_x} {dest_y} {promotion}')
 
-def getAI_move(callback):
-    send('3')
+def get_move():
+    print('get_move')
     output = read()
-    now_x, now_y, next_x, next_y = map(int, output.split())
-    callback(now_x, now_y, next_x, next_y)
+    now_x, now_y, next_x, next_y, promotion = map(int, output.split())
+    return now_x, now_y, next_x, next_y, promotion
 
-def restart():
-    send('4')
-
-def changeColor():
-    send('5')
+def set_color(color: Literal[0, 1]):
+    print('set_color')
+    send(f'{color}')
 
 if __name__ == '__main__':
-    print('')
+    set_color(0)
+    read()

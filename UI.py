@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from typing import Literal
+from pubsub import pub
 
 import path
 import chess
@@ -297,11 +298,11 @@ class Window(QWidget):
         self.set_legalMove() 
 
     def delSelect(self):
-        print('delSelect')
-        self.line_selected.setText('None')
         if self.isSelected():
             self.off_light(self.selected)
             self.del_legalMove()
+        self.line_selected.setText('None')
+        self.selected = chess.Position(-1, -1)
 
 ### Highlight
     def off_light(self, pos: chess.Position):
@@ -349,6 +350,7 @@ class Window(QWidget):
                 self.highlight[UIy][UIx] = HighLightSquare(self, chess.Position(UIx, UIy))
                 
         self.promotion_window = PromotionWindow(self, self.chess.player, self.promotion_callback)
+        pub.subscribe(self.move_piece, 'AI_move')
 
     def reset(self):
         self.selected = chess.Position(-1, -1)
@@ -437,10 +439,6 @@ class Window(QWidget):
         self.board[pos.y][pos.x] = None
 
     def move_piece(self, cur: chess.Position, dest: chess.Position, smooth: bool):
-        if self.board[cur.y][cur.x] == None:
-            print('ERROR::move_piece(), there is no piece')
-            exit(0)
-        
         UIpos = self.convert_position(dest)
         self.board[cur.y][cur.x].move_smooth(UIpos) if smooth else self.board[cur.y][cur.x].move_direct(UIpos)
         isPromotion = False
@@ -487,7 +485,6 @@ class Window(QWidget):
 
     def play_move(self, dest: chess.Position, smooth: bool):
         check = self.chess.move(self.selected, dest)
-        self.delSelect()
         # (-1) can't move (0) None (1) CheckMate (2) StaleMate (3) Promotion (4) By Repetition (5) Piece Shortage -> TODO
         if check != -1:
             if check == 3:
@@ -501,9 +498,10 @@ class Window(QWidget):
                     self.gameEnd(0 if self.chess.turn == 1 else 1) # White <-> Black Change
                 elif check == 2:
                     self.gameEnd(2)
+            self.delSelect()
+            pub.sendMessage('Player_move', promotion=self.promotion_num)
         else:
             self.board[self.selected.y][self.selected.x].move_return()
-        self.selected = chess.Position(-1, -1)
 
     def promotion(self):
         self.promotion_window.finished.connect(self.promotion_finished)
@@ -536,12 +534,9 @@ class Window(QWidget):
     def piece_callback_land(self, UIpos):
         pos = self.convert_position(UIpos)
         print(f'LAND, {pos.x} {pos.y} piece')
-        if self.isSelected() == False:
-            return
         if self.chess.turn != self.board[self.selected.y][self.selected.x].color:
             self.board[self.selected.y][self.selected.x].move_return()
 
-        
         if self.selected.x != pos.x or self.selected.y != pos.y: # move
             self.play_move(pos, smooth=False)
         else: # click

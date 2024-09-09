@@ -1,4 +1,7 @@
 from typing import Literal
+from pubsub import pub
+
+import connector
 
 class Position:
     def __init__(self, x: int, y: int):
@@ -455,11 +458,33 @@ class Chess:
         self.board = self.Board()
         self.turn = self.Color['White']
         self.player = self.Color['White']
+        pub.subscribe(self.AI_move, 'Player_move')
+        connector.set_color(self.Color['Black'] if self.player == self.Color['White'] else self.Color['White'])
 
     def restart(self):
         self.board.reset()
         self.turn = self.Color['White']
         self.player = self.Color['White']
+
+    def get_legalMove(self, pos: Position):
+        square = self.board.get_square(pos)
+
+        ### piece existence check
+        if square.empty():
+            print('get_legalMove()::there is no piece')
+        
+        list = self.board.get_legalMoveList(pos)
+        return list
+
+    def get_candidateMove(self):
+        list = self.board.get_candidateMove(self.turn)
+        print(f'size : {len(list)}')
+        for move in list:
+            print(f'{to_notation(move[0])} -> {to_notation(move[1])} ')
+        print()
+    
+    def changeTurn(self):
+        self.turn = self.Color['White'] if self.turn == self.Color['Black'] else self.Color['Black']
 
     def move(self, cur: Position, dest: Position, promotion: Literal[0, 1, 2, 3] = None): # (-1) can't move (0) None (1) CheckMate (2) StaleMate
         print('chess.move function')
@@ -492,55 +517,26 @@ class Chess:
         
         ### Move
         self.board.move(cur, dest, promotion)
-        self.turn = self.Color['White'] if self.turn == self.Color['Black'] else self.Color['Black']
         self.board.print_board()
-        print(f'turn : {"WHITE" if self.turn == 0 else "BLACK"}')
+        self.changeTurn()
+        print(f'[turn] : {"WHITE" if self.turn == 0 else "BLACK"}')
 
         ### game end check
         return self.board.gameEnd_check(self.turn)
 
-    def get_legalMove(self, pos: Position):
-        square = self.board.get_square(pos)
+    def AI_move(self, promotion):
+        connector.send_move(self.board.prev_move.now.x, self.board.prev_move.now.x, self.board.prev_move.prev.x, self.board.prev_move.prev.y, promotion)
+        now_x, now_y, next_x, next_y, promotion = connector.get_move()
+        cur = Position(now_x, now_y)
+        dest = Position(next_x, next_y)
+        print(f'AI MOVE COMMAND {to_notation(cur)} -> {to_notation(dest)}')
+        self.move(cur, dest, promotion)
+        pub.sendMessage('AI_move', cur=cur, dest=dest, smooth=True)
 
-        ### piece existence check
-        if square.empty():
-            print('get_legalMove()::there is no piece')
-        
-        list = self.board.get_legalMoveList(pos)
-        return list
-
-    def get_candidateMove(self):
-        list = self.board.get_candidateMove(self.turn)
-        print(f'size : {len(list)}')
-        for move in list:
-            print(f'{to_notation(move[0])} -> {to_notation(move[1])} ')
-        print()
-
-
-
-    def start(self):
-        while True:
-            self.board.print_board()
-            color = 'WHITE' if self.turn == self.Color['White'] else 'BLACK'
-            print(f'{color}\'s turn')
-            while True:
-                command = input('[1] move [2] get legal move [3] get candidate move [4] get board data\n -> ').split()
-                print(command)
-                if command[0] == '1':
-                    cur, dest = command[1], command[2]
-                    if not self.move(to_position(cur), to_position(dest)):
-                        continue
-                elif command[0] == '2':
-                    pos = command[1]
-                    self.get_legalMove(to_position(pos))
-                    continue
-                elif command[0] == '3':
-                    self.get_candidateMove()
-
-                break
+    def waiting(event):
+        event.wait()
 
 
 
 if __name__ == '__main__':
     chess = Chess()
-    chess.start()
