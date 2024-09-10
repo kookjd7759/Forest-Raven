@@ -24,7 +24,7 @@ events:
       The output was:
       0
       msbuild 버전 17.8.3+195e7f5a3(.NET Framework용)
-      빌드 시작: 2024-09-09 오전 10:30:43
+      빌드 시작: 2024-09-10 오전 9:51:28
       
       1 노드의 "C:\\WorkSpace\\Visual Studio Code Workspace\\Chess\\AI\\build\\CMakeFiles\\3.30.2\\CompilerIdCXX\\CompilerIdCXX.vcxproj" 프로젝트(기본 대상)입니다.
       PrepareForBuild:
@@ -72,8 +72,8 @@ events:
     checks:
       - "Detecting CXX compiler ABI info"
     directories:
-      source: "C:/WorkSpace/Visual Studio Code Workspace/Chess/AI/build/CMakeFiles/CMakeScratch/TryCompile-oail8z"
-      binary: "C:/WorkSpace/Visual Studio Code Workspace/Chess/AI/build/CMakeFiles/CMakeScratch/TryCompile-oail8z"
+      source: "C:/WorkSpace/Visual Studio Code Workspace/Chess/AI/build/CMakeFiles/CMakeScratch/TryCompile-c3r5s1"
+      binary: "C:/WorkSpace/Visual Studio Code Workspace/Chess/AI/build/CMakeFiles/CMakeScratch/TryCompile-c3r5s1"
     cmakeVariables:
       CMAKE_CXX_FLAGS: "/DWIN32 /D_WINDOWS /EHsc"
       CMAKE_CXX_FLAGS_DEBUG: "/Ob0 /Od /RTC1"
@@ -83,40 +83,40 @@ events:
       variable: "CMAKE_CXX_ABI_COMPILED"
       cached: true
       stdout: |
-        Change Dir: 'C:/WorkSpace/Visual Studio Code Workspace/Chess/AI/build/CMakeFiles/CMakeScratch/TryCompile-oail8z'
+        Change Dir: 'C:/WorkSpace/Visual Studio Code Workspace/Chess/AI/build/CMakeFiles/CMakeScratch/TryCompile-c3r5s1'
         
-        Run Build Command(s): "C:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_42a58.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
+        Run Build Command(s): "C:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_964b0.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
         msbuild 버전 17.8.3+195e7f5a3(.NET Framework용)
-        빌드 시작: 2024-09-09 오전 10:30:44
+        빌드 시작: 2024-09-10 오전 9:51:29
         
-        1 노드의 "C:\\WorkSpace\\Visual Studio Code Workspace\\Chess\\AI\\build\\CMakeFiles\\CMakeScratch\\TryCompile-oail8z\\cmTC_42a58.vcxproj" 프로젝트(기본 대상)입니다.
+        1 노드의 "C:\\WorkSpace\\Visual Studio Code Workspace\\Chess\\AI\\build\\CMakeFiles\\CMakeScratch\\TryCompile-c3r5s1\\cmTC_964b0.vcxproj" 프로젝트(기본 대상)입니다.
         PrepareForBuild:
-          "cmTC_42a58.dir\\Debug\\" 디렉터리를 만들고 있습니다.
+          "cmTC_964b0.dir\\Debug\\" 디렉터리를 만들고 있습니다.
           구조적 출력을 사용할 수 있습니다. 컴파일러 진단의 서식은 오류 계층 구조를 반영합니다. 자세한 내용은 https://aka.ms/cpp/structured-output을 참조하세요.
-          "C:\\WorkSpace\\Visual Studio Code Workspace\\Chess\\AI\\build\\CMakeFiles\\CMakeScratch\\TryCompile-oail8z\\Debug\\" 디렉터리를 만들고 있습니다.
-          "cmTC_42a58.dir\\Debug\\cmTC_42a58.tlog\\" 디렉터리를 만들고 있습니다.
+          "C:\\WorkSpace\\Visual Studio Code Workspace\\Chess\\AI\\build\\CMakeFiles\\CMakeScratch\\TryCompile-c3r5s1\\Debug\\" 디렉터리를 만들고 있습니다.
+          "cmTC_964b0.dir\\Debug\\cmTC_964b0.tlog\\" 디렉터리를 만들고 있습니다.
         InitializeBuildStatus:
-          "AlwaysCreate"이(가) 지정되었기 때문에 "cmTC_42a58.dir\\Debug\\cmTC_42a58.tlog\\unsuccessfulbuild"을(를) 만들고 있습니다.
-          "cmTC_42a58.dir\\Debug\\cmTC_42a58.tlog\\unsuccessfulbuild"에 연결(touching)하고 있습니다.
+          "AlwaysCreate"이(가) 지정되었기 때문에 "cmTC_964b0.dir\\Debug\\cmTC_964b0.tlog\\unsuccessfulbuild"을(를) 만들고 있습니다.
+          "cmTC_964b0.dir\\Debug\\cmTC_964b0.tlog\\unsuccessfulbuild"에 연결(touching)하고 있습니다.
         ClCompile:
-          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\HostX64\\x64\\CL.exe /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_42a58.dir\\Debug\\\\" /Fd"cmTC_42a58.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TP /errorReport:queue "C:\\Program Files\\CMake\\share\\cmake-3.30\\Modules\\CMakeCXXCompilerABI.cpp"
+          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\HostX64\\x64\\CL.exe /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_964b0.dir\\Debug\\\\" /Fd"cmTC_964b0.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TP /errorReport:queue "C:\\Program Files\\CMake\\share\\cmake-3.30\\Modules\\CMakeCXXCompilerABI.cpp"
           Microsoft (R) C/C++ 최적화 컴파일러 버전 19.38.33133(x64)
           Copyright (c) Microsoft Corporation. All rights reserved.
-          cl /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_42a58.dir\\Debug\\\\" /Fd"cmTC_42a58.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TP /errorReport:queue "C:\\Program Files\\CMake\\share\\cmake-3.30\\Modules\\CMakeCXXCompilerABI.cpp"
+          cl /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_964b0.dir\\Debug\\\\" /Fd"cmTC_964b0.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TP /errorReport:queue "C:\\Program Files\\CMake\\share\\cmake-3.30\\Modules\\CMakeCXXCompilerABI.cpp"
           CMakeCXXCompilerABI.cpp
         Link:
-          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:"C:\\WorkSpace\\Visual Studio Code Workspace\\Chess\\AI\\build\\CMakeFiles\\CMakeScratch\\TryCompile-oail8z\\Debug\\cmTC_42a58.exe" /INCREMENTAL /ILK:"cmTC_42a58.dir\\Debug\\cmTC_42a58.ilk" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/WorkSpace/Visual Studio Code Workspace/Chess/AI/build/CMakeFiles/CMakeScratch/TryCompile-oail8z/Debug/cmTC_42a58.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/WorkSpace/Visual Studio Code Workspace/Chess/AI/build/CMakeFiles/CMakeScratch/TryCompile-oail8z/Debug/cmTC_42a58.lib" /MACHINE:X64  /machine:x64 cmTC_42a58.dir\\Debug\\CMakeCXXCompilerABI.obj
-          cmTC_42a58.vcxproj -> C:\\WorkSpace\\Visual Studio Code Workspace\\Chess\\AI\\build\\CMakeFiles\\CMakeScratch\\TryCompile-oail8z\\Debug\\cmTC_42a58.exe
+          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:"C:\\WorkSpace\\Visual Studio Code Workspace\\Chess\\AI\\build\\CMakeFiles\\CMakeScratch\\TryCompile-c3r5s1\\Debug\\cmTC_964b0.exe" /INCREMENTAL /ILK:"cmTC_964b0.dir\\Debug\\cmTC_964b0.ilk" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/WorkSpace/Visual Studio Code Workspace/Chess/AI/build/CMakeFiles/CMakeScratch/TryCompile-c3r5s1/Debug/cmTC_964b0.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/WorkSpace/Visual Studio Code Workspace/Chess/AI/build/CMakeFiles/CMakeScratch/TryCompile-c3r5s1/Debug/cmTC_964b0.lib" /MACHINE:X64  /machine:x64 cmTC_964b0.dir\\Debug\\CMakeCXXCompilerABI.obj
+          cmTC_964b0.vcxproj -> C:\\WorkSpace\\Visual Studio Code Workspace\\Chess\\AI\\build\\CMakeFiles\\CMakeScratch\\TryCompile-c3r5s1\\Debug\\cmTC_964b0.exe
         FinalizeBuildStatus:
-          "cmTC_42a58.dir\\Debug\\cmTC_42a58.tlog\\unsuccessfulbuild" 파일을 삭제하고 있습니다.
-          "cmTC_42a58.dir\\Debug\\cmTC_42a58.tlog\\cmTC_42a58.lastbuildstate"에 연결(touching)하고 있습니다.
-        "C:\\WorkSpace\\Visual Studio Code Workspace\\Chess\\AI\\build\\CMakeFiles\\CMakeScratch\\TryCompile-oail8z\\cmTC_42a58.vcxproj" 프로젝트를 빌드했습니다(기본 대상).
+          "cmTC_964b0.dir\\Debug\\cmTC_964b0.tlog\\unsuccessfulbuild" 파일을 삭제하고 있습니다.
+          "cmTC_964b0.dir\\Debug\\cmTC_964b0.tlog\\cmTC_964b0.lastbuildstate"에 연결(touching)하고 있습니다.
+        "C:\\WorkSpace\\Visual Studio Code Workspace\\Chess\\AI\\build\\CMakeFiles\\CMakeScratch\\TryCompile-c3r5s1\\cmTC_964b0.vcxproj" 프로젝트를 빌드했습니다(기본 대상).
         
         빌드했습니다.
             경고 0개
             오류 0개
         
-        경과 시간: 00:00:00.69
+        경과 시간: 00:00:00.75
         
       exitCode: 0
   -
@@ -163,7 +163,7 @@ events:
       The output was:
       0
       msbuild 버전 17.8.3+195e7f5a3(.NET Framework용)
-      빌드 시작: 2024-09-09 오전 10:30:45
+      빌드 시작: 2024-09-10 오전 9:51:30
       
       1 노드의 "C:\\WorkSpace\\Visual Studio Code Workspace\\Chess\\AI\\build\\CMakeFiles\\3.30.2\\CompilerIdC\\CompilerIdC.vcxproj" 프로젝트(기본 대상)입니다.
       PrepareForBuild:
@@ -192,7 +192,7 @@ events:
           경고 0개
           오류 0개
       
-      경과 시간: 00:00:00.70
+      경과 시간: 00:00:00.74
       
       
       Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "CompilerIdC.exe"
@@ -211,8 +211,8 @@ events:
     checks:
       - "Detecting C compiler ABI info"
     directories:
-      source: "C:/WorkSpace/Visual Studio Code Workspace/Chess/AI/build/CMakeFiles/CMakeScratch/TryCompile-dqrb6t"
-      binary: "C:/WorkSpace/Visual Studio Code Workspace/Chess/AI/build/CMakeFiles/CMakeScratch/TryCompile-dqrb6t"
+      source: "C:/WorkSpace/Visual Studio Code Workspace/Chess/AI/build/CMakeFiles/CMakeScratch/TryCompile-o7t592"
+      binary: "C:/WorkSpace/Visual Studio Code Workspace/Chess/AI/build/CMakeFiles/CMakeScratch/TryCompile-o7t592"
     cmakeVariables:
       CMAKE_C_FLAGS: "/DWIN32 /D_WINDOWS"
       CMAKE_C_FLAGS_DEBUG: "/Ob0 /Od /RTC1"
@@ -221,40 +221,40 @@ events:
       variable: "CMAKE_C_ABI_COMPILED"
       cached: true
       stdout: |
-        Change Dir: 'C:/WorkSpace/Visual Studio Code Workspace/Chess/AI/build/CMakeFiles/CMakeScratch/TryCompile-dqrb6t'
+        Change Dir: 'C:/WorkSpace/Visual Studio Code Workspace/Chess/AI/build/CMakeFiles/CMakeScratch/TryCompile-o7t592'
         
-        Run Build Command(s): "C:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_5bc14.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
+        Run Build Command(s): "C:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_4dbbd.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
         msbuild 버전 17.8.3+195e7f5a3(.NET Framework용)
-        빌드 시작: 2024-09-09 오전 10:30:46
+        빌드 시작: 2024-09-10 오전 9:51:31
         
-        1 노드의 "C:\\WorkSpace\\Visual Studio Code Workspace\\Chess\\AI\\build\\CMakeFiles\\CMakeScratch\\TryCompile-dqrb6t\\cmTC_5bc14.vcxproj" 프로젝트(기본 대상)입니다.
+        1 노드의 "C:\\WorkSpace\\Visual Studio Code Workspace\\Chess\\AI\\build\\CMakeFiles\\CMakeScratch\\TryCompile-o7t592\\cmTC_4dbbd.vcxproj" 프로젝트(기본 대상)입니다.
         PrepareForBuild:
-          "cmTC_5bc14.dir\\Debug\\" 디렉터리를 만들고 있습니다.
+          "cmTC_4dbbd.dir\\Debug\\" 디렉터리를 만들고 있습니다.
           구조적 출력을 사용할 수 있습니다. 컴파일러 진단의 서식은 오류 계층 구조를 반영합니다. 자세한 내용은 https://aka.ms/cpp/structured-output을 참조하세요.
-          "C:\\WorkSpace\\Visual Studio Code Workspace\\Chess\\AI\\build\\CMakeFiles\\CMakeScratch\\TryCompile-dqrb6t\\Debug\\" 디렉터리를 만들고 있습니다.
-          "cmTC_5bc14.dir\\Debug\\cmTC_5bc14.tlog\\" 디렉터리를 만들고 있습니다.
+          "C:\\WorkSpace\\Visual Studio Code Workspace\\Chess\\AI\\build\\CMakeFiles\\CMakeScratch\\TryCompile-o7t592\\Debug\\" 디렉터리를 만들고 있습니다.
+          "cmTC_4dbbd.dir\\Debug\\cmTC_4dbbd.tlog\\" 디렉터리를 만들고 있습니다.
         InitializeBuildStatus:
-          "AlwaysCreate"이(가) 지정되었기 때문에 "cmTC_5bc14.dir\\Debug\\cmTC_5bc14.tlog\\unsuccessfulbuild"을(를) 만들고 있습니다.
-          "cmTC_5bc14.dir\\Debug\\cmTC_5bc14.tlog\\unsuccessfulbuild"에 연결(touching)하고 있습니다.
+          "AlwaysCreate"이(가) 지정되었기 때문에 "cmTC_4dbbd.dir\\Debug\\cmTC_4dbbd.tlog\\unsuccessfulbuild"을(를) 만들고 있습니다.
+          "cmTC_4dbbd.dir\\Debug\\cmTC_4dbbd.tlog\\unsuccessfulbuild"에 연결(touching)하고 있습니다.
         ClCompile:
-          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\HostX64\\x64\\CL.exe /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_5bc14.dir\\Debug\\\\" /Fd"cmTC_5bc14.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TC /errorReport:queue "C:\\Program Files\\CMake\\share\\cmake-3.30\\Modules\\CMakeCCompilerABI.c"
+          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\HostX64\\x64\\CL.exe /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_4dbbd.dir\\Debug\\\\" /Fd"cmTC_4dbbd.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TC /errorReport:queue "C:\\Program Files\\CMake\\share\\cmake-3.30\\Modules\\CMakeCCompilerABI.c"
           Microsoft (R) C/C++ 최적화 컴파일러 버전 19.38.33133(x64)
           Copyright (c) Microsoft Corporation. All rights reserved.
-          cl /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_5bc14.dir\\Debug\\\\" /Fd"cmTC_5bc14.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TC /errorReport:queue "C:\\Program Files\\CMake\\share\\cmake-3.30\\Modules\\CMakeCCompilerABI.c"
+          cl /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_4dbbd.dir\\Debug\\\\" /Fd"cmTC_4dbbd.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TC /errorReport:queue "C:\\Program Files\\CMake\\share\\cmake-3.30\\Modules\\CMakeCCompilerABI.c"
           CMakeCCompilerABI.c
         Link:
-          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:"C:\\WorkSpace\\Visual Studio Code Workspace\\Chess\\AI\\build\\CMakeFiles\\CMakeScratch\\TryCompile-dqrb6t\\Debug\\cmTC_5bc14.exe" /INCREMENTAL /ILK:"cmTC_5bc14.dir\\Debug\\cmTC_5bc14.ilk" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/WorkSpace/Visual Studio Code Workspace/Chess/AI/build/CMakeFiles/CMakeScratch/TryCompile-dqrb6t/Debug/cmTC_5bc14.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/WorkSpace/Visual Studio Code Workspace/Chess/AI/build/CMakeFiles/CMakeScratch/TryCompile-dqrb6t/Debug/cmTC_5bc14.lib" /MACHINE:X64  /machine:x64 cmTC_5bc14.dir\\Debug\\CMakeCCompilerABI.obj
-          cmTC_5bc14.vcxproj -> C:\\WorkSpace\\Visual Studio Code Workspace\\Chess\\AI\\build\\CMakeFiles\\CMakeScratch\\TryCompile-dqrb6t\\Debug\\cmTC_5bc14.exe
+          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:"C:\\WorkSpace\\Visual Studio Code Workspace\\Chess\\AI\\build\\CMakeFiles\\CMakeScratch\\TryCompile-o7t592\\Debug\\cmTC_4dbbd.exe" /INCREMENTAL /ILK:"cmTC_4dbbd.dir\\Debug\\cmTC_4dbbd.ilk" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/WorkSpace/Visual Studio Code Workspace/Chess/AI/build/CMakeFiles/CMakeScratch/TryCompile-o7t592/Debug/cmTC_4dbbd.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/WorkSpace/Visual Studio Code Workspace/Chess/AI/build/CMakeFiles/CMakeScratch/TryCompile-o7t592/Debug/cmTC_4dbbd.lib" /MACHINE:X64  /machine:x64 cmTC_4dbbd.dir\\Debug\\CMakeCCompilerABI.obj
+          cmTC_4dbbd.vcxproj -> C:\\WorkSpace\\Visual Studio Code Workspace\\Chess\\AI\\build\\CMakeFiles\\CMakeScratch\\TryCompile-o7t592\\Debug\\cmTC_4dbbd.exe
         FinalizeBuildStatus:
-          "cmTC_5bc14.dir\\Debug\\cmTC_5bc14.tlog\\unsuccessfulbuild" 파일을 삭제하고 있습니다.
-          "cmTC_5bc14.dir\\Debug\\cmTC_5bc14.tlog\\cmTC_5bc14.lastbuildstate"에 연결(touching)하고 있습니다.
-        "C:\\WorkSpace\\Visual Studio Code Workspace\\Chess\\AI\\build\\CMakeFiles\\CMakeScratch\\TryCompile-dqrb6t\\cmTC_5bc14.vcxproj" 프로젝트를 빌드했습니다(기본 대상).
+          "cmTC_4dbbd.dir\\Debug\\cmTC_4dbbd.tlog\\unsuccessfulbuild" 파일을 삭제하고 있습니다.
+          "cmTC_4dbbd.dir\\Debug\\cmTC_4dbbd.tlog\\cmTC_4dbbd.lastbuildstate"에 연결(touching)하고 있습니다.
+        "C:\\WorkSpace\\Visual Studio Code Workspace\\Chess\\AI\\build\\CMakeFiles\\CMakeScratch\\TryCompile-o7t592\\cmTC_4dbbd.vcxproj" 프로젝트를 빌드했습니다(기본 대상).
         
         빌드했습니다.
             경고 0개
             오류 0개
         
-        경과 시간: 00:00:00.85
+        경과 시간: 00:00:00.72
         
       exitCode: 0
   -
