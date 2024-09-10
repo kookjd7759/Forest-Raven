@@ -212,9 +212,9 @@ const int Chess::en_passent_check(const Position& pos) {
     int dir = color == WHITE ? +2 : -2;
     Position kingSide[2]{ Position(pos.x + 1, pos.y + dir), Position(pos.x + 1, pos.y) };
     Position queenSide[2]{ Position(pos.x - 1, pos.y + dir), Position(pos.x - 1, pos.y) };
-    if (boundaryCheck(kingSide[0]) && kingSide[0] == prevMove.prev && kingSide[1] == prevMove.now)
+    if (boundaryCheck(kingSide[0]) && kingSide[0] == prevMove.move.first && kingSide[1] == prevMove.move.second)
         return 1;
-    else if (boundaryCheck(queenSide[0]) && queenSide[0] == prevMove.prev && queenSide[1] == prevMove.now)
+    else if (boundaryCheck(queenSide[0]) && queenSide[0] == prevMove.move.first && queenSide[1] == prevMove.move.second)
         return -1;
     return 0;
 }
@@ -284,7 +284,7 @@ void Chess::move(const Position& cur, const Position& dest, const int& promotion
     }
 
     calAttackSquare();
-    prevMove.set(type, cur, dest);
+    prevMove.set(type, MOVE(cur, dest));
     turn = (turn == WHITE ? BLACK : WHITE);
 }
 

@@ -26,10 +26,10 @@ enum Color {
 
 struct PreviousMove {
     Type type = NOTYPE;
-    Position prev = Position(-1, -1), now = Position(-1, -1);
-
-    void set(Type t, Position p, Position n) { type = t, prev = p, now = n; }
-    void clear() { type = NOTYPE, prev = Position(-1, -1), now = Position(-1, -1); }
+    MOVE move = MOVE(Position(-1, -1), Position(-1, -1));
+    
+    void set(Type t, MOVE m) { type = t, move = m; }
+    void clear() { type = NOTYPE, move = MOVE(Position(-1, -1), Position(-1, -1)); }
 };
 
 struct Piece {
@@ -86,12 +86,13 @@ public:
     Square board[8][8];
     Color turn, myColor;
 
+    Chess clone() const { return *this; }
+
     Chess() { reset(); }
     void reset();
 
     set<MOVE>* get_candidateMove(const Color& color);
     void move(const Position& cur, const Position& dest, const int& promotion = -1);
-
     void print_board();
 };
 

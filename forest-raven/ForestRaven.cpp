@@ -1,6 +1,7 @@
 #include <string>
 #include <sstream>
 #include <map>
+#include <vector>
 #include "utility.h"
 #include "chess.h"
 
@@ -45,11 +46,20 @@ public:
 
 class Algorithm {
 private:
-    const int Depth = 2;
+    const int Depth = 1;
     Chess chess;
 
     MOVE findBestMove() {
         set<MOVE>* moveList = chess.get_candidateMove(chess.myColor);
+        for (int depth = 1; depth <= Depth; depth++) {
+            vector<Chess> vec;
+            set<MOVE>* moveList = chess.get_candidateMove(chess.myColor);
+            for (const MOVE move : *moveList) {
+                Chess next = chess.clone();
+                next.move(move.first, move.second, -1); // TODO -> Promotion case 
+                vec.push_back(next);
+            }
+        }
         int idx = get_random(0, moveList->size() - 1);
         auto it = moveList->begin();
         advance(it, idx);
