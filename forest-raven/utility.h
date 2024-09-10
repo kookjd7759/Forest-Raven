@@ -25,9 +25,9 @@ enum Color {
 };
 
 struct Position {
-    int x, y;
+    int x = -1, y = -1;
 
-    Position() { x = -1, y = -1; }
+    Position() {}
     Position(int x, int y) : x(x), y(y) {}
 
     bool operator<(const Position& other) const {

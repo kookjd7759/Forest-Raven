@@ -13,23 +13,11 @@ const bool Chess::isEnemy(const Position& a, const Position& b) const {
 const bool Chess::isCheck(const Color& color) const { return board[king_position_wb[color].y][king_position_wb[color].x].isAttacked(color); }
 const bool Chess::isThisMoveLegal(const Move& move) {
     Color color = board[move.ori.y][move.ori.x].piece.color;
-    Piece temp_destPiece = board[move.dest.y][move.dest.x].piece, temp_takePiece = Piece(NOTYPE, NOCOLOR);
-    if (move.take.x != -1) {
-        temp_takePiece = board[move.take.y][move.take.x].piece;
-        board[move.take.y][move.take.x].clear();
-    }
-
-    move_piece(move);
-    calAttackSquare();
-    bool ret = !isCheck(color);
-    move_piece(move);
-    board[move.dest.y][move.dest.x].piece = temp_destPiece;
-
-    if (move.take.x != -1)
-        board[move.take.y][move.take.x].piece = temp_takePiece;
-    calAttackSquare();
-
-    return ret;
+    Chess chess_next = this->clone();
+    chess_next.move(move);
+    if (chess_next.isCheck(color))
+        return false;
+    return true;
 }
 void Chess::calAttackSquare() {
     for (int y = 0; y < 8; y++) for (int x = 0; x < 8; x++)

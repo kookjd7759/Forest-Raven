@@ -21,6 +21,8 @@ struct Move {
     Move(Position ori, Position dest, Position take) : ori(ori), dest(dest), take(take) {};
     Move(Position ori, Position dest, int promotion) : ori(ori), dest(dest), promotion(promotion) {};
     Move(Position ori, Position dest, Position take, int promotion) :ori(ori), dest(dest), take(take), promotion(promotion) {};
+
+    bool isTake() const { return (take.x != -1); }
 };
 
 struct PreviousMove {
@@ -34,9 +36,10 @@ struct PreviousMove {
 };
 
 struct Piece {
-    Type type;
-    Color color;
+    Type type = NOTYPE;
+    Color color = NOCOLOR;
 
+    Piece(){}
     Piece(Type type, Color color) : type(type), color(color) {}
 };
 
