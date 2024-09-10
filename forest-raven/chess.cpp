@@ -11,22 +11,22 @@ const bool Chess::isEnemy(const Position& a, const Position& b) const {
         board[a.y][a.x].piece.color != board[b.y][b.x].piece.color);
 }
 const bool Chess::isCheck(const Color& color) const { return board[king_position_wb[color].y][king_position_wb[color].x].isAttacked(color); }
-const bool Chess::isThisMoveLegal(const Position& cur, const Position& dest, const Position& take) {
-    Color color = board[cur.y][cur.x].piece.color;
-    Piece temp_destPiece = board[dest.y][dest.x].piece, temp_takePiece = Piece(NOTYPE, NOCOLOR);
-    if (take.x != -1) {
-        temp_takePiece = board[take.y][take.x].piece;
-        board[take.y][take.x].clear();
+const bool Chess::isThisMoveLegal(const Move& move) {
+    Color color = board[move.ori.y][move.ori.x].piece.color;
+    Piece temp_destPiece = board[move.dest.y][move.dest.x].piece, temp_takePiece = Piece(NOTYPE, NOCOLOR);
+    if (move.take.x != -1) {
+        temp_takePiece = board[move.take.y][move.take.x].piece;
+        board[move.take.y][move.take.x].clear();
     }
 
-    move_piece(cur, dest);
+    move_piece(move);
     calAttackSquare();
     bool ret = !isCheck(color);
-    move_piece(dest, cur);
-    board[dest.y][dest.x].piece = temp_destPiece;
+    move_piece(move);
+    board[move.dest.y][move.dest.x].piece = temp_destPiece;
 
-    if (take.x != -1)
-        board[take.y][take.x].piece = temp_takePiece;
+    if (move.take.x != -1)
+        board[move.take.y][move.take.x].piece = temp_takePiece;
     calAttackSquare();
 
     return ret;
@@ -37,110 +37,131 @@ void Chess::calAttackSquare() {
 
     for (int y = 0; y < 8; y++) for (int x = 0; x < 8; x++)
         if (!board[y][x].empty()) {
-            set<Position>* s = get_attackList(Position(x, y));
             Color color = board[y][x].piece.color;
+            set<Position>* s = get_attackList(Position(x, y));
             for (const Position pos : *s)
                 board[pos.y][pos.x].attack_wb[color]++;
         }
 }
 
-void Chess::append(set<Position>* set, const Position& cur, const Position& dest, const bool& legalMove, const Position& take) {
-    if (!legalMove || isThisMoveLegal(cur, dest)) set->insert(dest);
+void Chess::append(set<Position>* set, const Move& move, const bool& legalMove) {
+    if (!legalMove || isThisMoveLegal(move)) set->insert(move.dest);
 }
-void Chess::repeatMove(set<Position>* s, const Position& cur, const Position& dir, const bool& legalMove) {
-    Position next = cur;
+void Chess::repeatMove(set<Position>* s, const Position& ori, const Position& dir, const bool& legalMove) {
+    Position dest = ori;
     while (true) {
-        next += dir;
-        if (!boundaryCheck(next)) return;
+        dest += dir;
+        if (!boundaryCheck(dest)) return;
 
-        if (board[next.y][next.x].empty())
-            append(s, cur, next, legalMove);
-        else if (isEnemy(cur, next)) {
-            append(s, cur, next, legalMove);
+        if (board[dest.y][dest.x].empty())
+            append(s, Move(ori, dest), legalMove);
+        else if (isEnemy(ori, dest)) {
+            append(s, Move(ori, dest, dest), legalMove);
             return;
         }
-        else if (isAlly(cur, next)) {
-            if (!legalMove) append(s, cur, next, legalMove);
+        else if (isAlly(ori, dest)) {
+            if (!legalMove) append(s, Move(ori, dest), legalMove);
             return;
         }
     }
 }
-void Chess::oneMove(set<Position>* s, const Position& cur, const Position& dir, const bool& legalMove) {
-    Position next = cur + dir;
-    if (boundaryCheck(next)) {
-        if (board[next.y][next.x].empty() || isEnemy(cur, next))
-            append(s, cur, next, legalMove);
-        else if (isAlly(cur, next) && !legalMove)
-            append(s, cur, next, legalMove);
+void Chess::oneMove(set<Position>* s, const Position& ori, const Position& dir, const bool& legalMove) {
+    Position dest = ori + dir;
+    if (boundaryCheck(dest)) {
+        if (board[dest.y][dest.x].empty())
+            append(s, Move(ori, dest), legalMove);
+        else if (isEnemy(ori, dest))
+            append(s, Move(ori, dest, dest), legalMove);
+        else if (isAlly(ori, dest) && !legalMove)
+            append(s, Move(ori, dest), legalMove);
     }
 }
 set<Position>* Chess::rook(const Position& pos, const bool& legalMove) {
     set<Position>* s = new set<Position>;
     for (int i = 0; i < 4; i++)
-        repeatMove(s, pos, Position(dir_straight[i].x, dir_straight[i].y), legalMove);
+        repeatMove(s, pos, dir_straight[i], legalMove);
     return s;
 }
 set<Position>* Chess::bishop(const Position& pos, const bool& legalMove) {
     set<Position>* s = new set<Position>;
     for (int i = 0; i < 4; i++)
-        repeatMove(s, pos, Position(dir_diagonal[i].x, dir_diagonal[i].y), legalMove);
+        repeatMove(s, pos, dir_diagonal[i], legalMove);
     return s;
 }
 set<Position>* Chess::knight(const Position& pos, const bool& legalMove) {
     set<Position>* s = new set<Position>;
     for (int i = 0; i < 8; i++)
-        oneMove(s, pos, Position(dir_knight[i].x, dir_knight[i].y), legalMove);
+        oneMove(s, pos, dir_knight[i], legalMove);
     return s;
 
 }
 set<Position>* Chess::king(const Position& pos, const bool& legalMove) {
     set<Position>* s = new set<Position>;
     for (int i = 0; i < 8; i++)
-        oneMove(s, pos, Position(dir_all[i].x, dir_all[i].y), legalMove);
+        oneMove(s, pos, dir_all[i], legalMove);
 
-    if (castling_check(board[pos.y][pos.x].piece.color, true)) // Check king side castling
+    Color color = board[pos.y][pos.x].piece.color;
+    if (castling_check(color, true)) // Check king side castling
         s->insert(pos + Position(+2, 0)); // already guarantee the check free move
-    if (castling_check(board[pos.y][pos.x].piece.color, false)) // Check queen side castling
+    if (castling_check(color, false)) // Check queen side castling
         s->insert(pos + Position(-2, 0)); // already guarantee the check free move
     return s;
 }
 set<Position>* Chess::queen(const Position& pos, const bool& legalMove) {
     set<Position>* s = new set<Position>;
     for (int i = 0; i < 8; i++)
-        repeatMove(s, pos, Position(dir_all[i].x, dir_all[i].y), legalMove);
+        repeatMove(s, pos, dir_all[i], legalMove);
     return s;
 }
 set<Position>* Chess::pawn_move(const Position& pos) {
     set<Position>* s = new set<Position>;
     Color color = board[pos.y][pos.x].piece.color;
     Position dir = (color == WHITE ? Position(0, +1) : Position(0, -1));
-    Position next = pos + dir;
-    if (board[next.y][next.x].empty()) {
-        append(s, pos, next, true);
+    Position dest = pos + dir;
+    if (board[dest.y][dest.x].empty()) {
+        append(s, Move(pos, dest), true);
+        if (dest.y == (color == WHITE ? 7 : 0)) { // promotion move
+            for (int pro_type = 0; pro_type < 4; pro_type++) 
+                append(s, Move(pos, dest, pro_type), true);
+        }
         if (pos.y == (color == WHITE ? 1 : 6)) { // first move
-            next += dir;
-            if (board[next.y][next.x].empty())
-                append(s, pos, next, true);
+            dest += dir;
+            if (board[dest.y][dest.x].empty())
+                append(s, Move(pos, dest), true);
         }
     }
     return s;
 }
 set<Position>* Chess::pawn_attack(const Position& pos, const bool& legalMove) {
     set<Position>* s = new set<Position>;
-    auto add = [&](const Position& next) -> void {
-        if (boundaryCheck(next))
-            if (!legalMove || (legalMove && isEnemy(pos, next)))
-                append(s, pos, next, legalMove);
-        };
     Color color = board[pos.y][pos.x].piece.color;
+    auto attack = [&](const Position& dest) -> void {
+        if (boundaryCheck(dest)) {
+            if (!legalMove) 
+                append(s, Move(pos, dest), legalMove);
+            else if (legalMove && isEnemy(pos, dest)) {
+                append(s, Move(pos, dest, dest), legalMove);
+                if (dest.y == (color == WHITE ? 7 : 0)) { // promotion move
+                    for (int pro_type = 0; pro_type < 4; pro_type++)
+                        append(s, Move(pos, dest, dest, pro_type), legalMove);
+                }
+            }
+        }
+        };
     int dir = color == WHITE ? +1 : -1;
-    add(pos + Position(-1, dir)); // king side
-    add(pos + Position(+1, dir)); // queen side
+    attack(pos + Position(-1, dir)); // king side
+    attack(pos + Position(+1, dir)); // queen side
 
     int en_passent_dir = en_passent_check(pos);
     if (en_passent_dir != 0) {
         int dir = color == WHITE ? +1 : -1;
-        append(s, pos, Position(pos.x + en_passent_dir, pos.y + dir), legalMove, Position(pos.x + en_passent_dir, pos.y));
+        Position dest = Position(pos.x + en_passent_dir, pos.y + dir);
+        Position take = Position(pos.x + en_passent_dir, pos.y);
+        if (dest.y == (color == WHITE ? 7 : 0)) { // takes and promotion
+            for (int pro_type = 0; pro_type < 4; pro_type++)
+                append(s, Move(pos, dest, take, pro_type), true);
+        }
+        else append(s, Move(pos, dest, take), legalMove);
     }
     return s;
 }
@@ -171,32 +192,31 @@ set<Position>* Chess::get_legalMoveList(const Position& pos) {
     return s;
 }
 
-void Chess::move_piece(const Position& cur, const Position& dest) {
-    if (board[cur.y][cur.x].piece.type == KING) // king position recording
-        king_position_wb[board[cur.y][cur.x].piece.color] = dest;
-    board[dest.y][dest.x].piece = board[cur.y][cur.x].piece;
-    board[cur.y][cur.x].clear();
+void Chess::move_piece(const Move& move) {
+    if (board[move.ori.y][move.ori.x].piece.type == KING) // king position recording
+        king_position_wb[board[move.ori.y][move.ori.x].piece.color] = move.dest;
+    board[move.dest.y][move.dest.x].piece = board[move.ori.y][move.ori.x].piece;
+    board[move.ori.y][move.ori.x].clear();
 }
-void Chess::castling_move(const Position& cur, const Position& dest) {
-    int rank = board[cur.y][cur.x].piece.color == WHITE ? 0 : 7;
-    if (dest.x > cur.x) { // king side 
+void Chess::castling_move(const Move& move) {
+    int rank = (board[move.ori.y][move.ori.x].piece.color == WHITE ? 0 : 7);
+    if (move.dest.x > move.ori.x) { // king side 
         Position rook_pos = Position(7, rank);
-        move_piece(cur, dest);
-        move_piece(rook_pos, dest + Position(-1, 0));
+        move_piece(move);
+        move_piece(Move(rook_pos, move.dest + Position(-1, 0)));
     }
     else { // queen side
         Position rook_pos = Position(0, rank);
-        move_piece(cur, dest);
-        move_piece(rook_pos, dest + Position(+1, 0));
+        move_piece(move);
+        move_piece(Move(rook_pos, move.dest + Position(+1, 0)));
     }
 }
-void Chess::en_passent_move(const Position& cur, const Position& dest) {
-    Position attack = dest + Position(0, (board[cur.y][cur.x].piece.color == WHITE ? -1 : +1));
-    board[attack.y][attack.x].clear();
-    move_piece(cur, dest);
+void Chess::en_passent_move(const Move& move) {
+    board[move.take.y][move.take.x].clear();
+    move_piece(move);
 }
 
-const bool Chess::castling_check(const Color& color, const bool& isKingside) {
+const bool Chess::castling_check(const Color& color, const bool& isKingside) const {
     int rank = (color == WHITE ? 0 : 7);
     bool condition_1 = !kr_moveCheck_wb_qk[color][isKingside ? 1 : 0];
     bool condition_2 = isKingside ? board[rank][5].empty() && board[rank][6].empty() :
@@ -209,12 +229,12 @@ const int Chess::en_passent_check(const Position& pos) {
     Color color = board[pos.y][pos.x].piece.color;
     if (pos.y != (color == WHITE ? 4 : 3) || prevMove.type != PAWN) return 0;
 
-    int dir = color == WHITE ? +2 : -2;
-    Position kingSide[2]{ Position(pos.x + 1, pos.y + dir), Position(pos.x + 1, pos.y) };
-    Position queenSide[2]{ Position(pos.x - 1, pos.y + dir), Position(pos.x - 1, pos.y) };
-    if (boundaryCheck(kingSide[0]) && kingSide[0] == prevMove.move.first && kingSide[1] == prevMove.move.second)
+    int dir = (color == WHITE ? +2 : -2);
+    Move kingSide(Position(pos.x + 1, pos.y + dir), Position(pos.x + 1, pos.y));
+    Move queenSide(Position(pos.x - 1, pos.y + dir), Position(pos.x - 1, pos.y));
+    if (boundaryCheck(kingSide.ori) && kingSide.ori == prevMove.move.ori && kingSide.dest == prevMove.move.dest)
         return 1;
-    else if (boundaryCheck(queenSide[0]) && queenSide[0] == prevMove.move.first && queenSide[1] == prevMove.move.second)
+    else if (boundaryCheck(queenSide.ori) && queenSide.ori == prevMove.move.ori && queenSide.dest == prevMove.move.dest)
         return -1;
     return 0;
 }
@@ -235,56 +255,56 @@ void Chess::reset() {
     calAttackSquare();
 }
 
-set<MOVE>* Chess::get_candidateMove(const Color& color) {
-    set<MOVE>* move_s = new set<MOVE>;
+set<Move>* Chess::get_candidateMove(const Color& color) {
+    set<Move>* move_s = new set<Move>;
     for (int y = 0; y < 8; y++) for (int x = 0; x < 8; x++)
         if (!board[y][x].empty() && board[y][x].piece.color == color) {
-            set<Position>* pos_s = get_legalMoveList(Position(x, y));
-            for (const Position pos : *pos_s)
-                move_s->insert(make_pair(Position(x, y), pos));
+            set<Position>* s = get_legalMoveList(Position(x, y));
+            for (const Position pos : *s)
+                move_s->insert(Move(Position(x, y), pos));
         }
     return move_s;
 }
-void Chess::move(const Position& cur, const Position& dest, const int& promotion) {
+void Chess::move(const Move& move) {
     bool isCastling = false, isEn_passent = false, isPromotion = false;
-    Color color = board[cur.y][cur.x].piece.color;
-    Type type = board[cur.y][cur.x].piece.type;
-
+    Color color = board[move.ori.y][move.ori.x].piece.color;
+    Type type = board[move.ori.y][move.ori.x].piece.type;
+    
     if (type == KING) {
         kr_moveCheck_wb_qk[color][0] = kr_moveCheck_wb_qk[color][1] = true;
-        if (abs(dest.x - cur.x) == 2) // Castling move
+        if (abs(move.dest.x - move.ori.x) == 2) // Castling move
             isCastling = true;
     }
     else if (type == ROOK) {
-        if (cur.x == 0) kr_moveCheck_wb_qk[color][0] = true;
-        else if (cur.x == 7) kr_moveCheck_wb_qk[color][1] = true;
+        if (move.ori.x == 0) kr_moveCheck_wb_qk[color][0] = true;
+        else if (move.ori.x == 7) kr_moveCheck_wb_qk[color][1] = true;
     }
     else if (type == PAWN) {
-        if (dest.y == (color == WHITE ? 7 : 0)) isPromotion = true;
-        if (cur.x != dest.x) // Pawn takes something
-            if (board[dest.y][dest.x].empty())
+        if (move.dest.y == (color == WHITE ? 7 : 0)) isPromotion = true;
+        if (move.ori.x != move.dest.x) // Pawn takes something
+            if (board[move.dest.y][move.dest.x].empty())
                 isEn_passent = true;
     }
 
-    if (isCastling) castling_move(cur, dest);
-    else if (isEn_passent) en_passent_move(cur, dest);
+    if (isCastling) castling_move(move);
+    else if (isEn_passent) en_passent_move(move);
     else {
-        move_piece(cur, dest);
+        move_piece(move);
         if (isPromotion) {
             Type promotion_type = NOTYPE;
-            switch (promotion) {
+            switch (move.promotion) {
             case 0: promotion_type = QUEEN; break;
             case 1: promotion_type = ROOK; break;
             case 2: promotion_type = BISHOP; break;
             case 3: promotion_type = KNIGHT; break;
             default: break;
             }
-            board[dest.y][dest.x].set(Piece(promotion_type, color));
+            board[move.dest.y][move.dest.x].set(Piece(promotion_type, color));
         }
     }
 
     calAttackSquare();
-    prevMove.set(type, MOVE(cur, dest));
+    prevMove.set(type, move);
     turn = (turn == WHITE ? BLACK : WHITE);
 }
 

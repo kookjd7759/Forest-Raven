@@ -49,14 +49,14 @@ private:
     const int Depth = 1;
     Chess chess;
 
-    MOVE findBestMove() {
-        set<MOVE>* moveList = chess.get_candidateMove(chess.myColor);
+    Move findBestMove() {
+        set<Move>* moveList = chess.get_candidateMove(chess.myColor);
         for (int depth = 1; depth <= Depth; depth++) {
             vector<Chess> vec;
-            set<MOVE>* moveList = chess.get_candidateMove(chess.myColor);
-            for (const MOVE move : *moveList) {
+            set<Move>* moveList = chess.get_candidateMove(chess.myColor);
+            for (const Move move : *moveList) {
                 Chess next = chess.clone();
-                next.move(move.first, move.second, -1); // TODO -> Promotion case 
+                next.move(move); // TODO -> Promotion case 
                 vec.push_back(next);
             }
         }
@@ -68,16 +68,16 @@ private:
 
 public:
     Algorithm(const Chess ch) { chess = ch; }
-    MOVE getBestMove() { return findBestMove(); }
+    Move getBestMove() { return findBestMove(); }
 };
 
 class ForestRaven {
 private:
     Chess chess;
 
-    MOVE find_nextMove() {
+    Move find_nextMove() {
         Algorithm algo(chess);
-        MOVE move = algo.getBestMove();
+        Move move = algo.getBestMove();
         return move;
     }
 
@@ -107,15 +107,15 @@ public:
         Position cur = Position(get_int(), get_int());
         Position dest = Position(get_int(), get_int());
         int promotion = get_int();
-        chess.move(cur, dest, promotion);
+        chess.move(Move(cur, dest, promotion));
     }
     void move() {
-        MOVE move = find_nextMove();
-        chess.move(move.first, move.second);
-        send_move(move.first, move.second);
+        Move move = find_nextMove();
+        chess.move(move);
+        send_move(move);
     }
-    void send_move(const Position& cur_pos, const Position& dest_pos, const int& promotion = -1) { 
-        cout << cur_pos.x << ' ' << cur_pos.y << ' ' << dest_pos.x << ' ' << dest_pos.y << ' ' << promotion << "\n"; 
+    void send_move(const Move& move) { 
+        cout << move.ori.x << ' ' << move.ori.y << ' ' << move.dest.x << ' ' << move.dest.y << ' ' << move.promotion << "\n";
     }
 };
 

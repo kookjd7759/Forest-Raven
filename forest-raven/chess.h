@@ -4,32 +4,33 @@
 #include <set>
 #include "utility.h"
 
-#define MOVE pair<Position, Position>
-
 using namespace std;
 
-enum Type {
-    PAWN,
-    KNIGHT,
-    BISHOP,
-    ROOK,
-    QUEEN,
-    KING,
-    NOTYPE
-};
+struct Move {
+    Position ori, dest, take;
+    int promotion = -1;
 
-enum Color {
-    WHITE,
-    BLACK,
-    NOCOLOR
+    bool operator<(const Move& other) const {
+        if (ori > other.ori) return true;
+        else if (dest > other.dest) return false;
+        return take < other.take;
+    }
+
+    Move() {}
+    Move(Position ori, Position dest) : ori(ori), dest(dest) {};
+    Move(Position ori, Position dest, Position take) : ori(ori), dest(dest), take(take) {};
+    Move(Position ori, Position dest, int promotion) : ori(ori), dest(dest), promotion(promotion) {};
+    Move(Position ori, Position dest, Position take, int promotion) :ori(ori), dest(dest), take(take), promotion(promotion) {};
 };
 
 struct PreviousMove {
-    Type type = NOTYPE;
-    MOVE move = MOVE(Position(-1, -1), Position(-1, -1));
+    Type type;
+    Move move;
+
+    PreviousMove() { clear(); }
     
-    void set(Type t, MOVE m) { type = t, move = m; }
-    void clear() { type = NOTYPE, move = MOVE(Position(-1, -1), Position(-1, -1)); }
+    void set(Type t, Move m) { type = t, move = m; }
+    void clear() { type = NOTYPE, move = Move(NULL_POS, NULL_POS, NULL_POS, -1); }
 };
 
 struct Piece {
@@ -42,6 +43,8 @@ struct Piece {
 struct Square {
     Piece piece = Piece(NOTYPE, NOCOLOR);
     int attack_wb[2]{ 0, 0 };
+
+    Square() { clear(); }
 
     void set(Piece p) { piece = p; }
     bool isAttacked(Color color) const { return attack_wb[(color == WHITE ? BLACK : WHITE)] != 0 ? true : false; }
@@ -59,10 +62,10 @@ private:
     const bool isAlly(const Position& a, const Position& b) const;
     const bool isEnemy(const Position& a, const Position& b) const;
     const bool isCheck(const Color& color) const;
-    const bool isThisMoveLegal(const Position& cur, const Position& dest, const Position& take = Position(-1, -1));
+    const bool isThisMoveLegal(const Move& move);
     void calAttackSquare();
 
-    void append(set<Position>* set, const Position& cur, const Position& dest, const bool& legalMove, const Position& take = Position(-1, -1));
+    void append(set<Position>* set, const Move& move, const bool& legalMove);
     void repeatMove(set<Position>* s, const Position& cur, const Position& dir, const bool& legalMove);
     void oneMove(set<Position>* s, const Position& cur, const Position& dir, const bool& legalMove);
     set<Position>* rook(const Position& pos, const bool& legalMove);
@@ -75,11 +78,11 @@ private:
     set<Position>* get_attackList(const Position& pos);
     set<Position>* get_legalMoveList(const Position& pos);
 
-    void move_piece(const Position& cur, const Position& dest);
-    void castling_move(const Position& cur, const Position& dest);
-    void en_passent_move(const Position& cur, const Position& dest);
+    void move_piece(const Move& move);
+    void castling_move(const Move& move);
+    void en_passent_move(const Move& move);
 
-    const bool castling_check(const Color& color, const bool& isKingside);
+    const bool castling_check(const Color& color, const bool& isKingside) const;
     const int en_passent_check(const Position& pos);
 
 public:
@@ -91,8 +94,8 @@ public:
     Chess() { reset(); }
     void reset();
 
-    set<MOVE>* get_candidateMove(const Color& color);
-    void move(const Position& cur, const Position& dest, const int& promotion = -1);
+    set<Move>* get_candidateMove(const Color& color);
+    void move(const Move& move);
     void print_board();
 };
 

@@ -4,17 +4,41 @@
 #include <iostream>
 #include <random>
 
+#define NULL_POS Position(-1, -1)
+
 using namespace std;
+
+enum Type {
+    PAWN,
+    KNIGHT,
+    BISHOP,
+    ROOK,
+    QUEEN,
+    KING,
+    NOTYPE
+};
+
+enum Color {
+    WHITE,
+    BLACK,
+    NOCOLOR
+};
 
 struct Position {
     int x, y;
 
+    Position() { x = -1, y = -1; }
     Position(int x, int y) : x(x), y(y) {}
 
     bool operator<(const Position& other) const {
         if (x < other.x) return true;
         if (x > other.x) return false;
         return y < other.y;
+    }
+    bool operator>(const Position& other) const {
+        if (x > other.x) return true;
+        if (x < other.x) return false;
+        return y > other.y;
     }
     Position operator+(const Position& other) const { return Position(x + other.x, y + other.y); }
     Position& operator+=(const Position& other) {
