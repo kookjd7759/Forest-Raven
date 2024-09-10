@@ -1,3 +1,0 @@
-C:/WorkSpace/Visual Studio Code Workspace/Chess/AI/build/CMakeFiles/game.dir
-C:/WorkSpace/Visual Studio Code Workspace/Chess/AI/build/CMakeFiles/ALL_BUILD.dir
-C:/WorkSpace/Visual Studio Code Workspace/Chess/AI/build/CMakeFiles/ZERO_CHECK.dir
