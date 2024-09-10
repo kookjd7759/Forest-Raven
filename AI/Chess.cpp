@@ -287,3 +287,17 @@ void Chess::move(const Position& cur, const Position& dest, const int& promotion
     prevMove.set(type, cur, dest);
     turn = (turn == WHITE ? BLACK : WHITE);
 }
+
+void Chess::print_board() {
+    for (int i = 7; i >= 0; i--) {
+        for (int j = 0; j < 8; j++) {
+            if (board[i][j].empty()) cout << "-- ";
+            else cout << typeToChar[board[i][j].piece.type] << colorToChar[board[i][j].piece.color] << " ";
+        }
+        cout << "   ";
+        for (int j = 0; j < 8; j++) {
+            cout << board[i][j].attack_wb[0] << board[i][j].attack_wb[1] << " ";
+        }
+        cout << "\n";
+    }
+}
