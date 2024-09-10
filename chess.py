@@ -186,7 +186,7 @@ class Chess:
             for dir in Chess.dir_diagonal:
                 self.__repeatMove(list, pos, dir, legalMove)
             return list
-
+        
         def __knight(self, pos: Position, legalMove: bool):
             list = []
             for dir in Chess.dir_knight:
@@ -451,7 +451,6 @@ class Chess:
                 print()
             print(f'Castling : [White].Q (={self.castling_check(0, False)}) [White].K (={self.castling_check(0, True)})')
             print(f'           [Black].Q (={self.castling_check(1, False)}) [Black].K (={self.castling_check(1, True)})')
-
 
 
     def __init__(self):
