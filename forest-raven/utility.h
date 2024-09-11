@@ -4,25 +4,34 @@
 #include <iostream>
 #include <random>
 
-#define NULL_POS Position(-1, -1)
-
 using namespace std;
-
-enum Type {
-    PAWN,
-    KNIGHT,
-    BISHOP,
-    ROOK,
-    QUEEN,
-    KING,
-    NOTYPE
-};
 
 enum Color {
     WHITE,
     BLACK,
     NOCOLOR
 };
+const char colorToChar[3] = { 'w', 'b', '-' };
+
+enum Move_type {
+    MOVE,
+    CAPTURE,
+    MOVE_PRO,
+    CAPTURE_PRO,
+    CASTLING,
+    NOMOVE
+};
+
+enum Piece_type {
+    QUEEN,
+    ROOK,
+    BISHOP,
+    KNIGHT,
+    KING,
+    PAWN,
+    NOPIECE
+};
+const char typeToChar[7] = { 'Q', 'R', 'B', 'N', 'K', 'P', '-' };
 
 struct Position {
     int x = -1, y = -1;
@@ -31,13 +40,11 @@ struct Position {
     Position(int x, int y) : x(x), y(y) {}
 
     bool operator<(const Position& other) const {
-        if (x < other.x) return true;
-        if (x > other.x) return false;
+        if (x != other.x) return x < other.x;
         return y < other.y;
     }
     bool operator>(const Position& other) const {
-        if (x > other.x) return true;
-        if (x < other.x) return false;
+        if (x != other.x) return x > other.x;
         return y > other.y;
     }
     Position operator+(const Position& other) const { return Position(x + other.x, y + other.y); }
@@ -46,6 +53,7 @@ struct Position {
         return *this;
     }
     bool operator==(const Position& other) const { return bool(x == other.x && y == other.y); }
+    bool operator!=(const Position& other) const { return bool(x != other.x && y != other.y); }
 };
 
 const Position dir_straight[4]{ Position(0, 1), Position(0, -1), Position(1, 0), Position(-1, 0) };
@@ -53,8 +61,8 @@ const Position dir_diagonal[4]{ Position(1, 1), Position(1, -1), Position(-1, -1
 const Position dir_all[8]{ Position(0, 1), Position(0, -1), Position(1, 0), Position(-1, 0), Position(1, 1), Position(1, -1), Position(-1, -1), Position(-1, 1) };
 const Position dir_knight[8]{ Position(1, 2), Position(-1, 2), Position(2, 1), Position(-2, 1), Position(2, -1), Position(-2, -1), Position(1, -2), Position(-1, -2) };
 
-const char typeToChar[7] = { 'P', 'N', 'B', 'R', 'Q', 'K', '-' };
-const char colorToChar[3] = { 'w', 'b', '-' };
+
+const Piece_type promotion_list[4] = { QUEEN, ROOK, BISHOP, KNIGHT, };
 
 bool notationCheck(const string& st);
 Position convertPos(const string& st);

@@ -1,5 +1,4 @@
 #include <string>
-#include <sstream>
 #include <map>
 #include <vector>
 #include "utility.h"
@@ -7,7 +6,7 @@
 
 class State {
 private:
-    map<Type, int> piece_value;
+    map<Piece_type, int> piece_value;
     const Chess* chess = nullptr;
     Color color = NOCOLOR;
     int control_square = 0, threat = 0, defend = 0, hanging = 0, score = 0;
@@ -50,13 +49,14 @@ private:
     Chess chess;
 
     Move findBestMove() {
+        cout << "findBestMove()\n";
         set<Move>* moveList = chess.get_candidateMove(chess.myColor);
         for (int depth = 1; depth <= Depth; depth++) {
             vector<Chess> vec;
             set<Move>* moveList = chess.get_candidateMove(chess.myColor);
-            for (const Move move : *moveList) {
+            for (const Move& move : *moveList) {
                 Chess next = chess.clone();
-                next.move(move); // TODO -> Promotion case 
+                next.play(move);
                 vec.push_back(next);
             }
         }
@@ -96,30 +96,38 @@ public:
     void start() {
         //board.print_board();
         while (true) {
-            chess.turn != chess.myColor ? opponent_move() : move();
+            chess.turn != chess.myColor ? opponent_play() : play();
             //board.print_board();
         }
     }
 
-    void opponent_move() {
-        string line; getline(cin, line); stringstream ss(line); string word;
-        auto get_int = [&]() -> int { getline(ss, word, ' '); return stoi(word);; };
-        Position cur = Position(get_int(), get_int());
-        Position dest = Position(get_int(), get_int());
-        int promotion = get_int();
-        chess.move(Move(cur, dest, promotion));
+    void opponent_play() {
+        cout << "opponent_play()\n";
+        string line; getline(cin, line);
+        Move move; move.string_init(line);
+        Piece piece = chess.board[move.ori.y][move.ori.x].piece;
+        move.piece = piece;
+        chess.play(move);
     }
-    void move() {
+    void play() {
+        cout << "play()\n";
         Move move = find_nextMove();
-        chess.move(move);
-        send_move(move);
+        chess.play(move);
+        send_play(move);
     }
-    void send_move(const Move& move) { 
-        cout << move.ori.x << ' ' << move.ori.y << ' ' << move.dest.x << ' ' << move.dest.y << ' ' << move.promotion << "\n";
+    void send_play(Move& move) {
+        cout << "send_play()\n";
+        string st = move.get_string();
+        cout << st << "\n";
     }
 };
 
 int main() {
-    ForestRaven forest_raven;
-    forest_raven.start();
+    //ForestRaven forest_raven;
+    //forest_raven.start();
+    Chess chess;
+    set<Move>* moveList = chess.get_candidateMove(chess.myColor);
+    for (const Move& move : *moveList) {
+        cout << move.get_string();
+    }
 }
