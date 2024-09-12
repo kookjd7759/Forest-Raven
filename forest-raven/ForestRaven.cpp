@@ -4,70 +4,43 @@
 #include "utility.h"
 #include "chess.h"
 
-class State {
-private:
-    map<Piece_type, int> piece_value;
-    const Chess* chess = nullptr;
-    Color color = NOCOLOR;
-    int control_square = 0, threat = 0, defend = 0, hanging = 0, score = 0;
-
-    void update_score() {
-        score = 0;
-    }
-
-public:
-    State(const Chess* ch, Color co){
-        chess = ch;
-        color = co;
-        piece_value[PAWN] = 1;
-        piece_value[BISHOP] = 3;
-        piece_value[KNIGHT] = 3;
-        piece_value[ROOK] = 5;
-        piece_value[QUEEN] = 9;
-    }
-
-    void update() {
-        control_square = 0, threat = 0, defend = 0, hanging = 0;
-        for (int y = 0; y < 8; y++)
-            for (int x = 0; x < 8; x++) {
-                int control = chess->board[y][x].attack_wb[color];
-                bool isEmpty = chess->board[y][x].empty();
-                Color piece_color = chess->board[y][x].piece.color;
-
-                control_square += control;
-                if (control != 0 && !isEmpty) // piece in control square
-                    piece_color == color ? defend++ : threat++;
-                if (control == 0 && !isEmpty && piece_color == color) // Hanging piece
-                    hanging++;
-            }
-    }
-};
+double board_value[8][8];
+const double center = 1.5;
+const double semi_center = 1.3;
+const double normal = 1.0;
 
 class Algorithm {
 private:
-    const int Depth = 1;
     Chess chess;
 
+    double cal_evaluation(const Chess& chess) {
+        double score = 0.0;
+        for (int y = 0; y < 8; y++)
+            for (int x = 0; x < 8; x++) {
+                score += (double)chess.board[y][x].attack_wb[chess.myColor] * board_value[y][x];
+            }
+        return score;
+    }
+
     Move findBestMove() {
-        cout << "findBestMove()\n";
+        Move selected_move;
+        double maxiScore = cal_evaluation(chess);
         set<Move>* moveList = chess.get_candidateMove(chess.myColor);
-        for (int depth = 1; depth <= Depth; depth++) {
-            vector<Chess> vec;
-            set<Move>* moveList = chess.get_candidateMove(chess.myColor);
-            for (const Move& move : *moveList) {
-                Chess next = chess.clone();
-                next.play(move);
-                vec.push_back(next);
+        for (const Move& move : *moveList) {
+            Chess next = chess.clone(); next.play(move);
+            double nextScore = cal_evaluation(next);
+            if (maxiScore < nextScore) {
+                selected_move = move;
+                maxiScore = nextScore;
             }
         }
-        int idx = get_random(0, moveList->size() - 1);
-        auto it = moveList->begin();
-        advance(it, idx);
-        return *it;
+        return selected_move;
     }
 
 public:
-    Algorithm(const Chess ch) { chess = ch; }
+    Algorithm(const Chess ch) { 
+        chess = ch; 
+    }
     Move getBestMove() { return findBestMove(); }
 };
 
@@ -102,7 +75,6 @@ public:
     }
 
     void opponent_play() {
-        cout << "opponent_play()\n";
         string line; getline(cin, line);
         Move move; move.string_init(line);
         Piece piece = chess.board[move.ori.y][move.ori.x].piece;
@@ -110,24 +82,31 @@ public:
         chess.play(move);
     }
     void play() {
-        cout << "play()\n";
         Move move = find_nextMove();
         chess.play(move);
         send_play(move);
     }
     void send_play(Move& move) {
-        cout << "send_play()\n";
         string st = move.get_string();
         cout << st << "\n";
     }
 };
 
+void init() {
+    // set board_value
+    for (int y = 0; y < 8; y++)
+        for (int x = 0; x < 8; x++) {
+            if (x >= 2 && x <= 5 && y >= 2 && y <= 5) {
+                if (x >= 3 && x <= 4 && y >= 3 && y <= 4) 
+                    board_value[y][x] = center;
+                else board_value[y][x] = semi_center;;
+            }
+            else board_value[y][x] = normal;
+        }
+}
+
 int main() {
-    //ForestRaven forest_raven;
-    //forest_raven.start();
-    Chess chess;
-    set<Move>* moveList = chess.get_candidateMove(chess.myColor);
-    for (const Move& move : *moveList) {
-        cout << move.get_string();
-    }
+    init();
+    ForestRaven forest_raven;
+    forest_raven.start();
 }

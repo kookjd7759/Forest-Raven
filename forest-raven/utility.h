@@ -39,29 +39,18 @@ struct Position {
     Position() {}
     Position(int x, int y) : x(x), y(y) {}
 
-    bool operator<(const Position& other) const {
-        if (x != other.x) return x < other.x;
-        return y < other.y;
-    }
-    bool operator>(const Position& other) const {
-        if (x != other.x) return x > other.x;
-        return y > other.y;
-    }
+    bool operator<(const Position& other) const { return (x != other.x ? x < other.x : y < other.y); }
+    bool operator>(const Position& other) const { return (x != other.x ? x > other.x : y > other.y); }
     Position operator+(const Position& other) const { return Position(x + other.x, y + other.y); }
-    Position& operator+=(const Position& other) {
-        x += other.x, y += other.y;
-        return *this;
-    }
+    Position& operator+=(const Position& other) { x += other.x, y += other.y; return *this; }
     bool operator==(const Position& other) const { return bool(x == other.x && y == other.y); }
-    bool operator!=(const Position& other) const { return bool(x != other.x && y != other.y); }
+    bool operator!=(const Position& other) const { return bool(x != other.x || y != other.y); }
 };
 
 const Position dir_straight[4]{ Position(0, 1), Position(0, -1), Position(1, 0), Position(-1, 0) };
 const Position dir_diagonal[4]{ Position(1, 1), Position(1, -1), Position(-1, -1), Position(-1, 1) };
 const Position dir_all[8]{ Position(0, 1), Position(0, -1), Position(1, 0), Position(-1, 0), Position(1, 1), Position(1, -1), Position(-1, -1), Position(-1, 1) };
 const Position dir_knight[8]{ Position(1, 2), Position(-1, 2), Position(2, 1), Position(-2, 1), Position(2, -1), Position(-2, -1), Position(1, -2), Position(-1, -2) };
-
-
 const Piece_type promotion_list[4] = { QUEEN, ROOK, BISHOP, KNIGHT, };
 
 bool notationCheck(const string& st);

@@ -18,10 +18,7 @@ const bool Chess::isThisMoveLegal(const Move& move) const {
 }
 
 void Chess::append(set<Move>* s, const Move& move) {
-    if (isThisMoveLegal(move)) {
-        s->insert(move);
-        cout << "\n" << move.get_string() << " insert ! ";
-    }
+    if (isThisMoveLegal(move))  s->insert(move);
 }
 void Chess::repeatCheck(set<Move>* s, const Piece& piece, const Position& ori, const Position& dir) {
     Position dest = ori;
@@ -68,7 +65,6 @@ set<Move>* Chess::knight(const Position& pos, const Piece& piece) {
     set<Move>* s = new set<Move>;
     for (int i = 0; i < 8; i++) {
         oneCheck(s, piece, pos, dir_knight[i]);
-        cout << s->size() << ", ";
     }
     return s;
 
@@ -86,8 +82,8 @@ set<Move>* Chess::king(const Position& pos, const Piece& piece) {
 }
 set<Move>* Chess::pawn(const Position& pos, const Piece& piece) {
     set<Move>* s = new set<Move>;
-    Color color = board[pos.y][pos.x].piece.color;
-    int dir = WHITE ? +1 : -1;
+    Color color = piece.color;
+    int dir = (color == WHITE ? +1 : -1);
     // MOVE
     Position dest = pos; dest.y += dir;
     if (board[dest.y][dest.x].empty()) {
@@ -99,7 +95,6 @@ set<Move>* Chess::pawn(const Position& pos, const Piece& piece) {
         if (pos.y == (color == WHITE ? 1 : 6)) { // first move
             dest.y += dir;
             if (board[dest.y][dest.x].empty()) {
-                cout << "YES !! first move !!\n";
                 append(s, Move(piece, pos, dest));
             }
         }
@@ -130,14 +125,13 @@ set<Move>* Chess::pawn(const Position& pos, const Piece& piece) {
 set<Move>* Chess::get_legalMoveList(const Position& pos) {
     set<Move>* s = new set<Move>;
     switch (board[pos.y][pos.x].piece.type) {
-    case KING: cout << "KING !!\n"; s = king(pos, board[pos.y][pos.x].piece); break;
-    case QUEEN: cout << "QUEEN !!\n"; s = queen(pos, board[pos.y][pos.x].piece); break;
-    case ROOK: cout << "ROOK !!\n"; s = rook(pos, board[pos.y][pos.x].piece); break;
-    case KNIGHT: cout << "KNIGHT !!\n"; s = knight(pos, board[pos.y][pos.x].piece); break;
-    case BISHOP: cout << "BISHOP !!\n"; s = bishop(pos, board[pos.y][pos.x].piece); break;
-    case PAWN: cout << "PAWN !!\n"; s = pawn(pos, board[pos.y][pos.x].piece);break;
+    case KING: s = king(pos, board[pos.y][pos.x].piece); break;
+    case QUEEN: s = queen(pos, board[pos.y][pos.x].piece); break;
+    case ROOK: s = rook(pos, board[pos.y][pos.x].piece); break;
+    case KNIGHT: s = knight(pos, board[pos.y][pos.x].piece); break;
+    case BISHOP: s = bishop(pos, board[pos.y][pos.x].piece); break;
+    case PAWN: s = pawn(pos, board[pos.y][pos.x].piece);break;
     }
-    cout << "size : " << s->size() << "\n";
     return s;
 }
 
@@ -290,7 +284,6 @@ set<Move>* Chess::get_candidateMove(const Color& color) {
     set<Move>* moves = new set<Move>;
     for (int y = 0; y < 8; y++) for (int x = 0; x < 8; x++)
         if (!board[y][x].empty() && board[y][x].piece.color == color) {
-            cout << x << ", " << y << " : ";
             set<Move>* s = get_legalMoveList(Position(x, y));
             for (const Move& move : *s)
                 moves->insert(move);

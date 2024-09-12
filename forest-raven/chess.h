@@ -12,6 +12,8 @@ struct Piece {
     Piece_type type = NOPIECE;
     Color color = NOCOLOR;
 
+    bool operator<(const Piece& other) const { return (type != other.type ? type < other.type : color < other.color); }
+
     Piece(){}
     Piece(Piece_type t, Color c) : type(t), color(c) {}
 };
@@ -36,7 +38,9 @@ struct Move {
     bool operator<(const Move& other) const {
         if (ori != other.ori) return ori < other.ori;
         if (dest != other.dest) return dest < other.dest;
-        return take < other.take;
+        if (take != other.take) return take < other.take;
+        if (promotion_type != other.promotion_type) return promotion_type < other.promotion_type;
+        return piece < other.piece;
     }
 
     // NULL
