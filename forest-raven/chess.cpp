@@ -103,8 +103,13 @@ set<Move>* Chess::pawn(const Position& pos, const Piece& piece) {
     // ATTACK
     // Normal attack
     auto attack = [&](const Position& dest) -> void {
-        if (boundaryCheck(dest) && isEnemy(pos, dest))
-            append(s, Move(piece, pos, dest, dest));
+        if (boundaryCheck(dest) && isEnemy(pos, dest)) {
+            if (dest.y == (color == WHITE ? 7 : 0)) { // takes and promotion
+                for (int i = 0; i < 4; i++)
+                    append(s, Move(piece, pos, dest, dest, promotion_list[i]));
+            }
+            else append(s, Move(piece, pos, dest, dest));
+        }
         };
     attack(pos + Position(-1, dir));
     attack(pos + Position(+1, dir));
@@ -114,11 +119,7 @@ set<Move>* Chess::pawn(const Position& pos, const Piece& piece) {
     if (en_passent_dir != 0) {
         Position dest = Position(pos.x + en_passent_dir, pos.y + dir);
         Position take = Position(pos.x + en_passent_dir, pos.y);
-        if (dest.y == (color == WHITE ? 7 : 0)) { // takes and promotion
-            for (int i = 0; i < 4; i++)
-                append(s, Move(piece, pos, dest, take, promotion_list[i]));
-        }
-        else append(s, Move(piece, pos, dest, take));
+        append(s, Move(piece, pos, dest, take));
     }
     return s;
 }
@@ -254,13 +255,13 @@ const bool Chess::castling_check(const Color& color, const bool& isKingside) con
 }
 const int Chess::en_passent_check(const Position& pos) {
     Color color = board[pos.y][pos.x].piece.color;
-    if (pos.y != (color == WHITE ? 4 : 3) || prevMove.move.piece.type != PAWN) return 0;
+    if (pos.y != (color == WHITE ? 4 : 3) || prevMove.piece.type != PAWN) return 0;
 
     int dir = (color == WHITE ? +2 : -2);
     Position KSide[2] = { Position(pos.x + 1, pos.y + dir), Position(pos.x + 1, pos.y) };
     Position QSide[2] = { Position(pos.x - 1, pos.y + dir), Position(pos.x - 1, pos.y) };
-    if (boundaryCheck(KSide[0]) && KSide[0] == prevMove.move.ori && KSide[1] == prevMove.move.dest) return 1;
-    if (boundaryCheck(QSide[0]) && QSide[0] == prevMove.move.ori && QSide[1] == prevMove.move.dest) return -1;
+    if (boundaryCheck(KSide[0]) && KSide[0] == prevMove.ori && KSide[1] == prevMove.dest) return 1;
+    if (boundaryCheck(QSide[0]) && QSide[0] == prevMove.ori && QSide[1] == prevMove.dest) return -1;
     return 0;
 }
 
@@ -276,7 +277,7 @@ void Chess::reset() {
     turn = WHITE, myColor = WHITE;
     king_position_wb[0] = Position(4, 0), king_position_wb[1] = Position(4, 7);
     for (int i = 0; i < 4; i++) kr_moveCheck_wb_qk[i / 2][i % 2] = false;
-    prevMove.clear();
+    prevMove = Move();
     calAttackSquare();
 }
 

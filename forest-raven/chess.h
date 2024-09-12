@@ -58,6 +58,13 @@ struct Move {
     // Pawn take something and promotion
     Move(Piece p, Position o, Position d, Position t, Piece_type pro) : piece(p), ori(o), dest(d), take(t), promotion_type(pro) {};
 
+    void set(const Move& other) { 
+        piece = other.piece;
+        ori = other.ori;
+        dest = other.dest;
+        take = other.take;
+        promotion_type = other.promotion_type;
+    }
     Move_type get_move_type() const {
         if (piece.type == KING && abs(ori.x - dest.x) == 2) return CASTLING;
         else if (promotion_type != NOPIECE) return (take.x == -1 ? MOVE_PRO : CAPTURE_PRO);
@@ -84,20 +91,11 @@ struct Move {
     }
 };
 
-struct PreviousMove {
-    Move move;
-
-    PreviousMove() {}
-
-    void set(Move m) { move = m; }
-    void clear() { move = Move(); }
-};
-
 class Chess {
 private:
     Position king_position_wb[2]{ Position(4, 0), Position(4, 7) };
     bool kr_moveCheck_wb_qk[2][2];
-    PreviousMove prevMove;
+    Move prevMove;
 
     const bool boundaryCheck(const Position& pos) const;
     const bool isAlly(const Position& a, const Position& b) const;
