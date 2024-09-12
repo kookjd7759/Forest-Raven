@@ -23,14 +23,14 @@ def read():
         print(f'connector.read {output}')
     return output.strip()
 
-def send_move(cur_x: int, cur_y: int, dest_x: int, dest_y: int, promotion):
-    send(f'{cur_x} {cur_y} {dest_x} {dest_y} {promotion}')
+def send_move(cur_x: int, cur_y: int, dest_x: int, dest_y: int, take_x: int, take_y: int, promotion: int):
+    send(f'{cur_x} {cur_y} {dest_x} {dest_y} {take_x} {take_y} {promotion}')
 
 def get_move():
     print('get_move')
     output = read()
-    now_x, now_y, next_x, next_y, promotion = map(int, output.split())
-    return now_x, now_y, next_x, next_y, promotion
+    now_x, now_y, next_x, next_y, take_x, take_y, promotion = map(int, output.split())
+    return now_x, now_y, next_x, next_y, take_x, take_y, promotion
 
 def set_color(color: Literal[0, 1]):
     print('set_color')

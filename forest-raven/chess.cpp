@@ -122,7 +122,7 @@ set<Move>* Chess::pawn(const Position& pos, const Piece& piece) {
     }
     return s;
 }
-set<Move>* Chess::get_legalMoveList(const Position& pos) {
+set<Move>* Chess::legal_moves(const Position& pos) {
     set<Move>* s = new set<Move>;
     switch (board[pos.y][pos.x].piece.type) {
     case KING: s = king(pos, board[pos.y][pos.x].piece); break;
@@ -284,7 +284,7 @@ set<Move>* Chess::get_candidateMove(const Color& color) {
     set<Move>* moves = new set<Move>;
     for (int y = 0; y < 8; y++) for (int x = 0; x < 8; x++)
         if (!board[y][x].empty() && board[y][x].piece.color == color) {
-            set<Move>* s = get_legalMoveList(Position(x, y));
+            set<Move>* s = legal_moves(Position(x, y));
             for (const Move& move : *s)
                 moves->insert(move);
         }

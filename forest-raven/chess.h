@@ -114,7 +114,7 @@ private:
     set<Move>* knight(const Position& pos, const Piece& piece);
     set<Move>* king(const Position& pos, const Piece& piece);
     set<Move>* pawn(const Position& pos, const Piece& piece);
-    set<Move>* get_legalMoveList(const Position& pos);
+    set<Move>* legal_moves(const Position& pos);
 
     void repeatCheck(set<Position>* s, const Position& ori, const Position& dir);
     void oneCheck(set<Position>* s, const Position& ori, const Position& dir);

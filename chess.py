@@ -1,10 +1,33 @@
 from typing import Literal
 from pubsub import pub
+from enum import Enum
 
 import connector
 
+class Color(Enum):
+    NOCOLOR = -1
+    WHITE = 0
+    BLACK = 1
+
+class Move_type(Enum):
+    NOMOVE = -1,
+    MOVE = 0
+    CAPTURE = 1
+    MOVE_PRO = 2
+    CAPTURE_PRO = 3
+    CASTLING = 4
+
+class Piece_type(Enum):
+    NOPIECE = -1,
+    QUEEN = 0
+    ROOK = 1
+    BISHOP = 2
+    KNIGHT = 3
+    KING = 4
+    PAWN = 5
+
 class Position:
-    def __init__(self, x: int, y: int):
+    def __init__(self, x: int = -1, y: int = -1):
         self.x = x
         self.y = y
         
@@ -16,15 +39,17 @@ class Position:
         if isinstance(other, Position):
             return self.x == other.x and self.y == other.y
 
-
+class Move:
+    def __init__(self):
+        self.ori = Position()
+        self.dest = Position()
+        self.take = Position()
 
 def to_position(notation: str):
     return Position(ord(notation[0]) - ord('a'), ord(notation[1]) - ord('1'))
     
 def to_notation(position: Position):
-    return chr(position.x + ord('a')) + chr(position.y + ord('1'))
-
-
+    return chr(position.x + ord('a')) + chr(position.y + ord('1')) if position.x != -1 else 'NULL'
 
 class Chess:
     Color = { # 'White' : 0, 'Black' : 1
@@ -475,7 +500,7 @@ class Chess:
         list = self.board.get_legalMoveList(pos)
         return list
 
-    def move(self, cur: Position, dest: Position, promotion: Literal[0, 1, 2, 3] = None): # (-1) can't move (0) None (1) CheckMate (2) StaleMate
+    def move(self, cur: Position, dest: Position, take: Position, promotion: Literal[0, 1, 2, 3] = None): # (-1) can't move (0) None (1) CheckMate (2) StaleMate
         print('chess.move function')
         square = self.board.get_square(cur)
 
@@ -515,12 +540,13 @@ class Chess:
 
     def AI_move(self, promotion):
         connector.send_move(self.board.prev_move.prev.x, self.board.prev_move.prev.y, self.board.prev_move.now.x, self.board.prev_move.now.y, promotion)
-        now_x, now_y, next_x, next_y, promotion = connector.get_move()
+        now_x, now_y, next_x, next_y, take_x, take_y, promotion = connector.get_move()
         cur = Position(now_x, now_y)
         dest = Position(next_x, next_y)
-        print(f'AI MOVE COMMAND {to_notation(cur)} -> {to_notation(dest)}')
-        self.move(cur, dest, promotion)
-        pub.sendMessage('AI_move', cur=cur, dest=dest, smooth=True)
+        take = Position(take_x, take_y)
+        print(f'AI MOVE COMMAND {to_notation(cur)} -> {to_notation(dest)} / take {to_notation(take)}')
+        self.move(cur, dest, take, promotion)
+        pub.sendMessage('AI_move', cur=cur, dest=dest, take=take, smooth=True)
 
 
 if __name__ == '__main__':

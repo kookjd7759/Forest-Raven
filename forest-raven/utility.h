@@ -7,29 +7,29 @@
 using namespace std;
 
 enum Color {
+    NOCOLOR = -1,
     WHITE,
-    BLACK,
-    NOCOLOR
+    BLACK
 };
 const char colorToChar[3] = { 'w', 'b', '-' };
 
 enum Move_type {
+    NOMOVE = -1,
     MOVE,
     CAPTURE,
     MOVE_PRO,
     CAPTURE_PRO,
-    CASTLING,
-    NOMOVE
+    CASTLING
 };
 
 enum Piece_type {
+    NOPIECE = -1,
     QUEEN,
     ROOK,
     BISHOP,
     KNIGHT,
     KING,
     PAWN,
-    NOPIECE
 };
 const char typeToChar[7] = { 'Q', 'R', 'B', 'N', 'K', 'P', '-' };
 

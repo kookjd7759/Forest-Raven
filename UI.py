@@ -438,7 +438,7 @@ class Window(QWidget):
             self.board[pos.y][pos.x].die()
         self.board[pos.y][pos.x] = None
 
-    def move_piece(self, cur: chess.Position, dest: chess.Position, smooth: bool):
+    def move_piece(self, cur: chess.Position, dest: chess.Position, take: chess.Position, smooth: bool):
         UIpos = self.convert_position(dest)
         self.board[cur.y][cur.x].move_smooth(UIpos) if smooth else self.board[cur.y][cur.x].move_direct(UIpos)
         isPromotion = False
