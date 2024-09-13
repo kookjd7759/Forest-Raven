@@ -1,10 +1,11 @@
 import subprocess
-import path
+import os
 
 from utility import *
+exepath = os.getcwd() + '\\Forest-Raven\\forest-raven\\build\\Debug\\Forest_Raven.exe'
 
 process = subprocess.Popen(
-    [path.getGameexeFile()],
+    [exepath],
     stdin = subprocess.PIPE,
     stdout = subprocess.PIPE, 
     stderr = subprocess.PIPE,

@@ -291,7 +291,7 @@ class Chess:
     def __init__(self):
         self.king_position_wb = list[Position]
         self.kr_moveCheck_wb_qk = list[list[bool]]
-        self.prev_move = Chess.PreviousMove()
+        self.prev_move = Move()
         self.turn = Color.WHITE
         self.player = Color.WHITE
         self.init_value()
