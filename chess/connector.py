@@ -1,7 +1,7 @@
 import subprocess
 import path
-import time
 from typing import Literal
+from utility import *
 
 process = subprocess.Popen(
     [path.getGameexeFile()],
@@ -23,16 +23,16 @@ def read():
         print(f'connector.read {output}')
     return output.strip()
 
-def send_move(cur_x: int, cur_y: int, dest_x: int, dest_y: int, take_x: int, take_y: int, promotion: int):
-    send(f'{cur_x} {cur_y} {dest_x} {dest_y} {take_x} {take_y} {promotion}')
+def send_move(move: Move):
+    send(move.get_string())
 
 def get_move():
-    print('get_move')
-    output = read()
-    now_x, now_y, next_x, next_y, take_x, take_y, promotion = map(int, output.split())
-    return now_x, now_y, next_x, next_y, take_x, take_y, promotion
+    text = read()
+    move = Move()
+    move.string_init(text)
+    return move
 
-def set_color(color: Literal[0, 1]):
+def set_color(color: Color):
     print('set_color')
     send(f'{color}')
 
