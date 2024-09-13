@@ -333,9 +333,9 @@ class Chess:
     def get_legalMove(self, pos: Position):
         return self.__legal_moves(pos)
 
-    def play(self, cur: Position, dest: Position, take: Position, promotion: Literal[0, 1, 2, 3] = None): # (-1) can't move (0) None (1) CheckMate (2) StaleMate
+    def play(self, move: Move): # (-1) can't move (0) None (1) CheckMate (2) StaleMate
         print('chess.move function')
-        square = self.board.get_square(cur)
+        square = self.board[move.ori.y][move.ori.x]
 
         ### piece existence check
         if square.empty():
@@ -349,16 +349,17 @@ class Chess:
         
         ### move check
         isLegal = False
-        legalMoveList = self.board.get_legalMoveList(cur)
-        for move in legalMoveList:
-            if move.isEqual(dest):
+        legalMoveList = self.__legal_moves(move.ori)
+        for legalMove in legalMoveList:
+            if move.isEqual(legalMove):
                 isLegal = True
+                break
         
         if not isLegal:
             print('move()::it\'s illegal move')
             return -1
         
-        if square.piece.type == self.Type['Pawn'] and dest.y == (7 if square.piece.color == Chess.Color['White'] else 0) and promotion == None: # promotion check
+        if square.piece.type == Piece_type.PAWN and dest.y == (7 if square.piece.color == Chess.Color['White'] else 0) and promotion == None: # promotion check
             print('promotion signal !!')
             return 3
         

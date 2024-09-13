@@ -68,7 +68,11 @@ class Move:
         self.dest = Position(int(st[2]),int(st[3]))
         self.take = Position(int(st[4]), int(st[5]))
         self.promotion_type = promotion_list[int(st[6])]
-    
+    def isEqual(self, other):
+        if isinstance(other, Move):
+            return self.piece.type == other.piece.type and self.piece.color == other.piece.color and \
+                self.ori.isEqual(other.ori) and self.dest.isEqual(other.dest) and self.take.isEqual(other.take) and self.promotion_type == other.promotion_type
+
 class Square:
     def __init__(self, piece: Piece = None):
         self.piece = piece
