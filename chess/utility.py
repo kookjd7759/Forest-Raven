@@ -5,7 +5,7 @@ class Color(Enum):
     WHITE = 0
     BLACK = 1
 def opponent(color: Color):
-    return Color.WHITE if color == Color.BLACK else Color.WHITE
+    return Color.BLACK if color == Color.WHITE else Color.WHITE
 
 class Move_type(Enum):
     NOMOVE = -1,
@@ -30,8 +30,7 @@ class Position:
         self.y = y
         
     def __add__(self, other):
-        if isinstance(other, Position):
-            return Position(self.x + other.x, self.y + other.y)
+        return Position(self.x + other.x, self.y + other.y)
     def isEqual(self, other):
         if isinstance(other, Position):
             return self.x == other.x and self.y == other.y
@@ -42,7 +41,7 @@ class Piece:
         self.color = color
 
 class Move:
-    def __init__(self, piece: Piece, ori: Position, dest: Position, take: Position = None, promotion_type: Piece_type = None):
+    def __init__(self, piece: Piece = Piece(), ori: Position = Position(), dest: Position = Position(), take: Position = None, promotion_type: Piece_type = None):
         self.piece = piece
         self.ori = ori
         self.dest = dest
@@ -61,7 +60,12 @@ class Move:
         else: 
             return Move_type.NOMOVE
     def get_string(self):
-        return f'{str(self.ori.x)} {str(self.ori.y)} {str(self.dest.x)} {str(self.dest.y)} {str(self.take.x)} {str(self.take.y)} {self.promotion_type}'
+        st = f'{str(self.ori.x)} {str(self.ori.y)} {str(self.dest.x)} {str(self.dest.y)} {str(self.take.x)} {str(self.take.y)} '
+        if self.promotion_type == Piece_type.NOPIECE:
+            st += '-1'
+        else:
+            st += f'{self.promotion_type.value}'
+        return st
     def string_init(self, text: str):
         st = text.split()
         self.ori = Position(int(st[0]), int(st[1]))
@@ -81,7 +85,7 @@ class Square:
     def set(self, piece: Piece):
         self.piece = piece 
     def isAttacked(self, color: Color):
-        return True if self.attack_wb[opponent(color)] != 0 else False
+        return True if self.attack_wb[opponent(color).value] != 0 else False
     def empty(self):
         return True if self.piece == None else False
 

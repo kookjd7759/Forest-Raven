@@ -2,10 +2,11 @@ import subprocess
 import os
 
 from utility import *
-exepath = os.getcwd() + '\\Forest-Raven\\forest-raven\\build\\Debug\\Forest_Raven.exe'
+
+exePath = os.getcwd() + '\\Forest-Raven\\forest-raven\\build\\Debug\\Forest_Raven.exe'
 
 process = subprocess.Popen(
-    [exepath],
+    [exePath],
     stdin = subprocess.PIPE,
     stdout = subprocess.PIPE, 
     stderr = subprocess.PIPE,
@@ -35,7 +36,7 @@ def get_move():
 
 def set_color(color: Color):
     print('set_color')
-    send(f'{color}')
+    send(f'{color.value}')
 
 if __name__ == '__main__':
     set_color(0)
