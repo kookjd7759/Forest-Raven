@@ -96,5 +96,5 @@ dir_diagonal = { Position(1, 1), Position(1, -1), Position(-1, -1), Position(-1,
 dir_all = { Position(0, 1), Position(0, -1), Position(1, 0), Position(-1, 0), Position(1, 1), Position(1, -1), Position(-1, -1), Position(-1, 1) }
 dir_knight = { Position(1, 2), Position(-1, 2), Position(2, 1), Position(-2, 1), Position(2, -1), Position(-2, -1), Position(1, -2), Position(-1, -2)}
 
-initList = (Piece_type.ROOK, Piece_type.KNIGHT, Piece_type.BISHOP, Piece_type.QUEEN, Piece_type.KING, Piece_type.BISHOP, Piece_type.KNIGHT, Piece_type.ROOK)
+initPos_type = (Piece_type.ROOK, Piece_type.KNIGHT, Piece_type.BISHOP, Piece_type.QUEEN, Piece_type.KING, Piece_type.BISHOP, Piece_type.KNIGHT, Piece_type.ROOK)
 promotion_list = (Piece_type.QUEEN, Piece_type.ROOK, Piece_type.BISHOP, Piece_type.KNIGHT)

@@ -1,7 +1,7 @@
-from typing import Literal
 from pubsub import pub
 import copy
 import connector
+
 from utility import *
 
 class Chess:
@@ -301,7 +301,7 @@ class Chess:
         
         connector.set_color(opponent(self.player))
         pub.subscribe(self.AI_move, 'Player_move')
-    
+
     def init_board(self):
         for _ in self.board:
             for square in _:
@@ -309,12 +309,11 @@ class Chess:
 
         for i in range(8): 
             self.board[1][i].set(Piece(Piece_type.PAWN, Color.WHITE)) # White's pawns
-            self.board[0][i].set(Piece(initList[i], Color.WHITE)) # White's backrank pieces
+            self.board[0][i].set(Piece(initPos_type[i], Color.WHITE)) # White's backrank pieces
             self.board[6][i].set(Piece(Piece_type.PAWN, Color.BLACK)) # Black's pawns
-            self.board[7][i].set(Piece(initList[i], Color.BLACK)) # Black's backrank pieces
+            self.board[7][i].set(Piece(initPos_type[i], Color.BLACK)) # Black's backrank pieces
             
         self.__calAttackSquare()
-    
     def init_value(self):
         self.king_position_wb = [Position(4, 0), Position(4, 7)]
         self.kr_moveCheck_wb_qk = [[False, False],[False, False]]
@@ -333,55 +332,17 @@ class Chess:
     def get_legalMove(self, pos: Position):
         return self.__legal_moves(pos)
 
-    def play(self, move: Move): # (-1) can't move (0) None (1) CheckMate (2) StaleMate
-        print('chess.move function')
-        square = self.board[move.ori.y][move.ori.x]
+### PLAY MOVE
+    def PLAYER(self, move: Move): # (-1) can't move (0) None (1) CheckMate (2) StaleMate
+        print(f'PLAYER PLAY {move.get_move_type()} [{to_notation(move.ori)} -> {to_notation(move.dest)}]')
+        self.__play(move)
 
-        ### piece existence check
-        if square.empty():
-            print('move()::there is no piece')
-            return -1
-        
-        ### piece color check
-        if self.turn != square.piece.color:
-            print('move()::it\'s not their\'s turn')
-            return -1
-        
-        ### move check
-        isLegal = False
-        legalMoveList = self.__legal_moves(move.ori)
-        for legalMove in legalMoveList:
-            if move.isEqual(legalMove):
-                isLegal = True
-                break
-        
-        if not isLegal:
-            print('move()::it\'s illegal move')
-            return -1
-        
-        if square.piece.type == Piece_type.PAWN and dest.y == (7 if square.piece.color == Chess.Color['White'] else 0) and promotion == None: # promotion check
-            print('promotion signal !!')
-            return 3
-        
-        ### Move
-        self.board.move(cur, dest, promotion)
-        self.board.print_board()
-        self.turn = self.Color['White'] if self.turn == self.Color['Black'] else self.Color['Black']
-        print(f'[turn] : {"WHITE" if self.turn == 0 else "BLACK"}')
-
-        ### game end check
-        return self.board.gameEnd_check(self.turn)
-
-    def AI_Play(self, promotion):
-        connector.send_move(self.board.prev_move.prev.x, self.board.prev_move.prev.y, self.board.prev_move.now.x, self.board.prev_move.now.y, promotion)
-        now_x, now_y, next_x, next_y, take_x, take_y, promotion = connector.get_move()
-        cur = Position(now_x, now_y)
-        dest = Position(next_x, next_y)
-        take = Position(take_x, take_y)
-        print(f'AI MOVE COMMAND {to_notation(cur)} -> {to_notation(dest)} / take {to_notation(take)}')
-        self.move(cur, dest, take, promotion)
-        pub.sendMessage('AI_move', cur=cur, dest=dest, take=take, smooth=True)
-
+    def AI(self):
+        connector.send_move(self.prev_move)
+        move = connector.get_move()
+        print(f'AI PLAY {move.get_move_type()} [{to_notation(move.ori)} -> {to_notation(move.dest)}]')
+        self.__play(move)
+        pub.sendMessage('AI', cur=cur, dest=dest, take=take, smooth=True)
 
 if __name__ == '__main__':
     chess = Chess()
