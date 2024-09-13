@@ -201,17 +201,17 @@ class Window(QWidget):
             self.__capture(move)
             self.__promotion(move)
     def __isLegal(self, dest: Position):
-        legal_moves = self.chess.get_legalMove(self.selected)
-        for move in legal_moves:
+        for move in self.legalMove:
             if move.ori == self.selected and move.dest == dest:
-                return True
-        return False
+                return move
+        return None
 
     def PLAYER_PLAY(self, dest: Position):
-        if self.__isLegal(dest):
-            self.__play(dest)
-
+        move = self.__isLegal(dest)
+        if move != None:
+            self.__play(move)
     def AI_PLAY(self, move: Move):
+        self.__play(move)
         
 
     def __play(self, dest: Position, smooth: bool):
