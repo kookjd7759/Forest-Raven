@@ -16,7 +16,7 @@ from chess.chess import *
 class Window(QWidget):
 ### Utility
     def convert_position(self, pos: Position): # UI to Board / Board to UI position converting
-        return Position(pos.x, 7 - pos.y) if self.chess.player == self.chess.Color['White'] else Position(7 - pos.x, pos.y)
+        return Position(pos.x, 7 - pos.y) if self.chess.player == Color.WHITE else Position(7 - pos.x, pos.y)
 
 ### Legal move
     def set_legalMove(self):
@@ -46,10 +46,10 @@ class Window(QWidget):
 
 ### Highlight
     def off_light(self, pos: Position):
-        UIpos = convert_position(pos)
+        UIpos = self.convert_position(pos)
         self.highlight[UIpos.y][UIpos.x].off()
     def on_light(self, pos: Position, isSelectedLight):
-        UIpos = convert_position(pos)
+        UIpos = self.convert_position(pos)
         self.highlight[UIpos.y][UIpos.x].on(isSelectedLight)
         if self.board[pos.y][pos.x] != None:
             self.board[pos.y][pos.x].raise_()
@@ -87,8 +87,8 @@ class Window(QWidget):
         pub.subscribe(self.move_piece, 'AI')
 
     def reset(self):
-        self.selected = chess.Position(-1, -1)
-        self.legalMove: list[chess.Position] = []
+        self.selected = Position()
+        self.legalMove = []
         self.chess.restart()
         self.init_pieces()
         self.off_all_light()
@@ -149,7 +149,7 @@ class Window(QWidget):
 
 ### piece
     def create_piece(self, piece: Piece, pos: Position): # Get Board Position
-        UIpos = convert_position(pos) # Board to UI Position
+        UIpos = self.convert_position(pos) # Board to UI Position
         self.board[pos.y][pos.x] = ChessPiece(self, piece, UIpos, self.piece_callback_press, self.piece_callback_land)
     def init_pieces(self):
         for i in range(8):
@@ -165,57 +165,56 @@ class Window(QWidget):
             self.create_piece(Piece(initPos_type[i], Color.BLACK), Position(i, 7)) # Black other pieces
 
 ### move
-    def capture(self, pos: Position):
-        if self.board[pos.y][pos.x] != None:
-            self.board[pos.y][pos.x].die()
-        self.board[pos.y][pos.x] = None
+    def __move(self, move: Move, smooth):
+        self.board[move.ori.y][move.ori.x].move_piece(smooth)
+        self.board[move.dest.y][move.dest.x] = self.board[move.ori.y][move.ori.x]
+        self.board[move.ori.y][move.ori.x] = None
+    def __capture(self, move: Move):
+        self.board[move.take.y][move.take.x].die()
+        self.board[move.take.y][move.take.x] = None
+        self.move(move)
+    def __castling(self, move: Move):
+        rank = (0 if move.piece.color == Color.WHITE else 7)
+        if move.dest.x > move.ori.x: # king side 
+            rook_pos = Position(7, rank)
+            self.move(move)
+            self.move(Move(Piece(Piece_type.ROOK, move.piece.color), rook_pos, move.dest + Position(-1, 0)))
+        else: # queen side
+            rook_pos = Position(0, rank)
+            self.move(move)
+            self.move(Move(Piece(Piece_type.ROOK, move.piece.color), rook_pos, move.dest + Position(+1, 0)))
+    def __promotion(self, move: Move):
+        self.board[move.dest.y][move.dest.x].die()
+        self.create_piece(Piece(move.promotion_type, move.piece.color), move.dest)
+    def __play(self, move: Move):
+        move_type = move.get_move_type()
+        if move_type == Move_type.MOVE:
+            self.__move(move)
+        elif move_type == Move_type.CAPTURE:
+            self.__capture(move)
+        elif move_type == Move_type.CASTLING:
+            self.__castling(move)
+        elif move_type == Move_type.MOVE_PRO:
+            self.__move(move)
+            self.__promotion(move)
+        elif move_type == Move_type.CAPTURE_PRO:
+            self.__capture(move)
+            self.__promotion(move)
+    def __isLegal(self, dest: Position):
+        legal_moves = self.chess.get_legalMove(self.selected)
+        for move in legal_moves:
+            if move.ori == self.selected and move.dest == dest:
+                return True
+        return False
 
-    def move_piece(self, cur: Position, dest: Position, take: Position, smooth: bool):
-        UIpos = self.convert_position(dest)
-        self.board[cur.y][cur.x].move_smooth(UIpos) if smooth else self.board[cur.y][cur.x].move_direct(UIpos)
-        isPromotion = False
-        if self.board[cur.y][cur.x].piece_type == 'King' and abs(dest.x - cur.x) == 2: # Castling
-            rank = (0 if self.board[cur.y][cur.x].color == self.chess.Color['White'] else 7)
-            if dest.x > cur.x: # King Side Castling
-                print('# King Side Castling')
-                self.move_piece(chess.Position(7, rank), dest + chess.Position(-1, 0), smooth=True)
-            else: # Queen Side Castling
-                print('# Queen Side Castling')
-                self.move_piece(chess.Position(0, rank), dest + chess.Position(+1, 0), smooth=True)
-        elif self.board[cur.y][cur.x].piece_type == 'Pawn':
-            if dest.y == (7 if self.board[cur.y][cur.x].color == self.chess.Color['White'] else 0): # promotion
-                isPromotion = True
-            if cur.x != dest.x: # Pawn takes somthing
-                if self.board[dest.y][dest.x] == None: # en_passent move
-                    dir = chess.Position(0, (-1 if self.board[cur.y][cur.x].color == self.chess.Color['White'] else +1))
-                    attack = dest + dir
-                    self.capture(attack)
+    def PLAYER_PLAY(self, dest: Position):
+        if self.__isLegal(dest):
+            self.__play(dest)
 
-        self.capture(dest)
-        self.board[dest.y][dest.x] = self.board[cur.y][cur.x]
-        self.board[cur.y][cur.x] = None
+    def AI_PLAY(self, move: Move):
+        
 
-        if isPromotion: # Promotion
-            # (0)Queen (1)Rook (2)Bishop (3)Knight
-            self.board[dest.y][dest.x].die() # delete Piece
-            self.board[dest.y][dest.x] = None
-            type_text = ''
-            img_key_text = 'w' if self.chess.player == self.chess.Color['White'] else 'b'
-            if self.promotion_num == 0: # Queen promotion
-                type_text = 'Queen'
-                img_key_text += 'q'
-            elif self.promotion_num == 1:
-                type_text = 'Rook'
-                img_key_text += 'r'
-            elif self.promotion_num == 2:
-                type_text = 'Bishop'
-                img_key_text += 'b'
-            elif self.promotion_num == 3:
-                type_text = 'Knight'
-                img_key_text += 'n'
-            self.create_piece(type_text, img_key_text, dest, self.chess.player)
-
-    def play_move(self, dest: Position, smooth: bool):
+    def __play(self, dest: Position, smooth: bool):
         check = self.chess.move(self.selected, dest)
         # (-1) can't move (0) None (1) CheckMate (2) StaleMate (3) Promotion (4) By Repetition (5) Piece Shortage -> TODO
         if check != -1:

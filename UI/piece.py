@@ -27,7 +27,7 @@ class ChessPiece(QLabel):
         self.show()
         self.raise_()
 
-    def boundaryCheck(self):
+    def __boundaryCheck(self):
         piece_rect = self.rect().translated(self.mapToParent(QPoint(0, 0)))
         if piece_rect.left() < -30:
             self.move(-30, self.y()) 
@@ -37,46 +37,24 @@ class ChessPiece(QLabel):
             self.move(BOARD_SIZE - 30, self.y()) 
         if piece_rect.bottom() > BOARD_SIZE + 30:
             self.move(self.x(), BOARD_SIZE - 30)
-    def followMouse(self, mousePos):
+    def __followMouse(self, mousePos):
         self.raise_()
         pos = self.mapToParent(mousePos - QPoint(self.width() // 2, self.height() // 2))
         self.move(pos.x(), pos.y())
-        self.boundaryCheck()
-
-    def move_smooth(self, next_UIpos: Position):
-        x, y = next_UIpos.x, next_UIpos.y
-        self.animation.setStartValue(QPoint(self.UIpos.x * CELL_SIZE, self.UIpos.y * CELL_SIZE))
-        self.animation.setEndValue(QPoint(x * CELL_SIZE, y * CELL_SIZE))
-        
-        self.loop = QEventLoop()
-        self.animation.finished.connect(self.loop.quit)
-        
-        self.animation.start()
-        self.loop.exec_()
-        
-        self.move(x * CELL_SIZE, y * CELL_SIZE)
-        self.UIpos = next_UIpos
-    def move_direct(self, UIpos: Position):
-        self.move(UIpos.x * CELL_SIZE, UIpos.y * CELL_SIZE)
-        self.UIpos = UIpos
-    def move_return(self):
-        self.move(self.UIpos.x * CELL_SIZE, self.UIpos.y * CELL_SIZE)
-    def die(self):
-        self.hide()
-        self.deleteLater()
+        self.__boundaryCheck()
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             self.callback_press(self.UIpos)
             if self.parent().chess.player == self.color:
                 self.moving = True
-                self.followMouse(event.pos())
+                self.__followMouse(event.pos())
         if event.button() == Qt.RightButton and self.moving:
             self.moving = False
             self.callback_land(self.UIpos, self.color)
     def mouseMoveEvent(self, event):
         if self.moving:
-            self.followMouse(event.pos())
+            self.__followMouse(event.pos())
     def mouseReleaseEvent(self, event):
         if self.moving == False:
             return
@@ -86,3 +64,26 @@ class ChessPiece(QLabel):
             mousePos = self.parent().mapFromGlobal(self.mapToGlobal(event.pos()))
             land_UIpos = Position(max(0, min(mousePos.x() // CELL_SIZE, 7)), max(0, min(mousePos.y() // CELL_SIZE, 7))) # UI Position
             self.callback_land(land_UIpos)
+
+    def move_piece(self, next_UIpos: Position, smooth):
+        if smooth:
+            x, y = next_UIpos.x, next_UIpos.y
+            self.animation.setStartValue(QPoint(self.UIpos.x * CELL_SIZE, self.UIpos.y * CELL_SIZE))
+            self.animation.setEndValue(QPoint(x * CELL_SIZE, y * CELL_SIZE))
+            
+            self.loop = QEventLoop()
+            self.animation.finished.connect(self.loop.quit)
+            
+            self.animation.start()
+            self.loop.exec_()
+            
+            self.move(x * CELL_SIZE, y * CELL_SIZE)
+            self.UIpos = next_UIpos
+        else:
+            self.move(next_UIpos.x * CELL_SIZE, next_UIpos.y * CELL_SIZE)
+            self.UIpos = next_UIpos
+    def move_return(self):
+        self.move(self.UIpos.x * CELL_SIZE, self.UIpos.y * CELL_SIZE)
+    def die(self):
+        self.hide()
+        self.deleteLater()
