@@ -1,5 +1,5 @@
 from chess.utility import *
-import path
+import os
 CELL_SIZE = 60
 BOARD_SIZE = 480
 
@@ -9,8 +9,12 @@ WINDOW_POINT = {
     'RD': (BOARD_SIZE // 2 + PRO_WINDOW_SIZE // 2, BOARD_SIZE // 2 + PRO_WINDOW_SIZE // 2)
 }
 
+def getChessFolder():
+    return os.getcwd() + '\\Forest-Raven\\chess\\'
+def getImgFolder():
+    return os.getcwd() + '\\Forest-Raven\\img\\'
 def piece_img_path(piece: Piece):
-    return path.getImgFolder() + ('w' if piece.Color == Color.WHITE else 'b') + (type_to_symbol[piece.type]) + '.png'
+    return getImgFolder() + ('w' if piece.Color == Color.WHITE else 'b') + (type_to_symbol[piece.type]) + '.png'
 
 type_to_symbol = {
     Piece_type.QUEEN: 'q',

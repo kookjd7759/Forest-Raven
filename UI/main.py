@@ -1,8 +1,4 @@
 import sys
-from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from typing import Literal
 from pubsub import pub
 
 from utility import *
@@ -10,21 +6,12 @@ from windows import *
 from highLight import *
 from piece import *
 
-import path
 from chess.chess import *
 
 class Window(QWidget):
 ### Utility
     def convert_position(self, pos: Position): # UI to Board / Board to UI position converting
         return Position(pos.x, 7 - pos.y) if self.chess.player == Color.WHITE else Position(7 - pos.x, pos.y)
-
-### Legal move
-    def set_legalMove(self):
-        self.legalMove = self.chess.get_legalMove(self.selected)
-        self.on_legalMove_light()
-    def del_legalMove(self):
-        self.off_legalMove_light()
-        self.legalMove = []
 
 ### Selected piece
     def isSelected(self):
@@ -64,6 +51,14 @@ class Window(QWidget):
             for light in _:
                 light.off()
 
+### Legal move
+    def set_legalMove(self):
+        self.legalMove = self.chess.get_legalMove(self.selected)
+        self.on_legalMove_light()
+    def del_legalMove(self):
+        self.off_legalMove_light()
+        self.legalMove = []
+
 ### Window initalize
     def __init__(self):
         super().__init__()
@@ -99,7 +94,7 @@ class Window(QWidget):
             vbox = QVBoxLayout()
 
             lbl_board = QLabel(self)
-            lbl_board.setPixmap(QPixmap(self.img[path.getImgFolder() + 'Ground.png']))
+            lbl_board.setPixmap(QPixmap(self.img[getImgFolder() + 'Ground.png']))
             lbl_board.setFixedSize(BOARD_SIZE, BOARD_SIZE) # size of the chessboard
             lbl_board.setScaledContents(True)
 
@@ -166,7 +161,8 @@ class Window(QWidget):
 
 ### move
     def __move(self, move: Move, smooth):
-        self.board[move.ori.y][move.ori.x].move_piece(smooth)
+        UIpos = self.convert_position(move.dest)
+        self.board[move.ori.y][move.ori.x].move_piece(UIpos, smooth)
         self.board[move.dest.y][move.dest.x] = self.board[move.ori.y][move.ori.x]
         self.board[move.ori.y][move.ori.x] = None
     def __capture(self, move: Move):
@@ -202,10 +198,9 @@ class Window(QWidget):
             self.__promotion(move)
     def __isLegal(self, dest: Position):
         for move in self.legalMove:
-            if move.ori == self.selected and move.dest == dest:
+            if move.ori.isEqual(self.selected) and move.dest.isEqual(dest):
                 return move
         return None
-
     def PLAYER_PLAY(self, dest: Position):
         move = self.__isLegal(dest)
         if move != None:

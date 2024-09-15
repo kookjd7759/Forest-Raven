@@ -65,8 +65,8 @@ class ChessPiece(QLabel):
             self.callback_land(land_UIpos)
 
     def move_piece(self, next_UIpos: Position, smooth):
+        x, y = next_UIpos.x, next_UIpos.y
         if smooth:
-            x, y = next_UIpos.x, next_UIpos.y
             self.animation.setStartValue(QPoint(self.UIpos.x * CELL_SIZE, self.UIpos.y * CELL_SIZE))
             self.animation.setEndValue(QPoint(x * CELL_SIZE, y * CELL_SIZE))
             
@@ -75,12 +75,8 @@ class ChessPiece(QLabel):
             
             self.animation.start()
             self.loop.exec_()
-            
-            self.move(x * CELL_SIZE, y * CELL_SIZE)
-            self.UIpos = next_UIpos
-        else:
-            self.move(next_UIpos.x * CELL_SIZE, next_UIpos.y * CELL_SIZE)
-            self.UIpos = next_UIpos
+        self.move(x * CELL_SIZE, y * CELL_SIZE)
+        self.UIpos = next_UIpos
     def move_return(self):
         self.move(self.UIpos.x * CELL_SIZE, self.UIpos.y * CELL_SIZE)
     def die(self):
