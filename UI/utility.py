@@ -1,5 +1,7 @@
-from chess.utility import *
+import sys
 import os
+sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+from chess.utility import *
 CELL_SIZE = 60
 BOARD_SIZE = 480
 
@@ -14,7 +16,7 @@ def getChessFolder():
 def getImgFolder():
     return os.getcwd() + '\\Forest-Raven\\img\\'
 def piece_img_path(piece: Piece):
-    return getImgFolder() + ('w' if piece.Color == Color.WHITE else 'b') + (type_to_symbol[piece.type]) + '.png'
+    return getImgFolder() + ('w' if piece.color == Color.WHITE else 'b') + (type_to_symbol[piece.type]) + '.png'
 
 type_to_symbol = {
     Piece_type.QUEEN: 'q',

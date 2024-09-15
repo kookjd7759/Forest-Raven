@@ -12,7 +12,6 @@ class PromotionWindow(QLabel):
         self.color = color
         self.callback = callback
         self.finished = pyqtSignal()
-        self.loadImages()
         self.UIinit()
         self.off()
 
@@ -67,10 +66,9 @@ class PromotionWindow(QLabel):
         self.off()
 
 class GameEndWindow(QDialog): 
-    # loser = 0.win-white 1.win-black 2.Draw-staleMate 3.Draw-By Repetition 4.Draw-piece shortage 
-    def __init__(self, parent, callback, ret:Literal[0, 1, 2, 3]): # TODO -> define GAME OVER enum.
+    def __init__(self, parent, callback, gameOver:Gameover_type):
         super().__init__(parent)
-        self.ret = ret
+        self.gameOver = gameOver
         self.callback = callback
         self.initUI()
 
@@ -78,18 +76,15 @@ class GameEndWindow(QDialog):
         self.setFixedSize(170, 100)
         label = QLabel('test', self)
         label.setAlignment(Qt.AlignCenter)
-        if self.ret != 0 and self.ret != 1:
-            self.setWindowTitle('Draw')
-            text = 'Draw\n'
-            if self.ret == 2:
-                text += 'StaleMate'
-            elif self.ret == 3:
-                text += 'Piece Shortage'
-            label.setText(text)
-        else:
-            self.setWindowTitle('CheckMate')
-            print(f'result : {self.ret}')
-            label.setText(f'CheckMate\n {"White" if self.ret == 0 else "Black"} WIN !')
+        if self.gameOver == Gameover_type.CHECKMATE_BLACK:
+            self.setWindowTitle('CHECKMATE')
+            label.setText('CheckMate\n White WIN !')
+        elif self.gameOver == Gameover_type.CHECKMATE_WHITE:
+            self.setWindowTitle('CHECKMATE')
+            label.setText('CheckMate\n Black WIN !')
+        elif self.gameOver == Gameover_type.STALEMATE:
+            self.setWindowTitle('DRAW')
+            label.setText('Stalemate')
 
         btn = QPushButton('Restart', self)
         btn.clicked.connect(self.btn_function)

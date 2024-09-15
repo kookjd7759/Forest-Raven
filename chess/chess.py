@@ -1,7 +1,15 @@
 from pubsub import pub
 import copy
-import connector
-from utility import *
+
+if __name__ == '__main__':
+    import connector
+    from utility import *
+else:
+    import chess.connector as connector
+    from chess.utility import *
+
+#import connector
+#from utility import *
 
 class Chess:
     def print_board(self):
@@ -105,18 +113,18 @@ class Chess:
         color = piece.color
         dir = (+1 if color == Color.WHITE else -1)
         # MOVE
-        dest = Position(pos.x, pos.y)
-        dest.y += dir
-        if self.board[dest.y][dest.x].empty():
-            self.__append(list, Move(piece, pos, dest))
-            if dest.y == (7 if color == Color.WHITE else 0): # promotion move
+        one = Position(pos.x, pos.y + dir)
+        if self.board[one.y][one.x].empty():
+            self.__append(list, Move(piece, pos, one))
+            if one.y == (7 if color == Color.WHITE else 0): # promotion move
                 for promotion in promotion_list:
-                    self.__append(list, Move(piece, pos, dest, promotion_type=promotion))
+                    self.__append(list, Move(piece, pos, one, promotion_type=promotion))
+            
             if pos.y == (1 if color == Color.WHITE else 6): # first move
-                dest.y += dir
-                if self.board[dest.y][dest.x].empty():
-                    self.__append(list, Move(piece, pos, dest))
-        
+                two = Position(pos.x, pos.y + (dir * 2))
+                if self.board[two.y][two.x].empty():
+                    self.__append(list, Move(piece, pos, two))
+                    
         # ATTACK
         # normal attack
         def attack(dest: Position):
@@ -138,7 +146,7 @@ class Chess:
         return list
     def __legal_moves(self, pos: Position):
         list_: list[Move] = []
-        piece = self.board[pos.y][pos.x].piece
+        piece: Piece = self.board[pos.y][pos.x].piece
         if piece.type == Piece_type.KING:
             list_ = self.__king_legal(pos, piece)
         elif piece.type ==  Piece_type.QUEEN:
@@ -244,7 +252,7 @@ class Chess:
         self.board[move.ori.y][move.ori.x].piece = None
     def __capture(self, move: Move):
         self.board[move.take.y][move.take.x].piece = None
-        self.move(move)
+        self.__move(move)
     def __castling(self, move: Move):
         rank = (0 if move.piece.color == Color.WHITE else 7)
         if move.dest.x > move.ori.x: # king side 
@@ -283,8 +291,17 @@ class Chess:
             self.__promotion(move)
         
         self.__calAttackSquare()
-        self.prevMove = move
+        self.prev_move = move
         self.turn = opponent(self.turn)
+        self.print_board()
+    def __gameOver_check(self, color):
+        if self.__count_candidateMove(color) != 0:
+            return Gameover_type.NOGAMEOVER
+        
+        if self.__isCheck(color):
+            return Gameover_type.CHECKMATE_WHITE if color == Color.WHITE else Gameover_type.CHECKMATE_BLACK
+        else:
+            return Gameover_type.STALEMATE
 
     def __castling_check(self, color: Color, isKingside: bool):
         rank = (0 if color == Color.WHITE else 7)
@@ -310,15 +327,6 @@ class Chess:
         else:
             return 0
 
-    def gameEnd_check(self, color: Color): # (0) None (1) CheckMate (2) StaleMate
-        if self.__count_candidateMove(color) != 0:
-            return 0
-        
-        if self.__isCheck(color):
-            return 1
-        else:
-            return 2
-    
 
 
     def __init__(self):
@@ -333,7 +341,6 @@ class Chess:
         self.init_board()
         
         connector.set_color(opponent(self.player))
-        pub.subscribe(self.AI, 'Player_move')
 
     def init_board(self):
         for _ in self.board:
@@ -356,17 +363,30 @@ class Chess:
     def get_legalMove(self, pos: Position):
         return self.__legal_moves(pos)
 
-### PLAY MOVE
-    def PLAYER(self, move: Move): # (-1) can't move (0) None (1) CheckMate (2) StaleMate
-        print(f'PLAYER PLAY {move.get_move_type()} [{to_notation(move.ori)} -> {to_notation(move.dest)}]')
+### PLAY
+    def PLAYER(self, move: Move):
+        print(f'PLAYER_PLAY [{to_notation(move.ori)} -> {to_notation(move.dest)}] {move.get_move_type().name}')
         self.__play(move)
-
-    def AI(self):
         connector.send_move(self.prev_move)
+        if not self.GAMEOVER_CHECK(self.turn):
+            self.AI()
+    def AI(self):
         move = connector.get_move()
-        print(f'AI PLAY {move.get_move_type()} [{to_notation(move.ori)} -> {to_notation(move.dest)}]')
+        print(f'AI_PLAY [{to_notation(move.ori)} -> {to_notation(move.dest)}] {move.get_move_type().name}')
         self.__play(move)
         pub.sendMessage('AI', move=move)
+        self.GAMEOVER_CHECK(self.turn)
+    def GAMEOVER_CHECK(self, color: Color):
+        gameOver = self.__gameOver_check(color)
+        if gameOver != Gameover_type.NOGAMEOVER:
+            pub.sendMessage('GAMEOVER', gameOver)
+            return True
+        return False
+
 
 if __name__ == '__main__':
     chess = Chess()
+    move_positions = chess.get_legalMove(Position(4, 1))
+    print(f'-- move list-- {len(move_positions)}')
+    for move in move_positions:
+        print(to_notation((move.dest)))

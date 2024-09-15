@@ -58,19 +58,19 @@ struct Move {
     // Pawn take something and promotion
     Move(Piece p, Position o, Position d, Position t, Piece_type pro) : piece(p), ori(o), dest(d), take(t), promotion_type(pro) {};
 
+    Move_type get_move_type() const {
+        if (piece.type == KING && abs(dest.x - ori.x) == 2) return CASTLING;
+        else if (promotion_type != NOPIECE) return (take.x == -1 ? MOVE_PRO : CAPTURE_PRO);
+        else if (take.x != -1) return CAPTURE;
+        else if (take.x == -1) return MOVE;
+        else return NOMOVE;
+    }
     void set(const Move& other) { 
         piece = other.piece;
         ori = other.ori;
         dest = other.dest;
         take = other.take;
         promotion_type = other.promotion_type;
-    }
-    Move_type get_move_type() const {
-        if (piece.type == KING && abs(ori.x - dest.x) == 2) return CASTLING;
-        else if (promotion_type != NOPIECE) return (take.x == -1 ? MOVE_PRO : CAPTURE_PRO);
-        else if (take.x != -1) return CAPTURE;
-        else if (take.x == -1) return MOVE;
-        else return NOMOVE;
     }
     const string get_string() const {
         string st = "";

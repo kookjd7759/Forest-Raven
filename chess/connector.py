@@ -14,7 +14,7 @@ process = subprocess.Popen(
 )
 
 def send(st):
-    print(f'connector.send {st}')
+    print(f'connector.SEND {st}')
     process.stdin.write(st + '\n')
     process.stdin.flush()
 
@@ -22,7 +22,7 @@ def read():
     output = process.stdout.readline()
     while output == '':
         output = process.stdout.readline()
-        print(f'connector.read {output}')
+    print(f'connector.READ {output}')
     return output.strip()
 
 def send_move(move: Move):
@@ -35,7 +35,6 @@ def get_move():
     return move
 
 def set_color(color: Color):
-    print('set_color')
     send(f'{color.value}')
 
 if __name__ == '__main__':

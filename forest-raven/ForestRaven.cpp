@@ -23,6 +23,7 @@ private:
     }
 
     Move findBestMove() {
+        /*
         Move selected_move;
         double maxiScore = cal_evaluation(chess);
         set<Move>* moveList = chess.get_candidateMove(chess.myColor);
@@ -35,6 +36,12 @@ private:
             }
         }
         return selected_move;
+        */
+        set<Move>* moveList = chess.get_candidateMove(chess.myColor);
+        int idx = get_random(0, moveList->size() - 1);
+        auto it = moveList->begin();
+        std::advance(it, idx);
+        return *it;
     }
 
 public:

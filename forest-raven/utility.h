@@ -56,6 +56,7 @@ const Piece_type promotion_list[4] = { QUEEN, ROOK, BISHOP, KNIGHT, };
 bool notationCheck(const string& st);
 Position convertPos(const string& st);
 string convertPos(const Position& pos);
+string to_notation(const Position& pos);
 int get_random(const int& a, const int& b);
 
 #endif // UTILITY_H

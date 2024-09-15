@@ -45,12 +45,12 @@ class ChessPiece(QLabel):
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             self.callback_press(self.UIpos)
-            if self.parent().chess.player == self.color:
+            if self.parent().chess.player == self.piece.color:
                 self.moving = True
                 self.__followMouse(event.pos())
         if event.button() == Qt.RightButton and self.moving:
             self.moving = False
-            self.callback_land(self.UIpos, self.color)
+            self.callback_land(self.UIpos)
     def mouseMoveEvent(self, event):
         if self.moving:
             self.__followMouse(event.pos())

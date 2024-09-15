@@ -225,6 +225,7 @@ void Chess::move(const Move& move) {
     board[move.ori.y][move.ori.x].clear();
 }
 void Chess::capture(const Move& move) {
+    board[move.take.y][move.take.x].clear();
     Chess::move(move);
 }
 void Chess::castling(const Move& move) {

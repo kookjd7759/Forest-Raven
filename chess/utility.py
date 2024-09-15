@@ -24,6 +24,12 @@ class Piece_type(Enum):
     KING = 4
     PAWN = 5
 
+class Gameover_type(Enum):
+    NOGAMEOVER = -1
+    CHECKMATE_BLACK = 0
+    CHECKMATE_WHITE = 1
+    STALEMATE = 2
+
 class Position:
     def __init__(self, x: int = -1, y: int = -1):
         self.x = x
@@ -101,4 +107,4 @@ dir_all = { Position(0, 1), Position(0, -1), Position(1, 0), Position(-1, 0), Po
 dir_knight = { Position(1, 2), Position(-1, 2), Position(2, 1), Position(-2, 1), Position(2, -1), Position(-2, -1), Position(1, -2), Position(-1, -2)}
 
 initPos_type = (Piece_type.ROOK, Piece_type.KNIGHT, Piece_type.BISHOP, Piece_type.QUEEN, Piece_type.KING, Piece_type.BISHOP, Piece_type.KNIGHT, Piece_type.ROOK)
-promotion_list = (Piece_type.QUEEN, Piece_type.ROOK, Piece_type.BISHOP, Piece_type.KNIGHT)
+promotion_list = (Piece_type.QUEEN, Piece_type.ROOK, Piece_type.BISHOP, Piece_type.KNIGHT, Piece_type.NOPIECE)
