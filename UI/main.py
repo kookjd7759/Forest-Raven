@@ -1,5 +1,6 @@
 import sys
 from pubsub import pub
+from PyQt5.QtCore import *
 
 from utility import *
 from windows import *
@@ -103,6 +104,17 @@ class Window(QWidget):
     def __promotion(self, move: Move):
         self.board[move.dest.y][move.dest.x].die()
         self.create_piece(Piece(move.promotion_type, move.piece.color), move.dest)
+    def __get_promotion(self, move: Move):
+        self.promotion_window.finished.connect(self.__promotion_finished)
+        self.promotion_window.on()
+        self.event_loop = QEventLoop()
+        self.event_loop.exec_()
+        move.promotion_type = self.promotion_type
+        if move.promotion_type == Piece_type.NOPIECE:
+            return False
+        return True
+    def __promotion_finished(self):
+        self.event_loop.quit()
     def __play(self, move: Move, smooth: bool):
         move_type = move.get_move_type()
         if move_type == Move_type.MOVE:
@@ -112,11 +124,16 @@ class Window(QWidget):
         elif move_type == Move_type.CASTLING:
             self.__castling(move, smooth)
         elif move_type == Move_type.MOVE_PRO:
+            if not self.__get_promotion(move):
+                return False
             self.__move(move, smooth)
             self.__promotion(move)
         elif move_type == Move_type.CAPTURE_PRO:
+            if not self.__get_promotion(move):
+                return False
             self.__capture(move, smooth)
             self.__promotion(move)
+        return True
     def __isLegal(self, dest: Position):
         for move in self.legalMoves:
             if move.ori.isEqual(self.selected) and move.dest.isEqual(dest):
@@ -127,8 +144,10 @@ class Window(QWidget):
             return 
         move = self.__isLegal(dest)
         if move != None:
+            if not self.__play(move, smooth):
+                self.board[move.ori.y][move.ori.x].move_return()
+                return
             self.delSelect()
-            self.__play(move, smooth)
             self.chess.PLAYER(move)
     def AI_PLAY(self, move: Move):
         self.__play(move, smooth=True)
@@ -148,6 +167,7 @@ class Window(QWidget):
         self.selected = Position()
         self.chess = Chess()
         self.legalMoves: list[Move] = []
+        self.promotion_type: Piece_type = Piece_type.NOPIECE
         
         # Initialize pieces
         self.board: list[list[ChessPiece]] = [[None for _ in range(8)] for _ in range(8)]
@@ -220,11 +240,6 @@ class Window(QWidget):
     
 
 
-    def promotion(self):
-        self.promotion_window.finished.connect(self.promotion_finished)
-        self.promotion_window.on()
-        self.event_loop = QEventLoop()
-        self.event_loop.exec_()
 
 ### Mouse event
     def mousePressEvent(self, event):
@@ -259,11 +274,8 @@ class Window(QWidget):
         else: # click
             self.board[pos.y][pos.x].move_return()
         
-    def promotion_callback(self, piece: Piece_type):
-        self.promotion_num = Piece_type
-
-    def promotion_finished(self):
-        self.event_loop.quit()
+    def promotion_callback(self, piece_type: Piece_type):
+        self.promotion_type = piece_type
 
 ### Button function 
     def btn_test_function(self):

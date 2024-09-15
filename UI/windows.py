@@ -7,11 +7,11 @@ from chess.utility import *
 from utility import *
 
 class PromotionWindow(QLabel):
+    finished = pyqtSignal()
     def __init__(self, parent, color: Color, callback):
         super().__init__(parent)
         self.color = color
         self.callback = callback
-        self.finished = pyqtSignal()
         self.UIinit()
         self.off()
 
@@ -57,13 +57,12 @@ class PromotionWindow(QLabel):
         if event.button() == Qt.LeftButton:
             mousePos = self.parent().mapFromGlobal(self.mapToGlobal(event.pos()))
             x, y = mousePos.x(), mousePos.y()
+            idx = -1
             if x >= WINDOW_POINT['LU'][0] and y >= WINDOW_POINT['LU'][1] and x <= WINDOW_POINT['RD'][0] and y <= WINDOW_POINT['RD'][1]:
                 idx = (0 if x < BOARD_SIZE // 2 else 1) + (0 if y < BOARD_SIZE // 2 else 2)
-                self.callback(idx)
-            else:
-                self.callback(-1)
-        self.finished.emit()
-        self.off()
+            self.callback(promotion_list[idx])
+            self.finished.emit()
+            self.off()
 
 class GameEndWindow(QDialog): 
     def __init__(self, parent, callback, gameOver:Gameover_type):

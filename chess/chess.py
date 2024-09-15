@@ -145,6 +145,7 @@ class Chess:
             self.__append(list, Move(piece, pos, dest, take=take))
         return list
     def __legal_moves(self, pos: Position):
+        print(f'__legal_moves - {to_notation(pos)}')
         list_: list[Move] = []
         piece: Piece = self.board[pos.y][pos.x].piece
         if piece.type == Piece_type.KING:
