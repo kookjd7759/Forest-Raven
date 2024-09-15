@@ -110,7 +110,7 @@ class Window(QWidget):
         elif move_type == Move_type.CAPTURE:
             self.__capture(move, smooth)
         elif move_type == Move_type.CASTLING:
-            self.__castling(move)
+            self.__castling(move, smooth)
         elif move_type == Move_type.MOVE_PRO:
             self.__move(move, smooth)
             self.__promotion(move)

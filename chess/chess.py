@@ -52,7 +52,7 @@ class Chess:
         return self.board[king.y][king.x].isAttacked(color)
     def __isThisMoveLegal(self, move: Move):
         chess_next = self.__clone()
-        chess_next.__move(move)
+        chess_next.__play(move)
         return not chess_next.__isCheck(move.piece.color)
 
     def __append(self, list: list, move: Move):
@@ -293,7 +293,6 @@ class Chess:
         self.__calAttackSquare()
         self.prev_move = move
         self.turn = opponent(self.turn)
-        self.print_board()
     def __gameOver_check(self, color):
         if self.__count_candidateMove(color) != 0:
             return Gameover_type.NOGAMEOVER
@@ -308,12 +307,13 @@ class Chess:
         condition_1 = not self.kr_moveCheck_wb_qk[color.value][1 if isKingside else 0]
         condition_2 = self.board[rank][5].empty() and self.board[rank][6].empty() if isKingside else \
             self.board[rank][3].empty() and self.board[rank][2].empty() and self.board[rank][1].empty()
-        condition_3 = not self.board[rank][5].isAttacked(color) and not self.board[rank][6].isAttacked(color.value) if isKingside else \
-            not self.board[rank][3].isAttacked(color.value) and not self.board[rank][2].isAttacked(color.value)
+        condition_3 = not self.board[rank][5].isAttacked(color) and not self.board[rank][6].isAttacked(color) if isKingside else \
+            not self.board[rank][3].isAttacked(color) and not self.board[rank][2].isAttacked(color)
+        print(f'__castling_check - {condition_1} {condition_2} {condition_3}')
         return condition_1 and condition_2 and condition_3
     def __en_passent_check(self, pos: Position):
         piece_color = self.board[pos.y][pos.x].piece.color
-        if pos.y != (4 if piece_color == Color.WHITE else 3) or self.prev_move.type != Piece_type.PAWN:
+        if pos.y != (4 if piece_color == Color.WHITE else 3) or self.prev_move.piece.type != Piece_type.PAWN:
             return 0
         
         dir = (+2 if piece_color == Color.WHITE else -2)
@@ -368,6 +368,7 @@ class Chess:
         print(f'PLAYER_PLAY [{to_notation(move.ori)} -> {to_notation(move.dest)}] {move.get_move_type().name}')
         self.__play(move)
         connector.send_move(self.prev_move)
+        self.print_board()
         if not self.GAMEOVER_CHECK(self.turn):
             self.AI()
     def AI(self):
@@ -376,10 +377,11 @@ class Chess:
         self.__play(move)
         pub.sendMessage('AI', move=move)
         self.GAMEOVER_CHECK(self.turn)
+        self.print_board()
     def GAMEOVER_CHECK(self, color: Color):
         gameOver = self.__gameOver_check(color)
         if gameOver != Gameover_type.NOGAMEOVER:
-            pub.sendMessage('GAMEOVER', gameOver)
+            pub.sendMessage('GAMEOVER', ret=gameOver)
             return True
         return False
 

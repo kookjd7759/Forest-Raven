@@ -83,11 +83,14 @@ struct Move {
     }
     void string_init(string st) {
         stringstream ss(st); string word;
-        auto get_int = [&]() -> int { getline(ss, word, ' '); return stoi(word);; };
-        ori = Position(get_int(), get_int());
-        dest = Position(get_int(), get_int());
-        take = Position(get_int(), get_int());
-        promotion_type = promotion_list[get_int()];
+        getline(ss, word, ' '); ori.x = stoi(word);
+        getline(ss, word, ' '); ori.y = stoi(word);
+        getline(ss, word, ' '); dest.x = stoi(word);
+        getline(ss, word, ' '); dest.y = stoi(word);
+        getline(ss, word, ' '); take.x = stoi(word);
+        getline(ss, word, ' '); take.y = stoi(word);
+        getline(ss, word, ' '); int pro = stoi(word);
+        promotion_type = (pro == -1 ? NOPIECE : promotion_list[pro]);
     }
 };
 

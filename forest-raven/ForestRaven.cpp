@@ -74,10 +74,10 @@ public:
     }
 
     void start() {
-        //board.print_board();
+        //chess.print_board();
         while (true) {
             chess.turn != chess.myColor ? opponent_play() : play();
-            //board.print_board();
+            //chess.print_board();
         }
     }
 
@@ -116,4 +116,12 @@ int main() {
     init();
     ForestRaven forest_raven;
     forest_raven.start();
+    //Chess chess;
+    //set<Move>* moveList = chess.get_candidateMove(chess.myColor);
+    //for (const Move& move : *moveList)
+    //    cout << to_notation(move.ori) << " -> " << to_notation(move.dest) << "\n";
 }
+/*
+1
+4 1 4 3 -1 -1 -1
+*/

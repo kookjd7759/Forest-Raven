@@ -13,7 +13,7 @@ const bool Chess::isEnemy(const Position& a, const Position& b) const {
 const bool Chess::isCheck(const Color& color) const { return board[king_position_wb[color].y][king_position_wb[color].x].isAttacked(color); }
 const bool Chess::isThisMoveLegal(const Move& move) const {
     Chess chess_next = this->clone();
-    chess_next.move(move);
+    chess_next.play(move);
     return !chess_next.isCheck(move.piece.color);
 }
 
