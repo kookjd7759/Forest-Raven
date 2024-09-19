@@ -6,7 +6,6 @@ class Color(Enum):
     BLACK = 1
 def opponent(color: Color):
     return Color.BLACK if color == Color.WHITE else Color.WHITE
-
 class Move_type(Enum):
     NOMOVE = -1,
     MOVE = 0
@@ -14,7 +13,6 @@ class Move_type(Enum):
     MOVE_PRO = 2
     CAPTURE_PRO = 3
     CASTLING = 4
-
 class Piece_type(Enum):
     NOPIECE = -1,
     QUEEN = 0
@@ -23,7 +21,6 @@ class Piece_type(Enum):
     KNIGHT = 3
     KING = 4
     PAWN = 5
-
 class Gameover_type(Enum):
     NOGAMEOVER = -1
     CHECKMATE_BLACK = 0

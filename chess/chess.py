@@ -32,18 +32,22 @@ class Chess:
             return ' ' + st + ' '
         def turn_print():
             print(f' [TURN] {self.turn.name}')
-        def castling_print():
-            print(f' [CASTLING] WHITE Q.{self.__castling_check(Color.WHITE, False)} K.{self.__castling_check(Color.WHITE, True)}   BLACK Q.{self.__castling_check(Color.BLACK, False)} K.{self.__castling_check(Color.BLACK, True)}')
-        def check_print():
-            print(f' [CHECK] WHITE.{self.__isCheck(Color.WHITE)}   BLACK.{self.__isCheck(Color.WHITE)}')        
-        def candidateMove_print():
-            print(f' [Candidate Move] WHITE.{self.__count_candidateMove(Color.WHITE)}   BLACK.{self.__count_candidateMove(Color.BLACK)}')
         def prevMove_print():
             print(f' [Previous Move] {to_notation(self.prev_move.ori)} -> {to_notation(self.prev_move.dest)}')
+        def castling_print():
+            print(f' [CASTLING] WHITE Q.{self.__castling_check(Color.WHITE, False)} K.{self.__castling_check(Color.WHITE, True)}   BLACK Q.{self.__castling_check(Color.BLACK, False)} K.{self.__castling_check(Color.BLACK, True)}')
+        def candidateMove_print():
+            print(f' [Candidate Move] WHITE.{self.__count_candidateMove(Color.WHITE)}   BLACK.{self.__count_candidateMove(Color.BLACK)}')
+        def check_print():
+            print(f' [CHECK] WHITE.{self.__isCheck(Color.WHITE)}   BLACK.{self.__isCheck(Color.BLACK)}')        
         def gameState_print():
             state_w = self.__gameOver_check(Color.WHITE)
             state_b = self.__gameOver_check(Color.BLACK)
             print(f' [State] WHITE.{state_w.name}   BLACK.{state_b.name}')
+        def kingPos_print():
+            king_w = self.king_position_wb[Color.WHITE.value]
+            king_b = self.king_position_wb[Color.BLACK.value]
+            print(f' [KING POSITION] WHITE.{to_notation(king_w)}   BLACK.{to_notation(king_b)}')
         def print_detail(y):
             if y == 7:
                 turn_print()
@@ -57,6 +61,8 @@ class Chess:
                 check_print()
             elif y == 2:
                 gameState_print()
+            elif y == 1:
+                kingPos_print()
             else:
                 print()
         
@@ -75,7 +81,6 @@ class Chess:
                 print(' ', end='')
         print('│')
         print('└─────────────────────────────────┘')
-
 
     def __clone(self):
         return copy.deepcopy(self)  
@@ -407,16 +412,18 @@ class Chess:
     def PLAYER(self, move: Move):
         print(f'PLAYER_PLAY [{to_notation(move.ori)} -> {to_notation(move.dest)}] {move.get_move_type().name}')
         self.__play(move)
+        self.print_board()
         connector.send_move(self.prev_move)
         if not self.GAMEOVER_CHECK(self.turn):
             self.AI()
     def AI(self):
         move = connector.get_move()
+        move.piece = Piece(self.board[move.ori.y][move.ori.x].piece.type, Color.BLACK)
         print(f'AI_PLAY [{to_notation(move.ori)} -> {to_notation(move.dest)}] {move.get_move_type().name}')
         self.__play(move)
+        self.print_board()
         pub.sendMessage('AI', move=move)
         self.GAMEOVER_CHECK(self.turn)
-        self.print_board()
     def GAMEOVER_CHECK(self, color: Color):
         gameOver = self.__gameOver_check(color)
         if gameOver != Gameover_type.NOGAMEOVER:
@@ -428,3 +435,4 @@ class Chess:
 if __name__ == '__main__':
     chess = Chess()
     chess.print_board()
+

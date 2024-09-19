@@ -240,16 +240,10 @@ class Window(QWidget):
             vbox.setContentsMargins(0,0,0,0)
 
             self.setLayout(vbox)
-    
-
-
 
 ### Mouse event
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
-            print(f'legal move list - {to_notation(self.selected)}')
-            for move in self.legalMoves:
-                print(f'({to_notation(move.ori)} -> {to_notation(move.dest)}) {move.get_move_type()} {move.promotion_type}')
             mousePos = self.mapFromGlobal(self.mapToGlobal(event.pos()))
             pos = self.convert_position(Position(mousePos.x() // CELL_SIZE, mousePos.y() // CELL_SIZE))
             print(f'CLICK, {to_notation(pos)} square')
@@ -268,7 +262,6 @@ class Window(QWidget):
             return
         elif self.isSelected(): # capture
             self.PLAYER_PLAY(pos, smooth=True)
-
     def piece_callback_land(self, UIpos):
         pos = self.convert_position(UIpos)
         print(f'LAND, {to_notation(pos)} piece')
@@ -276,7 +269,6 @@ class Window(QWidget):
             self.PLAYER_PLAY(pos, smooth=False)
         else: # click
             self.board[pos.y][pos.x].move_return()
-        
     def promotion_callback(self, piece_type: Piece_type):
         self.promotion_type = piece_type
 
@@ -285,6 +277,7 @@ class Window(QWidget):
         print('test function')
     def btn_restart_function(self):
         self.reset()
+
 
 
 if __name__ == '__main__':
