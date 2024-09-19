@@ -65,19 +65,7 @@ class Window(QWidget):
     def create_piece(self, piece: Piece, pos: Position): # Get Board Position
         UIpos = self.convert_position(pos) # Board to UI Position
         self.board[pos.y][pos.x] = ChessPiece(self, piece, UIpos, self.piece_callback_press, self.piece_callback_land)
-    def init_pieces(self):
-        for i in range(8):
-            for j in range(8):
-                if self.board[i][j] != None:
-                    self.board[i][j].die() # delete Piece
-                    self.board[i][j] = None
-        
-        for i in range(8):
-            self.create_piece(Piece(Piece_type.PAWN, Color.WHITE), Position(i, 1)) # White pawns
-            self.create_piece(Piece(initPos_type[i], Color.WHITE), Position(i, 0)) # White other pieces
-            self.create_piece(Piece(Piece_type.PAWN, Color.BLACK), Position(i, 6)) # Black pawns
-            self.create_piece(Piece(initPos_type[i], Color.BLACK), Position(i, 7)) # Black other pieces
- 
+
 ### play
     def __move(self, move: Move, smooth: bool):
         UIpos = self.convert_position(move.dest)
@@ -167,10 +155,11 @@ class Window(QWidget):
         super().__init__()
         self.UIinit()
 
-        self.selected = Position()
         self.chess = Chess()
-        self.legalMoves: list[Move] = []
-        self.promotion_type: Piece_type = Piece_type.NOPIECE
+        self.selected = Position()
+        self.legalMoves = list[Move]
+        self.promotion_type = Piece_type.NOPIECE
+        self.init_value()
         
         # Initialize pieces
         self.board: list[list[ChessPiece]] = [[None for _ in range(8)] for _ in range(8)]
@@ -186,60 +175,75 @@ class Window(QWidget):
         pub.subscribe(self.AI_PLAY, 'AI')
         pub.subscribe(self.GAMEOVER, 'GAMEOVER')
 
-    def reset(self):
+    def init_value(self):
         self.selected = Position()
-        self.legalMoves = []
-        self.chess.restart()
-        self.init_pieces()
-        self.off_all_light()
-
+        self.legalMoves: list[Move] = []
+        self.promotion_type = Piece_type.NOPIECE
+    def init_pieces(self):
+        for i in range(8):
+            for j in range(8):
+                if self.board[i][j] != None:
+                    self.board[i][j].die() # delete Piece
+                    self.board[i][j] = None
+        
+        for i in range(8):
+            self.create_piece(Piece(Piece_type.PAWN, Color.WHITE), Position(i, 1)) # White pawns
+            self.create_piece(Piece(initPos_type[i], Color.WHITE), Position(i, 0)) # White other pieces
+            self.create_piece(Piece(Piece_type.PAWN, Color.BLACK), Position(i, 6)) # Black pawns
+            self.create_piece(Piece(initPos_type[i], Color.BLACK), Position(i, 7)) # Black other pieces
     def UIinit(self):
-            self.setFixedSize(BOARD_SIZE, 560) # size of the windows
-            self.setWindowTitle('Chess')
-            vbox = QVBoxLayout()
+        self.setFixedSize(BOARD_SIZE, 560) # size of the windows
+        self.setWindowTitle('Chess')
+        vbox = QVBoxLayout()
 
-            lbl_board = QLabel(self)
-            lbl_board.setPixmap(QPixmap(getImgFolder() + 'Ground.png'))
-            lbl_board.setFixedSize(BOARD_SIZE, BOARD_SIZE) # size of the chessboard
-            lbl_board.setScaledContents(True)
+        lbl_board = QLabel(self)
+        lbl_board.setPixmap(QPixmap(getImgFolder() + 'Ground.png'))
+        lbl_board.setFixedSize(BOARD_SIZE, BOARD_SIZE) # size of the chessboard
+        lbl_board.setScaledContents(True)
 
-            # Player
-            hbox_player = QHBoxLayout()
-            lbl_player = QLabel('<b>[Player]</b>', self)
-            line_player = QLineEdit('White', self)
-            line_player.setReadOnly(True)
-            btn_changePlayer = QPushButton('Change my color', self)
-            btn_changePlayer.clicked.connect(self.btn_test_function)
-            btn_restart = QPushButton('Game Restart', self)
-            btn_restart.clicked.connect(self.btn_restart_function)
-            hbox_player.addWidget(lbl_player)
-            hbox_player.addWidget(line_player)
-            hbox_player.addWidget(btn_changePlayer)
-            hbox_player.addWidget(btn_restart)
+        # Player
+        hbox_player = QHBoxLayout()
+        lbl_player = QLabel('<b>[Player]</b>', self)
+        line_player = QLineEdit('White', self)
+        line_player.setReadOnly(True)
+        btn_changePlayer = QPushButton('Change my color', self)
+        btn_changePlayer.clicked.connect(self.btn_changeColor_function)
+        btn_restart = QPushButton('Game Restart', self)
+        btn_restart.clicked.connect(self.btn_restart_function)
+        hbox_player.addWidget(lbl_player)
+        hbox_player.addWidget(line_player)
+        hbox_player.addWidget(btn_changePlayer)
+        hbox_player.addWidget(btn_restart)
 
-            # Selected
-            hbox_selected = QHBoxLayout()
-            lbl_selected = QLabel('<b>[Selected Piece]</b>', self)
-            self.line_selected = QLineEdit('None', self)
-            self.line_selected.setReadOnly(True)
-            hbox_selected.addWidget(lbl_selected)
-            hbox_selected.addWidget(self.line_selected)
+        # Selected
+        hbox_selected = QHBoxLayout()
+        lbl_selected = QLabel('<b>[Selected Piece]</b>', self)
+        self.line_selected = QLineEdit('None', self)
+        self.line_selected.setReadOnly(True)
+        hbox_selected.addWidget(lbl_selected)
+        hbox_selected.addWidget(self.line_selected)
 
-            # TestButton
-            hbox_test = QHBoxLayout()
-            lbl_test = QLabel('<b>[test]</b>', self)
-            btn_test= QPushButton('test btn', self)
-            btn_test.clicked.connect(self.btn_test_function)
-            hbox_test.addWidget(lbl_test)
-            hbox_test.addWidget(btn_test)
+        # TestButton
+        hbox_test = QHBoxLayout()
+        lbl_test = QLabel('<b>[test]</b>', self)
+        btn_test= QPushButton('test btn', self)
+        btn_test.clicked.connect(self.btn_test_function)
+        hbox_test.addWidget(lbl_test)
+        hbox_test.addWidget(btn_test)
 
-            vbox.addWidget(lbl_board)
-            vbox.addLayout(hbox_player)
-            vbox.addLayout(hbox_selected)
-            vbox.addLayout(hbox_test)
-            vbox.setContentsMargins(0,0,0,0)
+        vbox.addWidget(lbl_board)
+        vbox.addLayout(hbox_player)
+        vbox.addLayout(hbox_selected)
+        vbox.addLayout(hbox_test)
+        vbox.setContentsMargins(0,0,0,0)
 
-            self.setLayout(vbox)
+        self.setLayout(vbox)
+    def restart(self, color: Color):
+        self.init_value()
+        self.off_all_light()
+        self.chess.player = color
+        self.init_pieces()
+        self.chess.RESTART(color)
 
 ### Mouse event
     def mousePressEvent(self, event):
@@ -276,8 +280,9 @@ class Window(QWidget):
     def btn_test_function(self):
         print('test function')
     def btn_restart_function(self):
-        self.reset()
-
+        self.restart(self.chess.player)
+    def btn_changeColor_function(self):
+        self.restart(opponent(self.chess.player))
 
 
 if __name__ == '__main__':

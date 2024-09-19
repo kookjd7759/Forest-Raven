@@ -32,6 +32,8 @@ class Chess:
             return ' ' + st + ' '
         def turn_print():
             print(f' [TURN] {self.turn.name}')
+        def color_print():
+            print(f' [PLAYER] {self.player.name} [FOREST-RAVEN] {opponent(self.player).name}')
         def prevMove_print():
             print(f' [Previous Move] {to_notation(self.prev_move.ori)} -> {to_notation(self.prev_move.dest)}')
         def castling_print():
@@ -52,16 +54,18 @@ class Chess:
             if y == 7:
                 turn_print()
             elif y == 6:
-                prevMove_print()
+                color_print()
             elif y == 5:
-                castling_print()
+                prevMove_print()
             elif y == 4:
-                candidateMove_print()
+                castling_print()
             elif y == 3:
-                check_print()
+                candidateMove_print()
             elif y == 2:
-                gameState_print()
+                check_print()
             elif y == 1:
+                gameState_print()
+            elif y == 0:
                 kingPos_print()
             else:
                 print()
@@ -372,6 +376,9 @@ class Chess:
         else:
             return 0
 
+    def __firstPlay(self):
+        if self.player == Color.BLACK:
+            self.AI()
 
 
     def __init__(self):
@@ -379,13 +386,13 @@ class Chess:
         self.kr_moveCheck_wb_qk = list[list[bool]]
         self.prev_move = Move()
         self.turn = Color.WHITE
-        self.player = Color.WHITE
         self.init_value()
+        self.player = Color.WHITE
         
         self.board = [[Square() for x in range(8)] for y in range(8)]
         self.init_board()
-        
-        connector.set_color(opponent(self.player))
+        connector.START(opponent(self.player))
+        self.__firstPlay()
 
     def init_board(self):
         for _ in self.board:
@@ -403,6 +410,7 @@ class Chess:
         self.king_position_wb = [Position(4, 0), Position(4, 7)]
         self.kr_moveCheck_wb_qk = [[False, False],[False, False]]
         self.prev_move = Move()
+        self.turn = Color.WHITE
 
 ### get function (for UI)
     def get_legalMove(self, pos: Position):
@@ -430,9 +438,18 @@ class Chess:
             pub.sendMessage('GAMEOVER', ret=gameOver)
             return True
         return False
-
+    def RESTART(self, color: Color):
+        self.player = color
+        self.init_value()
+        self.init_board()
+        connector.RESTART(opponent(color))
+        self.print_board()
+        self.__firstPlay()
+    def CHANGE(self):
+        self.RESTART(opponent(self.player))
+        self.__firstPlay()
 
 if __name__ == '__main__':
     chess = Chess()
-    chess.print_board()
+    chess.CHANGE()
 
