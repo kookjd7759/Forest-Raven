@@ -9,7 +9,7 @@ else:
     from chess.utility import *
 
 #import connector
-#from utility import *
+#from utility import * 
 
 class Chess:
     def print_board(self):
@@ -30,12 +30,52 @@ class Chess:
             }
             st = color_to_st[piece.color] + type_to_st[piece.type]
             return ' ' + st + ' '
-
+        def turn_print():
+            print(f' [TURN] {self.turn.name}')
+        def castling_print():
+            print(f' [CASTLING] WHITE Q.{self.__castling_check(Color.WHITE, False)} K.{self.__castling_check(Color.WHITE, True)}   BLACK Q.{self.__castling_check(Color.BLACK, False)} K.{self.__castling_check(Color.BLACK, True)}')
+        def check_print():
+            print(f' [CHECK] WHITE.{self.__isCheck(Color.WHITE)}   BLACK.{self.__isCheck(Color.WHITE)}')        
+        def candidateMove_print():
+            print(f' [Candidate Move] WHITE.{self.__count_candidateMove(Color.WHITE)}   BLACK.{self.__count_candidateMove(Color.BLACK)}')
+        def prevMove_print():
+            print(f' [Previous Move] {to_notation(self.prev_move.ori)} -> {to_notation(self.prev_move.dest)}')
+        def gameState_print():
+            state_w = self.__gameOver_check(Color.WHITE)
+            state_b = self.__gameOver_check(Color.BLACK)
+            print(f' [State] WHITE.{state_w.name}   BLACK.{state_b.name}')
+        def print_detail(y):
+            if y == 7:
+                turn_print()
+            elif y == 6:
+                prevMove_print()
+            elif y == 5:
+                castling_print()
+            elif y == 4:
+                candidateMove_print()
+            elif y == 3:
+                check_print()
+            elif y == 2:
+                gameState_print()
+            else:
+                print()
+        
+        print('┌─────────────────────────────────┐')
         for y in range(7, -1, -1):
+            print('│' + chr(ord('1') + y), end='')
             for x in range(0, 8):
                 piece = self.board[y][x].piece
                 print(tostring(piece), end='')
-            print()
+            print('│', end='')
+            print_detail(y)
+        print('│  ', end='')
+        for i in range(0, 8):
+            print(chr(ord('a') + i), end='  ')
+            if i != 7:
+                print(' ', end='')
+        print('│')
+        print('└─────────────────────────────────┘')
+
 
     def __clone(self):
         return copy.deepcopy(self)  
@@ -115,10 +155,11 @@ class Chess:
         # MOVE
         one = Position(pos.x, pos.y + dir)
         if self.board[one.y][one.x].empty():
-            self.__append(list, Move(piece, pos, one))
             if one.y == (7 if color == Color.WHITE else 0): # promotion move
-                for promotion in promotion_list:
-                    self.__append(list, Move(piece, pos, one, promotion_type=promotion))
+                for i in range(0, 4):
+                    self.__append(list, Move(piece, pos, one, promotion_type=promotion_list[i]))
+            else:
+                self.__append(list, Move(piece, pos, one))
             
             if pos.y == (1 if color == Color.WHITE else 6): # first move
                 two = Position(pos.x, pos.y + (dir * 2))
@@ -130,10 +171,10 @@ class Chess:
         def attack(dest: Position):
             if self.__boundaryCheck(dest) and self.__isEnemy(pos, dest):
                 if dest.y == (7 if color == Color.WHITE else 0): # takes and promotion
-                    for promotion in promotion_list:
-                        self.__append(list, Move(piece, pos, dest, take=dest, promotion_type=promotion))
+                    for i in range(0, 4):
+                        self.__append(list, Move(piece, pos, dest, take=dest, promotion_type=promotion_list[i]))
                 else:
-                    self.__append(list, Move(piece, pos, dest, dest))
+                    self.__append(list, Move(piece, pos, dest, take=dest))
         attack(pos + Position(-1, dir))
         attack(pos + Position(+1, dir))
 
@@ -145,7 +186,6 @@ class Chess:
             self.__append(list, Move(piece, pos, dest, take=take))
         return list
     def __legal_moves(self, pos: Position):
-        print(f'__legal_moves - {to_notation(pos)}')
         list_: list[Move] = []
         piece: Piece = self.board[pos.y][pos.x].piece
         if piece.type == Piece_type.KING:
@@ -310,7 +350,6 @@ class Chess:
             self.board[rank][3].empty() and self.board[rank][2].empty() and self.board[rank][1].empty()
         condition_3 = not self.board[rank][5].isAttacked(color) and not self.board[rank][6].isAttacked(color) if isKingside else \
             not self.board[rank][3].isAttacked(color) and not self.board[rank][2].isAttacked(color)
-        print(f'__castling_check - {condition_1} {condition_2} {condition_3}')
         return condition_1 and condition_2 and condition_3
     def __en_passent_check(self, pos: Position):
         piece_color = self.board[pos.y][pos.x].piece.color
@@ -369,7 +408,6 @@ class Chess:
         print(f'PLAYER_PLAY [{to_notation(move.ori)} -> {to_notation(move.dest)}] {move.get_move_type().name}')
         self.__play(move)
         connector.send_move(self.prev_move)
-        self.print_board()
         if not self.GAMEOVER_CHECK(self.turn):
             self.AI()
     def AI(self):
@@ -389,7 +427,4 @@ class Chess:
 
 if __name__ == '__main__':
     chess = Chess()
-    move_positions = chess.get_legalMove(Position(4, 1))
-    print(f'-- move list-- {len(move_positions)}')
-    for move in move_positions:
-        print(to_notation((move.dest)))
+    chess.print_board()

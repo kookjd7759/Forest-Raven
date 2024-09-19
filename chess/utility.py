@@ -99,7 +99,7 @@ def to_position(notation: str):
     return Position(ord(notation[0]) - ord('a'), ord(notation[1]) - ord('1'))
     
 def to_notation(position: Position):
-    return chr(position.x + ord('a')) + chr(position.y + ord('1')) if position.x != -1 else 'NULL'
+    return chr(position.x + ord('a')) + chr(position.y + ord('1')) if position.x != -1 else 'OUT BOUNDARY'
 
 dir_straight = { Position(0, 1), Position(0, -1), Position(1, 0), Position(-1, 0) }
 dir_diagonal = { Position(1, 1), Position(1, -1), Position(-1, -1), Position(-1, 1) }

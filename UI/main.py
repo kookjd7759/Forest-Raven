@@ -54,8 +54,9 @@ class Window(QWidget):
 
 ### Legal move
     def set_legalMove(self):
-        self.legalMoves = self.chess.get_legalMove(self.selected)
-        self.on_legalMove_light()
+        if self.selected.x != -1:
+            self.legalMoves = self.chess.get_legalMove(self.selected)
+            self.on_legalMove_light()
     def del_legalMove(self):
         self.off_legalMove_light()
         self.legalMoves = []
@@ -109,9 +110,9 @@ class Window(QWidget):
         self.promotion_window.on()
         self.event_loop = QEventLoop()
         self.event_loop.exec_()
-        move.promotion_type = self.promotion_type
-        if move.promotion_type == Piece_type.NOPIECE:
+        if self.promotion_type == Piece_type.NOPIECE:
             return False
+        move.promotion_type = self.promotion_type
         return True
     def __promotion_finished(self):
         self.event_loop.quit()
@@ -149,6 +150,8 @@ class Window(QWidget):
                 return
             self.delSelect()
             self.chess.PLAYER(move)
+        else:
+            self.board[self.selected.y][self.selected.x].move_return()
     def AI_PLAY(self, move: Move):
         self.__play(move, smooth=True)
         self.del_legalMove()
@@ -244,6 +247,9 @@ class Window(QWidget):
 ### Mouse event
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
+            print(f'legal move list - {to_notation(self.selected)}')
+            for move in self.legalMoves:
+                print(f'({to_notation(move.ori)} -> {to_notation(move.dest)}) {move.get_move_type()} {move.promotion_type}')
             mousePos = self.mapFromGlobal(self.mapToGlobal(event.pos()))
             pos = self.convert_position(Position(mousePos.x() // CELL_SIZE, mousePos.y() // CELL_SIZE))
             print(f'CLICK, {to_notation(pos)} square')
@@ -256,19 +262,16 @@ class Window(QWidget):
     def piece_callback_press(self, UIpos: Position):
         pos = self.convert_position(UIpos)
         print(f'PRESS, {to_notation(pos)} piece')
-        if self.board[pos.y][pos.x].piece.color != self.chess.player and not self.isSelected():
-            return
-        elif self.board[pos.y][pos.x].piece.color != self.chess.player and self.isSelected(): # capture
-            self.PLAYER_PLAY(pos, smooth=True)
-        else:
+        if self.board[pos.y][pos.x].piece.color == self.chess.player:
             self.setSelect(pos)
-    
+        elif not self.isSelected():
+            return
+        elif self.isSelected(): # capture
+            self.PLAYER_PLAY(pos, smooth=True)
+
     def piece_callback_land(self, UIpos):
         pos = self.convert_position(UIpos)
         print(f'LAND, {to_notation(pos)} piece')
-        if self.chess.turn != self.board[self.selected.y][self.selected.x].piece.color:
-            self.board[self.selected.y][self.selected.x].move_return()
-
         if self.selected.x != pos.x or self.selected.y != pos.y: # move
             self.PLAYER_PLAY(pos, smooth=False)
         else: # click

@@ -17,7 +17,6 @@ def send(st):
     print(f'connector.SEND {st}')
     process.stdin.write(st + '\n')
     process.stdin.flush()
-
 def read():
     output = process.stdout.readline()
     while output == '':
