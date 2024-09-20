@@ -18,7 +18,7 @@ const bool Chess::isThisMoveLegal(const Move& move) const {
 }
 
 void Chess::append(set<Move>* s, const Move& move) {
-    if (isThisMoveLegal(move))  s->insert(move);
+    if (isThisMoveLegal(move)) s->insert(move);
 }
 void Chess::repeatCheck(set<Move>* s, const Piece& piece, const Position& ori, const Position& dir) {
     Position dest = ori;
@@ -135,6 +135,16 @@ set<Move>* Chess::legal_moves(const Position& pos) {
     }
     return s;
 }
+int Chess::count_candidate_moves(const Color& color) {
+    int cnt(0);
+    for (int y = 0; y < 8; y++) for (int x = 0; x < 8; x++) {
+        if (!board[y][x].empty() && board[y][x].piece.color == color) {
+            set<Move>* moveList = legal_moves(Position(x, y));
+            cnt += moveList->size();
+        }
+    }
+    return cnt;
+}
 
 void Chess::repeatCheck(set<Position>* s, const Position& ori, const Position& dir) {
     Position dest = ori;
@@ -225,6 +235,8 @@ void Chess::move(const Move& move) {
     board[move.ori.y][move.ori.x].clear();
 }
 void Chess::capture(const Move& move) {
+    Piece takePiece = board[move.take.y][move.take.x].piece;
+    pieceValue_wb[takePiece.color] -= piece_value[takePiece.type];
     board[move.take.y][move.take.x].clear();
     Chess::move(move);
 }
@@ -243,6 +255,7 @@ void Chess::castling(const Move& move) {
 }
 void Chess::promotion(const Move& move) {
     board[move.dest.y][move.dest.x].set(Piece(move.promotion_type, move.piece.color));
+    pieceValue_wb[move.piece.color] -= piece_value[move.promotion_type];
 }
 
 const bool Chess::castling_check(const Color& color, const bool& isKingside) const {
@@ -275,12 +288,14 @@ void Chess::reset() {
         board[6][i].set(Piece(PAWN, BLACK));
         board[7][i].set(Piece(initList[i], BLACK));
     }
-    turn = WHITE, myColor = WHITE;
+    turn = WHITE, myColor = WHITE, opColor = BLACK;
     king_position_wb[0] = Position(4, 0), king_position_wb[1] = Position(4, 7);
     for (int i = 0; i < 4; i++) kr_moveCheck_wb_qk[i / 2][i % 2] = false;
     prevMove = Move();
+    pieceValue_wb[0] = pieceValue_wb[1] = 39;
     calAttackSquare();
 }
+bool Chess::isOver() { return count_candidate_moves(turn) == 0; }
 
 set<Move>* Chess::get_candidateMove(const Color& color) {
     set<Move>* moves = new set<Move>;

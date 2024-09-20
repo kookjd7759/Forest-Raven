@@ -96,7 +96,7 @@ struct Move {
 
 class Chess {
 private:
-    Position king_position_wb[2]{ Position(4, 0), Position(4, 7) };
+    Position king_position_wb[2];
     bool kr_moveCheck_wb_qk[2][2];
     Move prevMove;
 
@@ -116,6 +116,7 @@ private:
     set<Move>* king(const Position& pos, const Piece& piece);
     set<Move>* pawn(const Position& pos, const Piece& piece);
     set<Move>* legal_moves(const Position& pos);
+    int count_candidate_moves(const Color& color);
 
     void repeatCheck(set<Position>* s, const Position& ori, const Position& dir);
     void oneCheck(set<Position>* s, const Position& ori, const Position& dir);
@@ -138,12 +139,14 @@ private:
 
 public:
     Square board[8][8];
-    Color turn, myColor;
+    Color turn, myColor, opColor;
+    int pieceValue_wb[2];
 
     Chess clone() const { return *this; }
 
     Chess() { reset(); }
     void reset();
+    bool isOver();
 
     set<Move>* get_candidateMove(const Color& color);
     void play(const Move& move);

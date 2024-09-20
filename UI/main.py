@@ -94,6 +94,7 @@ class Window(QWidget):
         self.board[move.dest.y][move.dest.x].die()
         self.create_piece(Piece(move.promotion_type, move.piece.color), move.dest)
     def __get_promotion(self, move: Move):
+        self.promotion_window = PromotionWindow(self, self.chess.player, self.promotion_callback)
         self.promotion_window.finished.connect(self.__promotion_finished)
         self.promotion_window.on()
         self.event_loop = QEventLoop()
@@ -130,6 +131,7 @@ class Window(QWidget):
         return None
     def PLAYER_PLAY(self, dest: Position, smooth: bool):
         if self.chess.turn != self.chess.player:
+            self.board[self.selected.y][self.selected.x].move_return()
             return 
         move = self.__isLegal(dest)
         if move != None:
@@ -171,7 +173,6 @@ class Window(QWidget):
             for UIy in range(8):
                 self.highlight[UIy][UIx] = HighLightSquare(self, Position(UIx, UIy))
                 
-        self.promotion_window = PromotionWindow(self, self.chess.player, self.promotion_callback)
         pub.subscribe(self.AI_PLAY, 'AI')
         pub.subscribe(self.GAMEOVER, 'GAMEOVER')
 

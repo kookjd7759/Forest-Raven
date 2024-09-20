@@ -1,5 +1,6 @@
 from pubsub import pub
 import copy
+import threading
 
 if __name__ == '__main__':
     import connector
@@ -215,8 +216,8 @@ class Chess:
         for y in range(0, 8):
             for x in range(0, 8):
                 if not self.board[y][x].empty() and self.board[y][x].piece.color == color:
-                    posList = self.__legal_moves(Position(x, y))
-                    count += len(posList)
+                    moveList = self.__legal_moves(Position(x, y))
+                    count += len(moveList)
         return count
 
     def __repeatMove(self, list: list, ori: Position, dir: Position):
@@ -420,16 +421,15 @@ class Chess:
     def PLAYER(self, move: Move):
         print(f'PLAYER_PLAY [{to_notation(move.ori)} -> {to_notation(move.dest)}] {move.get_move_type().name}')
         self.__play(move)
-        self.print_board()
         connector.send_move(self.prev_move)
         if not self.GAMEOVER_CHECK(self.turn):
-            self.AI()
+            AI_PLAY = threading.Thread(target=self.AI)
+            AI_PLAY.start()
     def AI(self):
         move = connector.get_move()
-        move.piece = Piece(self.board[move.ori.y][move.ori.x].piece.type, Color.BLACK)
+        move.piece = Piece(self.board[move.ori.y][move.ori.x].piece.type, self.board[move.ori.y][move.ori.x].piece.color)
         print(f'AI_PLAY [{to_notation(move.ori)} -> {to_notation(move.dest)}] {move.get_move_type().name}')
         self.__play(move)
-        self.print_board()
         pub.sendMessage('AI', move=move)
         self.GAMEOVER_CHECK(self.turn)
     def GAMEOVER_CHECK(self, color: Color):
@@ -439,11 +439,9 @@ class Chess:
             return True
         return False
     def RESTART(self, color: Color):
-        self.player = color
         self.init_value()
         self.init_board()
         connector.RESTART(opponent(color))
-        self.print_board()
         self.__firstPlay()
     def CHANGE(self):
         self.RESTART(opponent(self.player))

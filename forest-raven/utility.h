@@ -32,6 +32,7 @@ enum Piece_type {
     PAWN,
 };
 const char typeToChar[7] = { 'Q', 'R', 'B', 'N', 'K', 'P', '-' };
+const int piece_value[7] = { 9, 5, 3, 3, 0, 1 };
 
 struct Position {
     int x = -1, y = -1;

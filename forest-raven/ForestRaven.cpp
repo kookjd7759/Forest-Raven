@@ -11,37 +11,57 @@ const double normal = 1.0;
 
 class Algorithm {
 private:
+    const int DEPTH = 2, MAXI_int = 2e9, MINI_int = -2e9;
     Chess chess;
-
-    double cal_evaluation(const Chess& chess) {
-        double score = 0.0;
-        for (int y = 0; y < 8; y++)
-            for (int x = 0; x < 8; x++) {
-                score += (double)chess.board[y][x].attack_wb[chess.myColor] * board_value[y][x];
-            }
+    int score_piece(const Chess& ch) { return (chess.pieceValue_wb[ch.myColor] - chess.pieceValue_wb[ch.opColor]); }
+    int evaluate(const Chess& ch) {
+        int score = score_piece(ch);
         return score;
+    }
+    
+    int minimax(Chess ch, int depth, bool isWhite) {
+        if (depth == 0 || ch.isOver()) 
+            return evaluate(ch);
+
+        if (isWhite) {
+            int maxi = MINI_int;
+            set<Move>* moveList = chess.get_candidateMove(chess.myColor);
+            for (const Move& move : *moveList) {
+                Chess next = chess.clone(); next.play(move);
+                int eval = minimax(next, depth - 1, false);
+                maxi = max(maxi, eval);
+            }
+            return maxi;
+        }
+        else {
+            int mini = MAXI_int;
+            set<Move>* moveList = chess.get_candidateMove(chess.myColor);
+            for (const Move& move : *moveList) {
+                Chess next = chess.clone(); next.play(move);
+                int eval = minimax(next, depth - 1, true);
+                mini = min(mini, eval);
+            }
+            return mini;
+        }
     }
 
     Move findBestMove() {
-        /*
-        Move selected_move;
-        double maxiScore = cal_evaluation(chess);
+        int best_eval = chess.myColor == WHITE ? MINI_int : MAXI_int;
+        bool isWhite = chess.myColor == WHITE;
+        Move bestMove;
         set<Move>* moveList = chess.get_candidateMove(chess.myColor);
         for (const Move& move : *moveList) {
+            cout << to_notation(move.ori) << " -> " << to_notation(move.dest) << "  -  ";
             Chess next = chess.clone(); next.play(move);
-            double nextScore = cal_evaluation(next);
-            if (maxiScore < nextScore) {
-                selected_move = move;
-                maxiScore = nextScore;
+            int next_eval = minimax(next, DEPTH, isWhite);
+            cout << best_eval << ", " << next_eval << "\n";
+            if (chess.myColor == WHITE ? next_eval > best_eval : next_eval < best_eval) {
+                best_eval = next_eval;
+                bestMove = move;
             }
         }
-        return selected_move;
-        */
-        set<Move>* moveList = chess.get_candidateMove(chess.myColor);
-        int idx = get_random(0, moveList->size() - 1);
-        auto it = moveList->begin();
-        std::advance(it, idx);
-        return *it;
+
+        return bestMove;
     }
 
 public:
@@ -62,15 +82,13 @@ private:
     }
 
 public:
-    int score_wb[2];
-
     ForestRaven() { init(); }
 
     void init() {
-        int color_int; cin >> color_int;
+        int color; cin >> color;
         string temp; getline(cin, temp);
-        chess.myColor = (color_int == 0 ? WHITE : BLACK);
-        score_wb[0] = score_wb[1] = 0;
+        chess.myColor = (color == 0 ? WHITE : BLACK);
+        chess.opColor = (color == 0 ? BLACK : WHITE);
     }
 
     void start() {
@@ -80,7 +98,6 @@ public:
             //chess.print_board();
         }
     }
-
     void opponent_play() {
         string line; getline(cin, line);
         Move move; move.string_init(line);
@@ -94,8 +111,7 @@ public:
         send_play(move);
     }
     void send_play(Move& move) {
-        string st = move.get_string();
-        cout << st << "\n";
+        cout << move.get_string() << "\n";
     }
 };
 
@@ -116,12 +132,4 @@ int main() {
     init();
     ForestRaven forest_raven;
     forest_raven.start();
-    //Chess chess;
-    //set<Move>* moveList = chess.get_candidateMove(chess.myColor);
-    //for (const Move& move : *moveList)
-    //    cout << to_notation(move.ori) << " -> " << to_notation(move.dest) << "\n";
 }
-/*
-1
-4 1 4 3 -1 -1 -1
-*/
