@@ -4,22 +4,25 @@
 #include "utility.h"
 #include "chess.h"
 
-double board_value[8][8];
-const double center = 1.5;
-const double semi_center = 1.3;
-const double normal = 1.0;
+int board_value[8][8];
+const int center = 3;
+const int semi_center = 2;
+const int normal = 1;
 
 class Algorithm {
 private:
     const int DEPTH = 2, MAXI_int = 2e9, MINI_int = -2e9;
     Chess chess;
-    int score_piece(const Chess& ch) { return (chess.pieceValue_wb[ch.myColor] - chess.pieceValue_wb[ch.opColor]); }
+    int evaluate_piece_value(const Chess& ch) { return (chess.pieceValue_wb[ch.myColor] - chess.pieceValue_wb[ch.opColor]); }
+    int evaluate_piece_activity(const Chess& ch) {
+
+    }
     int evaluate(const Chess& ch) {
-        int score = score_piece(ch);
+        int score = evaluate_piece_value(ch);
         return score;
     }
     
-    int minimax(Chess ch, int depth, bool isWhite) {
+    int minimax_alpha_beta(Chess ch, int depth, int alpha, int beta, bool isWhite) {
         if (depth == 0 || ch.isOver()) 
             return evaluate(ch);
 
@@ -28,8 +31,10 @@ private:
             set<Move>* moveList = chess.get_candidateMove(chess.myColor);
             for (const Move& move : *moveList) {
                 Chess next = chess.clone(); next.play(move);
-                int eval = minimax(next, depth - 1, false);
+                int eval = minimax_alpha_beta(next, depth - 1, alpha, beta, false);
                 maxi = max(maxi, eval);
+                alpha = max(alpha, eval);
+                if (beta <= alpha) break;
             }
             return maxi;
         }
@@ -38,8 +43,10 @@ private:
             set<Move>* moveList = chess.get_candidateMove(chess.myColor);
             for (const Move& move : *moveList) {
                 Chess next = chess.clone(); next.play(move);
-                int eval = minimax(next, depth - 1, true);
+                int eval = minimax_alpha_beta(next, depth - 1, alpha, beta, false);
                 mini = min(mini, eval);
+                beta = min(beta, eval);
+                if (beta <= alpha) break;
             }
             return mini;
         }
@@ -51,9 +58,9 @@ private:
         Move bestMove;
         set<Move>* moveList = chess.get_candidateMove(chess.myColor);
         for (const Move& move : *moveList) {
-            cout << to_notation(move.ori) << " -> " << to_notation(move.dest) << "  -  ";
+            cout << "[" << to_notation(move.ori) << " -> " << to_notation(move.dest) << "]  -  ";
             Chess next = chess.clone(); next.play(move);
-            int next_eval = minimax(next, DEPTH, isWhite);
+            int next_eval = minimax_alpha_beta(next, DEPTH, MINI_int, MAXI_int, isWhite);
             cout << best_eval << ", " << next_eval << "\n";
             if (chess.myColor == WHITE ? next_eval > best_eval : next_eval < best_eval) {
                 best_eval = next_eval;
@@ -120,9 +127,8 @@ void init() {
     for (int y = 0; y < 8; y++)
         for (int x = 0; x < 8; x++) {
             if (x >= 2 && x <= 5 && y >= 2 && y <= 5) {
-                if (x >= 3 && x <= 4 && y >= 3 && y <= 4) 
-                    board_value[y][x] = center;
-                else board_value[y][x] = semi_center;;
+                board_value[y][x] = (x >= 3 && x <= 4 && y >= 3 && y <= 4) ? 
+                    center : semi_center;;
             }
             else board_value[y][x] = normal;
         }
@@ -132,4 +138,5 @@ int main() {
     init();
     ForestRaven forest_raven;
     forest_raven.start();
+
 }
