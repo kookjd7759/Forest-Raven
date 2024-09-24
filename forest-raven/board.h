@@ -87,6 +87,40 @@ namespace ForestRaven {
 
 	public:
 		Board() { init(); }
+
+		void move(Move move) {
+			board[move.dest] = board[move.ori];
+			board[move.ori] = NOPIECE;
+
+				if (move.type == KING) // king position recording
+					king_position_wb[move.piece.color] = move.dest;
+			board[move.dest.y][move.dest.x].piece = board[move.ori.y][move.ori.x].piece;
+			board[move.ori.y][move.ori.x].clear();
+		}
+		void capture(Move move) {
+			Piece takePiece = board[move.take.y][move.take.x].piece;
+			pieceValue_wb[takePiece.color] -= piece_value[takePiece.type];
+			board[move.take.y][move.take.x].clear();
+			Chess::move(move);
+		}
+		void castling(Move move) {
+			int rank = (move.piece.color == WHITE ? 0 : 7);
+			if (move.dest.x > move.ori.x) { // king side 
+				Position rook_pos = Position(7, rank);
+				Chess::move(move);
+				Chess::move(Move(Piece(ROOK, move.piece.color), rook_pos, move.dest + Position(-1, 0)));
+			}
+			else { // queen side
+				Position rook_pos = Position(0, rank);
+				Chess::move(move);
+				Chess::move(Move(Piece(ROOK, move.piece.color), rook_pos, move.dest + Position(+1, 0)));
+			}
+		}
+		void promotion(Move move) {
+			board[move.dest.y][move.dest.x].set(Piece(move.promotion_type, move.piece.color));
+			pieceValue_wb[move.piece.color] -= piece_value[move.promotion_type];
+		}
+
 		void print() {
 			auto get_info = [&](Square s) -> string {
 				Bitboard b = sq_bb(s);

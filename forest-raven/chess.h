@@ -9,6 +9,9 @@
 
 namespace ForestRaven{
     class Chess {
+    private:
+        Board board;
+    public:
 
     }
 }

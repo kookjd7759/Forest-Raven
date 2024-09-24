@@ -23,8 +23,19 @@ namespace ForestRaven {
         CAPTURE,
         MOVE_PRO,
         CAPTURE_PRO,
-        CASTLING
+        CASTLING_OO,
+        CASTLING_OOO
     };
+    const string mt_str(Move_type mt) {
+        return mt == MOVE ? "MOVE"
+            : mt == CAPTURE ? "CAPTURE"
+            : mt == MOVE_PRO ? "MOVE_PROMOTION"
+            : mt == CAPTURE_PRO ? "CAPTURE_PROMOTION"
+            : mt == CASTLING_OO ? "CASTLING_OO"
+            : mt == CASTLING_OOO ? "CASTLING_OOO"
+            : "NOMOVE";
+    }
+
     enum Piece_type {
         QUEEN,
         ROOK,
@@ -62,13 +73,24 @@ namespace ForestRaven {
         A6, B6, C6, D6, E6, F6, G6, H6,
         A7, B7, C7, D7, E7, F7, G7, H7,
         A8, B8, C8, D8, E8, F8, G8, H8,
-        SQUARE_NB
+        SQUARE_NB,
+        NOSQUARE = -1
     };
     inline static void operator++(Square& s) { s = Square(int(s) + 1); }
     inline Square& operator+=(Square& s, Direction d) { return s = Square(s + d); }
     constexpr bool is_ok(Square s) { return s >= A1 && s <= H8; }
     constexpr Bitboard sq_bb(Square s) { assert(is_ok(s)); return Bitboard(1ULL << s); }
 
+    struct Move {
+        Move_type type = NOMOVE;
+        Piece_type piece = NOPIECE, promotion = NOPIECE;
+        Color color = NOCOLOR;
+        Square ori = NOSQUARE, dest = NOSQUARE;
+
+        Move() {}
+        Move(Color c, Piece_type pt, Move_type mt, Square ori, Square dest, Piece_type pro_pt = NOPIECE)
+            : color(c), piece(pt), type(mt), ori(ori), dest(dest), promotion(pro_pt) {}
+    };
 }
 
 #endif // UTILITY_H
