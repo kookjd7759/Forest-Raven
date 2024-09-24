@@ -21,9 +21,6 @@ namespace ForestRaven {
 	constexpr Bitboard Rank7 = Rank1 << (8 * 6);
 	constexpr Bitboard Rank8 = Rank1 << (8 * 7);
 
-	extern Bitboard attacks[PIECE_TYPE_NB][SQUARE_NB];
-	extern Bitboard Pawn_attacks[COLOR_NB][SQUARE_NB];
-
 	inline Bitboard& operator|=(Bitboard& b, Square s) { return b |= to_board(s); }
 
 	template<Direction D>
@@ -49,18 +46,23 @@ namespace ForestRaven {
 
 	Bitboard sliding_attack(Piece_type pt, Square s, Bitboard occupied);
 
+	void print_bb();
+
 	class Board {
 	private:
-		Bitboard board[COLOR_NB][PIECE_TYPE_NB], exist;
-		Color turn = WHITE;
+		Piece_type board[SQUARE_NB];
+		Bitboard   byColorBB[COLOR_NB];
+		Bitboard   byTypeBB[PIECE_TYPE_NB];
+		Color      turn = WHITE;
 
 		template<Color C>
-		void create_piece(Piece_type p, Square s) { exist |= (board[C][p] |= to_board(s)); }
+		void create_piece(Piece_type p, Square s) { board[s] = p, byColorBB[C] |= to_board(s), byTypeBB[p] |= to_board(s); };
 		void init_position();
 		void init();
 
 	public:
 		Board() { init(); }
+		void move_piece(Move move);
 		void print();
 	};
 }

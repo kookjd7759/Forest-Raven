@@ -5,18 +5,13 @@
 #include <string>
 #include <sstream>
 #include "utility.h"
+#include "board.h"
 
-using namespace std;
+namespace ForestRaven{
+    class Chess {
 
-struct Piece {
-    Piece_type type = NOPIECE;
-    Color color = NOCOLOR;
-
-    bool operator<(const Piece& other) const { return (type != other.type ? type < other.type : color < other.color); }
-
-    Piece(){}
-    Piece(Piece_type t, Color c) : type(t), color(c) {}
-};
+    }
+}
 
 struct Square {
     Piece piece;
@@ -96,11 +91,8 @@ struct Move {
 
 class Chess {
 private:
-    Position king_position_wb[2];
-    bool kr_moveCheck_wb_qk[2][2];
-    Move prevMove;
+    Board board;
 
-    const bool boundaryCheck(const Position& pos) const;
     const bool isAlly(const Position& a, const Position& b) const;
     const bool isEnemy(const Position& a, const Position& b) const;
     const bool isCheck(const Color& color) const;

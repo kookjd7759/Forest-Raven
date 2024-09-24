@@ -1,7 +1,6 @@
 #include "Chess.h"
 
 // private: 
-const bool Chess::boundaryCheck(const Position& pos) const { return (pos.x < 0 || pos.x > 7 || pos.y < 0 || pos.y > 7) ? false : true; }
 const bool Chess::isAlly(const Position& a, const Position& b) const {
     return ((board[a.y][a.x].piece.color != NOCOLOR && board[b.y][b.x].piece.color != NOCOLOR) &&
         board[a.y][a.x].piece.color == board[b.y][b.x].piece.color);

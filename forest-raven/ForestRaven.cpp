@@ -14,9 +14,7 @@ private:
     const int DEPTH = 2, MAXI_int = 2e9, MINI_int = -2e9;
     Chess chess;
     int evaluate_piece_value(const Chess& ch) { return (chess.pieceValue_wb[ch.myColor] - chess.pieceValue_wb[ch.opColor]); }
-    int evaluate_piece_activity(const Chess& ch) {
 
-    }
     int evaluate(const Chess& ch) {
         int score = evaluate_piece_value(ch);
         return score;

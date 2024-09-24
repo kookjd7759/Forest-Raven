@@ -8,16 +8,17 @@ namespace ForestRaven {
 	using Bitboard = uint64_t;
 	using Bitmove = uint32_t;
 
-	enum Color : int {
+	enum Color : uint32_t {
 		WHITE, BLACK,
 		COLOR_NB
 	};
 
-	enum Piece_type : int {
-		QUEEN, ROOK, BISHOP, KNIGHT, PAWN, KING,
-		PIECE_TYPE_NB
+	enum Piece_type : uint32_t {
+		QUEEN, ROOK, BISHOP, KNIGHT, KING, PAWN,
+		PIECE_TYPE_NB,
+		NOPIECE = -1,
 	};
-	constexpr char pt_char[PIECE_TYPE_NB] = { 'Q', 'R', 'B', 'N', 'P', 'K'};
+	constexpr char pt_char[PIECE_TYPE_NB] = { 'Q', 'R', 'B', 'N', 'K', 'P' };
 	constexpr Piece_type init_positions[8] = { ROOK, KNIGHT, BISHOP, QUEEN, KING, BISHOP, KNIGHT, ROOK };
 
 	enum Direction : int {
@@ -34,7 +35,7 @@ namespace ForestRaven {
 	constexpr array<Direction, 4> dir_straight = { UP, RIGHT, DOWN, LEFT };
 	constexpr array<Direction, 4> dir_diagonal = { UP_LEFT, UP_RIGHT, DOWN_LEFT, DOWN_RIGHT };
 
-	enum Square : int {
+	enum Square : uint32_t {
 		A1, B1, C1, D1, E1, F1, G1, H1,
 		A2, B2, C2, D2, E2, F2, G2, H2,
 		A3, B3, C3, D3, E3, F3, G3, H3,
@@ -50,5 +51,23 @@ namespace ForestRaven {
 	constexpr bool is_boundary(Square s) { return s >= A1 && s <= H8; }
 	constexpr Bitboard to_board(Square s) { assert(is_boundary(s)); return (1ULL << s); }
 
+	enum Move_type : uint32_t {
+		MOVE = 0 << 28,
+		CAPTURE = 1 << 28,
+		MOVE_PROMOTION = 2 << 28,
+		CAPTURE_PROMOTION = 3 << 28,
+		CASTLING_OO = 4 << 28,
+		CASTLING_OOO = 5 << 28
+	};
+	const string mt_str(Move_type mt) {
+		return mt == MOVE ? "MOVE"
+			: mt == CAPTURE ? "CAPTURE"
+			: mt == MOVE_PROMOTION ? "MOVE_PROMOTION"
+			: mt == CAPTURE_PROMOTION ? "CAPTURE_PROMOTION"
+			: mt == CASTLING_OO ? "CASTLING_OO"
+			: mt == CASTLING_OOO ? "CASTLING_OOO"
+			: "NOMOVE";
+	}
 
+	
 }
