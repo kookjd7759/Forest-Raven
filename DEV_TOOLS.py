@@ -46,7 +46,7 @@ def commit(comment):
 
 if __name__ == '__main__':
     while True:
-        command = input('[1] pull [2] debug [3] commit [4] exit \n >> ')
+        command = input('[1] pull [2] debug [3] commit [4] pull temp cpp code [5] exit \n >> ')
         if command == '1':
             cpp_pull()
         elif command == '2':
@@ -54,5 +54,9 @@ if __name__ == '__main__':
         elif command == '3':
             comment = input('Enter commit comment -> ')
             commit(comment)
+        elif command == '4':
+            src = 'C:\\Users\\kookj\\source\\repos\\Chess_new(Bitboard version)\\Chess_new(Bitboard version)'
+            dest = 'C:\\WorkSpace\\Visual Studio Code Workspace\\Forest-Raven\\tempcppcode'
+            cpp_pull()
         else:
             break
