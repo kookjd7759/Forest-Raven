@@ -16,15 +16,17 @@ namespace ForestRaven {
         NOCOLOR = -1,
     };
     constexpr char colorToChar[2] = { 'w', 'b' };
+    inline Color operator!(Color c) { return (c == WHITE ? BLACK : WHITE); }
 
     enum Move_type : int{
         NOMOVE = -1,
+        CASTLING_OO,
+        CASTLING_OOO,
+        CASTLING_TYPE_NB,
         MOVE,
         CAPTURE,
         MOVE_PRO,
-        CAPTURE_PRO,
-        CASTLING_OO,
-        CASTLING_OOO
+        CAPTURE_PRO
     };
     const string mt_str(Move_type mt) {
         return mt == MOVE ? "MOVE"
@@ -82,14 +84,20 @@ namespace ForestRaven {
     constexpr Bitboard sq_bb(Square s) { assert(is_ok(s)); return Bitboard(1ULL << s); }
 
     struct Move {
-        Move_type type = NOMOVE;
+        Color      color = NOCOLOR;
+        Move_type  type = NOMOVE;
         Piece_type piece = NOPIECE, promotion = NOPIECE;
-        Color color = NOCOLOR;
-        Square ori = NOSQUARE, dest = NOSQUARE;
+        Square     ori = NOSQUARE, dest = NOSQUARE, take = NOSQUARE;
+        Bitboard   ori_bb = 0, dest_bb = 0, take_bb = 0;
 
         Move() {}
         Move(Color c, Piece_type pt, Move_type mt, Square ori, Square dest, Piece_type pro_pt = NOPIECE)
-            : color(c), piece(pt), type(mt), ori(ori), dest(dest), promotion(pro_pt) {}
+            : color(c), piece(pt), type(mt), ori(ori), dest(dest), promotion(pro_pt),
+            ori_bb(sq_bb(ori)), dest_bb(sq_bb(ori)) {}
+        Move(Color c, Piece_type pt, Move_type mt, Square ori, Square dest, Square take, Piece_type pro_pt = NOPIECE)
+            : color(c), piece(pt), type(mt), ori(ori), dest(dest), take(take), promotion(pro_pt),
+            ori_bb(sq_bb(ori)), dest_bb(sq_bb(ori)), take_bb(sq_bb(take)){
+        }
     };
 }
 

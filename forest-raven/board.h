@@ -41,15 +41,25 @@ namespace ForestRaven {
 			: shift<DOWN_LEFT>(b) | shift<DOWN_RIGHT>(b);
 	}
 
-	class Board {
-	private:
+	const static Move CASTLING_rook[COLOR_NB][CASTLING_TYPE_NB]{
+		{Move(WHITE, ROOK, MOVE, H1,  F1), Move(WHITE, ROOK, MOVE, A1,  D1)},
+		{Move(WHITE, ROOK, MOVE, H8,  F8), Move(WHITE, ROOK, MOVE, A8,  D8)}
+	};
+
+	class Chess {
+	public:
 		Piece_type board[SQUARE_NB];
 		Bitboard   byColorBB[COLOR_NB];
 		Bitboard   byTypeBB[PIECE_TYPE_NB];
-		Color      turn = WHITE;
+		Color      turn;
+		Move       prevMove;
+		bool       move_king[COLOR_NB],
+			       move_rook[COLOR_NB][2];
+
+		Chess() { init(); }
 
 		template<Color C>
-		void create_piece(Piece_type p, Square s) { 
+		void create_piece(Piece_type p, Square s) {
 			Bitboard b = sq_bb(s);
 			board[s] = p;
 			byColorBB[C] |= b;
@@ -66,6 +76,10 @@ namespace ForestRaven {
 				create_piece<WHITE>(PAWN, Square(A2 + i));
 				create_piece<BLACK>(PAWN, Square(A7 + i));
 			}
+			turn = WHITE;
+			move_king[WHITE] = move_king[BLACK] = false;
+			move_rook[WHITE][0] = move_rook[WHITE][1] = move_rook[BLACK][0] = move_rook[BLACK][1] = false;
+			prevMove = Move();
 		}
 		void init() {
 			for (Square s = A1; s <= H8; ++s) {
@@ -85,40 +99,45 @@ namespace ForestRaven {
 			init_position();
 		}
 
-	public:
-		Board() { init(); }
-
 		void move(Move move) {
-			board[move.dest] = board[move.ori];
-			board[move.ori] = NOPIECE;
+			if (move.type == KING) move_king[move.color] = true;
+			else if (move.type == ROOK) {
+				if (FileA & move.ori_bb) move_rook[move.color][1] = true;
+				else if (FileH & move.ori_bb) move_rook[move.color][0] = true;
+			}
 
-				if (move.type == KING) // king position recording
-					king_position_wb[move.piece.color] = move.dest;
-			board[move.dest.y][move.dest.x].piece = board[move.ori.y][move.ori.x].piece;
-			board[move.ori.y][move.ori.x].clear();
+			board[move.dest] = board[move.ori], board[move.ori] = NOPIECE;
+			byColorBB[move.color] ^= ~move.ori_bb | move.dest_bb;
+			byTypeBB[move.type] ^= ~move.ori_bb | move.dest_bb;
+
+			prevMove = move;
 		}
 		void capture(Move move) {
-			Piece takePiece = board[move.take.y][move.take.x].piece;
-			pieceValue_wb[takePiece.color] -= piece_value[takePiece.type];
-			board[move.take.y][move.take.x].clear();
-			Chess::move(move);
+			Piece_type take_pt = board[move.take];
+			board[move.take] = NOPIECE;
+			byColorBB[!move.color] &= ~move.take_bb;
+			byTypeBB[take_pt] &= ~move.take_bb;
+			Board::move(move);
 		}
 		void castling(Move move) {
-			int rank = (move.piece.color == WHITE ? 0 : 7);
-			if (move.dest.x > move.ori.x) { // king side 
-				Position rook_pos = Position(7, rank);
-				Chess::move(move);
-				Chess::move(Move(Piece(ROOK, move.piece.color), rook_pos, move.dest + Position(-1, 0)));
-			}
-			else { // queen side
-				Position rook_pos = Position(0, rank);
-				Chess::move(move);
-				Chess::move(Move(Piece(ROOK, move.piece.color), rook_pos, move.dest + Position(+1, 0)));
-			}
+			Board::move(CASTLING_rook[move.color][move.type]);
+			Board::move(move);
 		}
 		void promotion(Move move) {
-			board[move.dest.y][move.dest.x].set(Piece(move.promotion_type, move.piece.color));
-			pieceValue_wb[move.piece.color] -= piece_value[move.promotion_type];
+			board[move.dest] = move.promotion;
+			byColorBB[move.color] |= move.dest_bb;
+			byTypeBB[move.promotion] |= move.dest_bb;
+		}
+		void play(Move move) {
+			switch (move.type) {
+			case MOVE: board.move(move); break;
+			case CAPTURE: board.capture(move); break;
+			case CASTLING_OO || CASTLING_OOO: board.castling(move); break;
+			case MOVE_PRO: board.move(move), board.promotion(move); break;
+			case CAPTURE_PRO: board.capture(move), board.promotion(move); break;
+			default: break;
+			}
+			board.turn = !board.turn;
 		}
 
 		void print() {

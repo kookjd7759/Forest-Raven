@@ -26,7 +26,7 @@ namespace ForestRaven {
 	void print_bb() {
 
 	}
-
+	
 	void Board::init_position() {
 		for (Square s = A1; s <= H8; ++s) board[s] = NOPIECE;
 		for (int c = 0; c < COLOR_NB; c++) byColorBB[c] = 0;

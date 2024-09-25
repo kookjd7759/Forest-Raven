@@ -227,36 +227,6 @@ void Chess::calAttackSquare() {
         }
 }
 
-void Chess::move(const Move& move) {
-    if (move.piece.type == KING) // king position recording
-        king_position_wb[move.piece.color] = move.dest;
-    board[move.dest.y][move.dest.x].piece = board[move.ori.y][move.ori.x].piece;
-    board[move.ori.y][move.ori.x].clear();
-}
-void Chess::capture(const Move& move) {
-    Piece takePiece = board[move.take.y][move.take.x].piece;
-    pieceValue_wb[takePiece.color] -= piece_value[takePiece.type];
-    board[move.take.y][move.take.x].clear();
-    Chess::move(move);
-}
-void Chess::castling(const Move& move) {
-    int rank = (move.piece.color == WHITE ? 0 : 7);
-    if (move.dest.x > move.ori.x) { // king side 
-        Position rook_pos = Position(7, rank);
-        Chess::move(move);
-        Chess::move(Move(Piece(ROOK, move.piece.color), rook_pos, move.dest + Position(-1, 0)));
-    }
-    else { // queen side
-        Position rook_pos = Position(0, rank);
-        Chess::move(move);
-        Chess::move(Move(Piece(ROOK, move.piece.color), rook_pos, move.dest + Position(+1, 0)));
-    }
-}
-void Chess::promotion(const Move& move) {
-    board[move.dest.y][move.dest.x].set(Piece(move.promotion_type, move.piece.color));
-    pieceValue_wb[move.piece.color] -= piece_value[move.promotion_type];
-}
-
 const bool Chess::castling_check(const Color& color, const bool& isKingside) const {
     int rank = (color == WHITE ? 0 : 7);
     bool condition_1 = !kr_moveCheck_wb_qk[color][isKingside ? 1 : 0];
