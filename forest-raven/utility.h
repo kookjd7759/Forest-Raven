@@ -65,6 +65,7 @@ namespace ForestRaven {
     };
     constexpr Direction dir_straight[4] = { UP, RIGHT, DOWN, LEFT };
     constexpr Direction dir_diagonal[4] = { UP_LEFT, UP_RIGHT, DOWN_LEFT, DOWN_RIGHT };
+    constexpr Direction all_direction[8] = { UP, RIGHT, DOWN, LEFT, UP_LEFT, UP_RIGHT, DOWN_LEFT, DOWN_RIGHT };
 
     enum Square : uint32_t {
         A1, B1, C1, D1, E1, F1, G1, H1,
@@ -80,8 +81,20 @@ namespace ForestRaven {
     };
     inline static void operator++(Square& s) { s = Square(int(s) + 1); }
     inline Square& operator+=(Square& s, Direction d) { return s = Square(s + d); }
+    inline Square operator+(Square& s, Direction d) { return Square(s + d); }
     constexpr bool is_ok(Square s) { return s >= A1 && s <= H8; }
     constexpr Bitboard sq_bb(Square s) { assert(is_ok(s)); return Bitboard(1ULL << s); }
+
+    constexpr Bitboard bb[SQUARE_NB] = {
+        sq_bb(A1), sq_bb(B1), sq_bb(C1), sq_bb(D1), sq_bb(E1), sq_bb(F1), sq_bb(G1), sq_bb(H1),
+        sq_bb(A2), sq_bb(B2), sq_bb(C2), sq_bb(D2), sq_bb(E2), sq_bb(F2), sq_bb(G2), sq_bb(H2),
+        sq_bb(A3), sq_bb(B3), sq_bb(C3), sq_bb(D3), sq_bb(E3), sq_bb(F3), sq_bb(G3), sq_bb(H3),
+        sq_bb(A4), sq_bb(B4), sq_bb(C4), sq_bb(D4), sq_bb(E4), sq_bb(F4), sq_bb(G4), sq_bb(H4),
+        sq_bb(A5), sq_bb(B5), sq_bb(C5), sq_bb(D5), sq_bb(E5), sq_bb(F5), sq_bb(G5), sq_bb(H5),
+        sq_bb(A6), sq_bb(B6), sq_bb(C6), sq_bb(D6), sq_bb(E6), sq_bb(F6), sq_bb(G6), sq_bb(H6),
+        sq_bb(A7), sq_bb(B7), sq_bb(C7), sq_bb(D7), sq_bb(E7), sq_bb(F7), sq_bb(G7), sq_bb(H7),
+        sq_bb(A8), sq_bb(B8), sq_bb(C8), sq_bb(D8), sq_bb(E8), sq_bb(F8), sq_bb(G8), sq_bb(H8)
+    };
 
     struct Move {
         Color      color = NOCOLOR;

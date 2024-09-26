@@ -54,13 +54,10 @@ private:
     const int en_passent_check(const Position& pos);
 
 public:
-    Square board[8][8];
-    Color turn, myColor, opColor;
     int pieceValue_wb[2];
 
     Chess clone() const { return *this; }
 
-    Chess() { reset(); }
     void reset();
     bool isOver();
 
