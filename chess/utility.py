@@ -63,7 +63,7 @@ class Move:
         else: 
             return Move_type.NOMOVE
     def get_string(self):
-        st = f'{str(self.ori.x)} {str(self.ori.y)} {str(self.dest.x)} {str(self.dest.y)} {str(self.take.x)} {str(self.take.y)} '
+        st = f'{to_notation(self.ori)} {to_notation(self.dest)} {to_notation(self.take)} '
         if self.promotion_type == Piece_type.NOPIECE:
             st += '-1'
         else:
@@ -71,10 +71,11 @@ class Move:
         return st
     def string_init(self, text: str):
         st = text.split()
-        self.ori = Position(int(st[0]), int(st[1]))
-        self.dest = Position(int(st[2]),int(st[3]))
-        self.take = Position(int(st[4]), int(st[5]))
-        self.promotion_type = promotion_list[int(st[6])]
+        
+        self.ori = to_position(st[0:2])
+        self.dest = to_position(st[3:5])
+        self.take = to_position(st[6:8])
+        self.promotion_type = promotion_list[int(st[9])]
     def isEqual(self, other):
         if isinstance(other, Move):
             return self.piece.type == other.piece.type and self.piece.color == other.piece.color and \

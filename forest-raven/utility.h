@@ -49,23 +49,31 @@ namespace ForestRaven {
         NOPIECE = -1,
     };
     constexpr Piece_type init_positions[8] = { ROOK, KNIGHT, BISHOP, QUEEN, KING, BISHOP, KNIGHT, ROOK };
+    constexpr Piece_type promotion_list[8] = { ROOK, KNIGHT, BISHOP, QUEEN };
     constexpr char pt_char[7] = { 'Q', 'R', 'B', 'N', 'K', 'P' };
     constexpr int piece_value[7] = {  9,   5,   3,   3,   0,   1 };
 
     enum Direction : int {
-        UP = 8,
-        RIGHT = 1,
-        DOWN = -UP,
-        LEFT = -RIGHT,
+        U = 8,
+        R = 1,
+        D = -U,
+        L = -R,
+        UU = U + U,
+        DD = D + D,
 
-        UP_LEFT = UP + LEFT,
-        UP_RIGHT = UP + RIGHT,
-        DOWN_LEFT = DOWN + LEFT,
-        DOWN_RIGHT = DOWN + RIGHT
+        UL = U + L,
+        UR = U + R,
+        DL = D + L,
+        DR = D + R,
+
+        UUL = U + U + L,
+        UUR = U + U + R,
+        DDL = D + D + L,
+        DDR = D + D + R,
     };
-    constexpr Direction dir_straight[4] = { UP, RIGHT, DOWN, LEFT };
-    constexpr Direction dir_diagonal[4] = { UP_LEFT, UP_RIGHT, DOWN_LEFT, DOWN_RIGHT };
-    constexpr Direction all_direction[8] = { UP, RIGHT, DOWN, LEFT, UP_LEFT, UP_RIGHT, DOWN_LEFT, DOWN_RIGHT };
+    constexpr Direction dir_straight[4] = { U, R, D, L };
+    constexpr Direction dir_diagonal[4] = { UL, UR, DL, DR};
+    constexpr Direction all_direction[8] = { U, R, D, L, UL, UR, DL, DR};
 
     enum Square : uint32_t {
         A1, B1, C1, D1, E1, F1, G1, H1,
@@ -80,22 +88,15 @@ namespace ForestRaven {
         NOSQUARE = -1
     };
     inline static void operator++(Square& s) { s = Square(int(s) + 1); }
-    inline Square& operator+=(Square& s, Direction d) { return s = Square(s + d); }
-    inline Square operator+(Square& s, Direction d) { return Square(s + d); }
+    inline Square operator+(Square& s, Direction d) { return Square(int(s) + int(d)); }
+    inline Square& operator+=(Square& s, Direction d) { return s = s + d; }
     constexpr bool is_ok(Square s) { return s >= A1 && s <= H8; }
-    constexpr Bitboard sq_bb(Square s) { assert(is_ok(s)); return Bitboard(1ULL << s); }
+    constexpr inline Bitboard sq_bb(Square s) { assert(is_ok(s)); return Bitboard(1ULL << s); }
+    // constexpr inline Square bitboard_to_square(Bitboard b) { assert(b != 0); return Square(__builtin_ctzll(b)); }
 
-    constexpr Bitboard bb[SQUARE_NB] = {
-        sq_bb(A1), sq_bb(B1), sq_bb(C1), sq_bb(D1), sq_bb(E1), sq_bb(F1), sq_bb(G1), sq_bb(H1),
-        sq_bb(A2), sq_bb(B2), sq_bb(C2), sq_bb(D2), sq_bb(E2), sq_bb(F2), sq_bb(G2), sq_bb(H2),
-        sq_bb(A3), sq_bb(B3), sq_bb(C3), sq_bb(D3), sq_bb(E3), sq_bb(F3), sq_bb(G3), sq_bb(H3),
-        sq_bb(A4), sq_bb(B4), sq_bb(C4), sq_bb(D4), sq_bb(E4), sq_bb(F4), sq_bb(G4), sq_bb(H4),
-        sq_bb(A5), sq_bb(B5), sq_bb(C5), sq_bb(D5), sq_bb(E5), sq_bb(F5), sq_bb(G5), sq_bb(H5),
-        sq_bb(A6), sq_bb(B6), sq_bb(C6), sq_bb(D6), sq_bb(E6), sq_bb(F6), sq_bb(G6), sq_bb(H6),
-        sq_bb(A7), sq_bb(B7), sq_bb(C7), sq_bb(D7), sq_bb(E7), sq_bb(F7), sq_bb(G7), sq_bb(H7),
-        sq_bb(A8), sq_bb(B8), sq_bb(C8), sq_bb(D8), sq_bb(E8), sq_bb(F8), sq_bb(G8), sq_bb(H8)
-    };
-
+    string sq_notation(Square s) { return s == NOSQUARE ? "--" : string(1, "ABCDEFGH"[(s % 8)]) + string(1, "12345678"[(s / 8)]);  }
+    Square notation_sq(string st) { return st.compare("--") ? NOSQUARE : Square((('1' - st[0]) * 8) + ('A' - st[0])); }
+    
     struct Move {
         Color      color = NOCOLOR;
         Move_type  type = NOMOVE;
@@ -111,7 +112,32 @@ namespace ForestRaven {
             : color(c), piece(pt), type(mt), ori(ori), dest(dest), take(take), promotion(pro_pt),
             ori_bb(sq_bb(ori)), dest_bb(sq_bb(ori)), take_bb(sq_bb(take)){
         }
+
+        void string_init() {
+
+        }
+        string get_string() {
+            string st = sq_notation(ori) + ' ' + sq_notation(dest) + ' ' + sq_notation(take) + ' ';
+            st += promotion == NOPIECE ? "-1" : to_string(promotion);
+            return st;
+        }
     };
+
+    void print_BB(Bitboard b) {
+        int idx = 0; string rank = "87654321";
+        for (Square s : {A8, A7, A6, A5, A4, A3, A2, A1}) {
+            cout << rank[idx++] << ' ';
+            for (int i = 0; i < 8; ++i) {
+                Bitboard sq = sq_bb(s) << i;
+                cout << ((sq & b) ? "бс" : "бр") << ' ';
+            }
+            cout << "\n";
+        }
+        cout << "  ";
+        for (char st : "ABCDEFGH")
+            cout << st << ' ';
+        cout << "\n";
+    }
 }
 
 #endif // UTILITY_H

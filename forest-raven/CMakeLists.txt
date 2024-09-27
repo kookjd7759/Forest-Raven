@@ -9,6 +9,5 @@ project(
 project(${PROJECT_NAME})
 add_executable(${PROJECT_NAME}
     ForestRaven.cpp
-    utility.cpp utility.h
-    chess.cpp chess.h
+    utility.h board.h
     )
