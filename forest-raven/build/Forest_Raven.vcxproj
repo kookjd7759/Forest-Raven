@@ -317,10 +317,8 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="C:\WorkSpace\Visual Studio Code Workspace\Forest-Raven\forest-raven\ForestRaven.cpp" />
-    <ClCompile Include="C:\WorkSpace\Visual Studio Code Workspace\Forest-Raven\forest-raven\utility.cpp" />
     <ClInclude Include="C:\WorkSpace\Visual Studio Code Workspace\Forest-Raven\forest-raven\utility.h" />
-    <ClCompile Include="C:\WorkSpace\Visual Studio Code Workspace\Forest-Raven\forest-raven\chess.cpp" />
-    <ClInclude Include="C:\WorkSpace\Visual Studio Code Workspace\Forest-Raven\forest-raven\chess.h" />
+    <ClInclude Include="C:\WorkSpace\Visual Studio Code Workspace\Forest-Raven\forest-raven\board.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="C:\WorkSpace\Visual Studio Code Workspace\Forest-Raven\forest-raven\build\ZERO_CHECK.vcxproj">

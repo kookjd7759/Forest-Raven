@@ -332,7 +332,7 @@ class Chess:
             self.__move(move)
         elif move_type == Move_type.CAPTURE:
             self.__capture(move)
-        elif move_type == Move_type.CASTLING:
+        elif move_type == Move_type.CASTLING_OO or Move_type.CASTLING_OOO:
             self.__castling(move)
         elif move_type == Move_type.MOVE_PRO:
             self.__move(move)
@@ -449,5 +449,4 @@ class Chess:
 
 if __name__ == '__main__':
     chess = Chess()
-    chess.CHANGE()
 

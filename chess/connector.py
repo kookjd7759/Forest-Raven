@@ -31,10 +31,11 @@ def send(st):
     forest_raven.stdin.flush()
 def read():
     output = forest_raven.stdout.readline()
-    while output == '':
+    while len(output) < 5 or output[0:4] != 'SEND':
         output = forest_raven.stdout.readline()
-    print(f'connector.READ {output}')
-    return output.strip()
+        print(f'connector.READ forestRaven::\t\t{output}', end='')
+    print(f'connector.READ {output[5:]}')
+    return output[5:]
 
 def send_move(move: Move):
     send(move.get_string())

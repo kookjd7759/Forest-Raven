@@ -6,13 +6,18 @@ class Color(Enum):
     BLACK = 1
 def opponent(color: Color):
     return Color.BLACK if color == Color.WHITE else Color.WHITE
+def Getcolor(value: int):
+    return Color.WHITE if value == Color.WHITE.value else Color.BLACK
+
 class Move_type(Enum):
     NOMOVE = -1,
-    MOVE = 0
-    CAPTURE = 1
-    MOVE_PRO = 2
-    CAPTURE_PRO = 3
-    CASTLING = 4
+    CASTLING_OO = 0
+    CASTLING_OOO = 1
+    CASTLING_TYPE_NB = 2
+    MOVE = 3
+    CAPTURE = 4
+    MOVE_PRO = 5
+    CAPTURE_PRO = 6
 class Piece_type(Enum):
     NOPIECE = -1,
     QUEEN = 0
@@ -21,6 +26,20 @@ class Piece_type(Enum):
     KNIGHT = 3
     KING = 4
     PAWN = 5
+def GetpieceType(value: int):
+    if value == Piece_type.QUEEN.value:
+        return Piece_type.QUEEN
+    elif value == Piece_type.ROOK.value:
+        return Piece_type.ROOK
+    elif value == Piece_type.BISHOP.value:
+        return Piece_type.BISHOP
+    elif value == Piece_type.KNIGHT.value:
+        return Piece_type.KNIGHT
+    elif value == Piece_type.KING.value:
+        return Piece_type.KING
+    elif value == Piece_type.PAWN.value:
+        return Piece_type.PAWN
+
 class Gameover_type(Enum):
     NOGAMEOVER = -1
     CHECKMATE_BLACK = 0
@@ -43,6 +62,10 @@ class Piece:
         self.type = type
         self.color = color
 
+# Move message format 
+# [color][pieceType][moveType][ori][dest][take][promotion]
+# [int  ][int      ][int     ][str][str ][str ]['-'/int  ]
+# [1    ][1        ][1       ][2  ][2   ][2   ][1        ]
 class Move:
     def __init__(self, piece: Piece = Piece(), ori: Position = Position(), dest: Position = Position(), take: Position = None, promotion_type: Piece_type = None):
         self.piece = piece
@@ -53,7 +76,7 @@ class Move:
     
     def get_move_type(self):
         if self.piece.type == Piece_type.KING and abs(self.dest.x - self.ori.x) == 2:
-            return Move_type.CASTLING
+            return (Move_type.CASTLING_OO if self.dest.x - self.ori.x > 0 else Move_type.CASTLING_OOO)
         elif self.promotion_type != Piece_type.NOPIECE:
             return (Move_type.MOVE_PRO if self.take.x == -1 else Move_type.CAPTURE_PRO)
         elif self.take.x != -1:
@@ -63,19 +86,21 @@ class Move:
         else: 
             return Move_type.NOMOVE
     def get_string(self):
-        st = f'{to_notation(self.ori)} {to_notation(self.dest)} {to_notation(self.take)} '
+        st = f'{self.piece.color.value}{self.piece.type.value}{self.get_move_type().value}{to_notation(self.ori)}{to_notation(self.dest)}{to_notation(self.take)}'
         if self.promotion_type == Piece_type.NOPIECE:
-            st += '-1'
+            st += '-'
         else:
             st += f'{self.promotion_type.value}'
         return st
-    def string_init(self, text: str):
-        st = text.split()
-        
-        self.ori = to_position(st[0:2])
-        self.dest = to_position(st[3:5])
-        self.take = to_position(st[6:8])
-        self.promotion_type = promotion_list[int(st[9])]
+    def string_init(self, st: str):
+        self.piece = Piece(GetpieceType(int(st[1])), Getcolor(int(st[0])))
+        self.ori = to_position(st[3:5])
+        self.dest = to_position(st[5:7])
+        self.take = to_position(st[7:9])
+        if st[9] == '-':
+            self.promotion_type = Piece_type.NOPIECE
+        else:
+            self.promotion_type = promotion_list[int(st[9])]
     def isEqual(self, other):
         if isinstance(other, Move):
             return self.piece.type == other.piece.type and self.piece.color == other.piece.color and \
@@ -94,10 +119,9 @@ class Square:
         return True if self.piece == None else False
 
 def to_position(notation: str):
-    return Position(ord(notation[0]) - ord('a'), ord(notation[1]) - ord('1'))
-    
+    return Position(ord(notation[0]) - ord('a'), ord(notation[1]) - ord('1')) if notation != '--' else Position()
 def to_notation(position: Position):
-    return chr(position.x + ord('a')) + chr(position.y + ord('1')) if position.x != -1 else 'OUT BOUNDARY'
+    return chr(position.x + ord('a')) + chr(position.y + ord('1')) if position.x != -1 else '--'
 
 dir_straight = { Position(0, 1), Position(0, -1), Position(1, 0), Position(-1, 0) }
 dir_diagonal = { Position(1, 1), Position(1, -1), Position(-1, -1), Position(-1, 1) }
@@ -106,3 +130,8 @@ dir_knight = { Position(1, 2), Position(-1, 2), Position(2, 1), Position(-2, 1),
 
 initPos_type = (Piece_type.ROOK, Piece_type.KNIGHT, Piece_type.BISHOP, Piece_type.QUEEN, Piece_type.KING, Piece_type.BISHOP, Piece_type.KNIGHT, Piece_type.ROOK)
 promotion_list = (Piece_type.QUEEN, Piece_type.ROOK, Piece_type.BISHOP, Piece_type.KNIGHT, Piece_type.NOPIECE)
+
+if __name__ == '__main__':
+    move = Move()
+    move.string_init('153g7g5---')
+    print(move.get_string())

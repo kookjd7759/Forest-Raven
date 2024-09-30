@@ -18,7 +18,7 @@ namespace ForestRaven {
     constexpr char colorToChar[2] = { 'w', 'b' };
     inline Color operator!(Color c) { return (c == WHITE ? BLACK : WHITE); }
 
-    enum Move_type : int{
+    enum Move_type : int {
         NOMOVE = -1,
         CASTLING_OO,
         CASTLING_OOO,
@@ -38,7 +38,7 @@ namespace ForestRaven {
             : "NOMOVE";
     }
 
-    enum Piece_type {
+    enum Piece_type : int {
         QUEEN,
         ROOK,
         BISHOP,
@@ -51,7 +51,6 @@ namespace ForestRaven {
     constexpr Piece_type init_positions[8] = { ROOK, KNIGHT, BISHOP, QUEEN, KING, BISHOP, KNIGHT, ROOK };
     constexpr Piece_type promotion_list[8] = { ROOK, KNIGHT, BISHOP, QUEEN };
     constexpr char pt_char[7] = { 'Q', 'R', 'B', 'N', 'K', 'P' };
-    constexpr int piece_value[7] = {  9,   5,   3,   3,   0,   1 };
 
     enum Direction : int {
         U = 8,
@@ -71,11 +70,12 @@ namespace ForestRaven {
         DDL = D + D + L,
         DDR = D + D + R,
     };
+    inline Direction operator+(Direction& s, Direction d) { return Direction(int(s) + int(d)); }
     constexpr Direction dir_straight[4] = { U, R, D, L };
     constexpr Direction dir_diagonal[4] = { UL, UR, DL, DR};
     constexpr Direction all_direction[8] = { U, R, D, L, UL, UR, DL, DR};
 
-    enum Square : uint32_t {
+    enum Square : int {
         A1, B1, C1, D1, E1, F1, G1, H1,
         A2, B2, C2, D2, E2, F2, G2, H2,
         A3, B3, C3, D3, E3, F3, G3, H3,
@@ -92,33 +92,45 @@ namespace ForestRaven {
     inline Square& operator+=(Square& s, Direction d) { return s = s + d; }
     constexpr bool is_ok(Square s) { return s >= A1 && s <= H8; }
     constexpr inline Bitboard sq_bb(Square s) { assert(is_ok(s)); return Bitboard(1ULL << s); }
-    // constexpr inline Square bitboard_to_square(Bitboard b) { assert(b != 0); return Square(__builtin_ctzll(b)); }
 
-    string sq_notation(Square s) { return s == NOSQUARE ? "--" : string(1, "ABCDEFGH"[(s % 8)]) + string(1, "12345678"[(s / 8)]);  }
-    Square notation_sq(string st) { return st.compare("--") ? NOSQUARE : Square((('1' - st[0]) * 8) + ('A' - st[0])); }
+    string sq_notation(Square s) { return s == NOSQUARE ? "--" : string(1, "abcdefgh"[(s % 8)]) + string(1, "12345678"[(s / 8)]);  }
+    Square notation_sq(string st) { return !st.compare("--") ? NOSQUARE : Square(((st[1] - '1') * 8) + (st[0] - 'a')); }
     
+    // Move message format 
+    // [color][pieceType][moveType][ori][dest][take][promotion]
+    // [int  ][int      ][int     ][str][str ][str ]['-'/int  ]
+    // [1    ][1        ][1       ][2  ][2   ][2   ][1        ]
     struct Move {
         Color      color = NOCOLOR;
-        Move_type  type = NOMOVE;
-        Piece_type piece = NOPIECE, promotion = NOPIECE;
+        Move_type  moveType = NOMOVE;
+        Piece_type pieceType = NOPIECE, promotion = NOPIECE;
         Square     ori = NOSQUARE, dest = NOSQUARE, take = NOSQUARE;
         Bitboard   ori_bb = 0, dest_bb = 0, take_bb = 0;
 
         Move() {}
         Move(Color c, Piece_type pt, Move_type mt, Square ori, Square dest, Piece_type pro_pt = NOPIECE)
-            : color(c), piece(pt), type(mt), ori(ori), dest(dest), promotion(pro_pt),
-            ori_bb(sq_bb(ori)), dest_bb(sq_bb(ori)) {}
+            : color(c), pieceType(pt), moveType(mt), ori(ori), dest(dest), promotion(pro_pt),
+            ori_bb(sq_bb(ori)), dest_bb(sq_bb(dest)) {}
         Move(Color c, Piece_type pt, Move_type mt, Square ori, Square dest, Square take, Piece_type pro_pt = NOPIECE)
-            : color(c), piece(pt), type(mt), ori(ori), dest(dest), take(take), promotion(pro_pt),
-            ori_bb(sq_bb(ori)), dest_bb(sq_bb(ori)), take_bb(sq_bb(take)){
-        }
+            : color(c), pieceType(pt), moveType(mt), ori(ori), dest(dest), take(take), promotion(pro_pt),
+            ori_bb(sq_bb(ori)), dest_bb(sq_bb(dest)), take_bb(sq_bb(take)) {}
 
-        void string_init() {
+        void string_init(string line) {
+            color = Color(line[0] - '0');
+            pieceType = Piece_type(line[1] - '0');
+            moveType = Move_type(line[2] - '0');
+            ori = notation_sq(line.substr(3, 2));
+            dest = notation_sq(line.substr(5, 2));
+            take = notation_sq(line.substr(7, 2));
+            promotion = (line[9] == '-' ? NOPIECE : Piece_type(line[9] - '0'));
 
+            ori_bb = sq_bb(ori), dest_bb = sq_bb(dest);
+            if (take != NOSQUARE) take_bb = sq_bb(take);
         }
         string get_string() {
-            string st = sq_notation(ori) + ' ' + sq_notation(dest) + ' ' + sq_notation(take) + ' ';
-            st += promotion == NOPIECE ? "-1" : to_string(promotion);
+            string st = to_string(color) + to_string(pieceType) + to_string(moveType) +
+                sq_notation(ori) + sq_notation(dest) + sq_notation(take);
+            st += promotion == NOPIECE ? "-" : to_string(promotion);
             return st;
         }
     };

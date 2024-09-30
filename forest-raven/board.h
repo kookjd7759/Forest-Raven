@@ -20,7 +20,10 @@ namespace ForestRaven {
 	constexpr Bitboard Rank7 = Rank1 << (8 * 6);
 	constexpr Bitboard Rank8 = Rank1 << (8 * 7);
 
-	uint8_t SquareDistance[SQUARE_NB][SQUARE_NB];
+	uint8_t  SquareDistance[SQUARE_NB][SQUARE_NB];
+	Bitboard attacks[PIECE_TYPE_NB - 1][SQUARE_NB];
+	Bitboard Pawn_attacks[COLOR_NB][SQUARE_NB];
+
 	enum File : int {
 		FILE_A,
 		FILE_B,
@@ -32,6 +35,8 @@ namespace ForestRaven {
 		FILE_H,
 		FILE_NB
 	};
+	constexpr File file_of(Square s) { return File(s & 7); }
+
 	enum Rank : int {
 		RANK_1,
 		RANK_2,
@@ -43,21 +48,12 @@ namespace ForestRaven {
 		RANK_8,
 		RANK_NB
 	};
-
-	constexpr File file_of(Square s) { return File(s & 7); }
 	constexpr Rank rank_of(Square s) { return Rank(s >> 3); }
 
-	Bitboard attacks[PIECE_TYPE_NB - 1][SQUARE_NB];
-	Bitboard Pawn_attacks[COLOR_NB][SQUARE_NB];
-
-	template<typename T1 = Square>
-	inline int distance(Square x, Square y);
-	template<>
-	inline int distance<File>(Square x, Square y) { return abs(file_of(x) - file_of(y)); }
-	template<>
-	inline int distance<Rank>(Square x, Square y) { return abs(rank_of(x) - rank_of(y)); }
-	template<>
-	inline int distance<Square>(Square x, Square y) { return SquareDistance[x][y]; }
+	template<typename T1 = Square> inline int distance(Square x, Square y);
+	template<> inline int distance<File>(Square x, Square y) { return abs(file_of(x) - file_of(y)); }
+	template<> inline int distance<Rank>(Square x, Square y) { return abs(rank_of(x) - rank_of(y)); }
+	template<> inline int distance<Square>(Square x, Square y) { return SquareDistance[x][y]; }
 
 	Bitboard destination(Square ori, int step) {
 		Square dest = Square(ori + step);
@@ -78,8 +74,7 @@ namespace ForestRaven {
 		return attacks;
 	}
 
-	template<Direction Dir>
-	constexpr Bitboard shift(Bitboard b) {
+	constexpr Bitboard shift(Direction Dir, Bitboard b) {
 		return Dir == U ? b << 8
 			: Dir == D ? b >> 8
 			: Dir == UU ? b << 16
@@ -94,10 +89,7 @@ namespace ForestRaven {
 	}
 
 	template<Color C>
-	constexpr Bitboard pawn_attacks(Bitboard b) {
-		return C == WHITE ? shift<UL>(b) | shift<UR>(b)
-			: shift<DL>(b) | shift<DR>(b);
-	}
+	constexpr Bitboard pawn_attacks(Bitboard b) { return C == WHITE ? shift(UL, b) | shift(UR, b) : shift(DL, b) | shift(DR, b); }
 
 	const static Move CASTLING_rook[COLOR_NB][CASTLING_TYPE_NB]{
 		{Move(WHITE, ROOK, MOVE, H1,  F1), Move(WHITE, ROOK, MOVE, A1,  D1)},
@@ -121,8 +113,9 @@ namespace ForestRaven {
 		Color      turn, myColor;
 		Move       prevMove;
 		bool       move_king[COLOR_NB],
-			       move_rook[COLOR_NB][2];
+			       move_rook[COLOR_NB][CASTLING_TYPE_NB];
 
+		Chess() {}
 		Chess(Color c) { init(c); }
 		Chess clone() const { return *this; }
 
@@ -178,17 +171,16 @@ namespace ForestRaven {
 		bool isLegal(Move move) {
 			Chess next = this->clone();
 			next.play(move);
-			return !next.isCheck(!turn);
+			return !next.isCheck(!next.turn);
 		}
-		void append(vector<Move>* moves, Move move) {
-			if (isLegal(move)) moves->push_back(move);
-		}
+		void append(vector<Move>* moves, Move move) { if (isLegal(move)) moves->push_back(move); }
 		void sliding_moves(vector<Move>* moves, Piece_type pt, Square ori, const Direction* dir, int size = 4) {
-			Color c = (byColorBB[WHITE] & byTypeBB[pt]) ? WHITE : BLACK;
+			Color c = (byColorBB[WHITE] & sq_bb(ori)) ? WHITE : BLACK;
 			for (int i = 0; i < size; i++) {
+				Square dest = ori;
 				while (true) {
-					Square dest = ori + dir[i];
-					Bitboard dest_bb = destination(ori, dir[i]);
+					Bitboard dest_bb = destination(dest, dir[i]);
+					dest += dir[i];
 					if (!dest_bb) break;
 					if ((existBB & dest_bb)) {
 						if (byColorBB[!c] & dest_bb) append(moves, Move(c, pt, CAPTURE, ori, dest, dest));
@@ -199,7 +191,7 @@ namespace ForestRaven {
 			}
 		}
 		void one_moves(vector<Move>* moves, Piece_type pt, Square ori, const int* step) {
-			Color c = (byColorBB[WHITE] & byTypeBB[pt]) ? WHITE : BLACK;
+			Color c = (byColorBB[WHITE] & sq_bb(ori)) ? WHITE : BLACK;
 			for (int i = 0; i < 8; ++i) {
 				Square dest = Square(ori + step[i]);
 				if (destination(ori, step[i])) {
@@ -241,37 +233,41 @@ namespace ForestRaven {
 		}
 		vector<Move>* pawn(Color c, Square ori) {
 			vector<Move>* moves = new vector<Move>;
+			Direction dir = (c == WHITE ? U : D);
 			Bitboard ori_bb = sq_bb(ori);
-			Bitboard dest_bb = shift<U>(ori_bb);
+			Bitboard dest_bb = shift(dir, ori_bb);
 			Bitboard promotion_rank = (c == WHITE ? Rank8 : Rank1);
+			Bitboard firstMove_rank = (c == WHITE ? Rank2 : Rank7);
 
 			// Normal move
-			if (!(existBB & dest_bb)) {
-				append(moves, Move(c, PAWN, MOVE, ori, ori + U));
-				if (dest_bb & promotion_rank)
-					for (Piece_type promotion : promotion_list)
-						append(moves, Move(c, PAWN, MOVE_PRO, ori, ori + U, promotion));
-				if (!(existBB & shift<UU>(ori_bb)))
-					append(moves, Move(c, PAWN, MOVE, ori, ori + UU));
+			if (~existBB & dest_bb) {
+				if (dest_bb & promotion_rank) for (Piece_type promotion : promotion_list)
+					append(moves, Move(c, PAWN, MOVE_PRO, ori, ori + dir, promotion));
+				else 
+					append(moves, Move(c, PAWN, MOVE, ori, ori + dir));
+
+				dest_bb = shift(dir, dest_bb);
+				if ((firstMove_rank & ori_bb) && (~existBB & dest_bb)) {
+					append(moves, Move(c, PAWN, MOVE, ori, ori + (dir + dir)));
+				}
 			}
 
 			// Attack move 
-			Direction dir = (c == WHITE ? U : D);
-			Square king_side = ori + Direction(dir + R), queen_side = ori + Direction(dir + L);
-			auto attack = [&](Square take) -> void {
-				if (is_ok(take) && (sq_bb(take) & byColorBB[!c])) {
-					append(moves, Move(c, PAWN, CAPTURE, ori, take, take));
-					if (sq_bb(take) & promotion_rank)
-						for (Piece_type promotion : promotion_list)
-							append(moves, Move(c, PAWN, CAPTURE_PRO, ori, take, take, promotion));
+			auto attack = [&](Direction take_dir) -> void {
+				dest_bb = destination(ori, take_dir);
+				if (dest_bb & byColorBB[!c]) {
+					Square take = ori + take_dir;
+					if (dest_bb & promotion_rank) for (Piece_type promotion : promotion_list)
+						append(moves, Move(c, PAWN, CAPTURE_PRO, ori, take, take, promotion));
+					else
+						append(moves, Move(c, PAWN, CAPTURE, ori, take, take));
 				}
 				};
-			attack(king_side); attack(queen_side);
+			attack(Direction(dir + R)); attack(Direction(dir + L));
 
 			// En_passant attack
 			int EnP_dir = en_passant_check(c, ori);
-			if (EnP_dir != 0)
-				append(moves, Move(c, PAWN, CAPTURE, ori, Square(ori + dir + EnP_dir), Square(ori + EnP_dir)));
+			if (EnP_dir != 0) append(moves, Move(c, PAWN, CAPTURE, ori, Square(ori + dir + EnP_dir), Square(ori + EnP_dir)));
 
 			return moves;
 		}
@@ -282,7 +278,7 @@ namespace ForestRaven {
 		}
 		int en_passant_check(Color c, Square s) {
 			Bitboard en_passant_rank = (c == WHITE ? Rank5 : Rank4);
-			if (prevMove.piece != PAWN || (sq_bb(s) & en_passant_rank)) return 0;
+			if (prevMove.pieceType != PAWN || (sq_bb(s) & en_passant_rank)) return 0;
 
 			Square k_ori = s + (c == WHITE ? UUR : DDR), k_dest = s + R, 
 				q_ori = s + (c == WHITE ? UUL : DDL), q_dest = s + L;
@@ -292,31 +288,34 @@ namespace ForestRaven {
 			return 0;
 		}
 
-		vector<Move>* legal_moves(Square s) {
+		vector<Move>* legal_moves(Color c, Square s) {
 			return board[s] == QUEEN ? queen(s)
 				: board[s] == ROOK ? rook(s)
 				: board[s] == BISHOP ? bishop(s)
 				: board[s] == KNIGHT ? knight(s)
 				: board[s] == KING ? king(s)
-				: board[s] == PAWN ? pawn(byTypeBB[board[s]] & byColorBB[WHITE] ? WHITE : BLACK, s)
-				: nullptr;
+				: board[s] == PAWN ? pawn(c, s)
+				: new vector<Move>;
 		}
 		vector<Move>* candidate_moves(Color c) {
 			vector<Move>* candidate_moves = new vector<Move>;
 			for (Square s = A1; s <= H8; ++s) {
 				if (sq_bb(s) & byColorBB[c]) {
-					vector<Move>* moves = legal_moves(s);
+					vector<Move>* moves = legal_moves(c, s);
 					candidate_moves->insert(candidate_moves->end(), moves->begin(), moves->end());
 				}
 			}
-
-			cout << "Candidate Moves size = " << candidate_moves->size() << "\n";
-			for (int i = 0; i < candidate_moves->size(); i++) {
-				cout << sq_notation(candidate_moves->at(i).ori) << ' ' << pt_char[candidate_moves->at (i).piece] << " -> " << sq_notation(candidate_moves->at(i).dest)
-					<< ", " << sq_notation(candidate_moves->at(i).take) << ", " << candidate_moves->at(i).promotion << "\n";
-				
-			}
 			return candidate_moves;
+		}
+		bool isOver() {
+			int cnt(0);
+			for (Square s = A1; s <= H8; ++s) {
+				if (sq_bb(s) & byColorBB[turn]) {
+					vector<Move>* moves = legal_moves(turn, s);
+					cnt += moves->size();
+				}
+			}
+			return (cnt == 0);
 		}
 
 		Bitboard get_attacks(Color c, Square s) {
@@ -340,16 +339,16 @@ namespace ForestRaven {
 		}
 
 		void move(Move move) {
-			if (move.type == KING) move_king[move.color] = true;
-			else if (move.type == ROOK) {
-				if (FileA & move.ori_bb) move_rook[move.color][1] = true;
-				else if (FileH & move.ori_bb) move_rook[move.color][0] = true;
+			if (move.pieceType == KING) move_king[move.color] = true;
+			else if (move.pieceType == ROOK) {
+				if (FileA & move.ori_bb) move_rook[move.color][CASTLING_OOO] = true;
+				else if (FileH & move.ori_bb) move_rook[move.color][CASTLING_OO] = true;
 			}
 
 			board[move.dest] = board[move.ori], board[move.ori] = NOPIECE;
-			byColorBB[move.color] ^= ~move.ori_bb | move.dest_bb;
-			byTypeBB[move.type] ^= ~move.ori_bb | move.dest_bb;
-			existBB ^= ~move.ori_bb | move.dest_bb;
+			byColorBB[move.color] &= ~move.ori_bb; byColorBB[move.color] |= move.dest_bb;
+			byTypeBB[move.pieceType] &= ~move.ori_bb; byTypeBB[move.pieceType] |= move.dest_bb;
+			existBB &= ~move.ori_bb; existBB |= move.dest_bb;
 
 			prevMove = move;
 		}
@@ -362,14 +361,14 @@ namespace ForestRaven {
 			Chess::move(move);
 		}
 		void castling(Move move) {
-			Chess::move(CASTLING_rook[move.color][move.type]);
+			Chess::move(CASTLING_rook[move.color][move.moveType]);
 			Chess::move(move);
 		}
 		void promotion(Move move) {
 			create_piece(move.color, move.promotion, move.dest);
 		}
 		void play(Move move) {
-			switch (move.type) {
+			switch (move.moveType) {
 			case MOVE: Chess::move(move); break;
 			case CAPTURE: capture(move); break;
 			case CASTLING_OO || CASTLING_OOO: castling(move); break;

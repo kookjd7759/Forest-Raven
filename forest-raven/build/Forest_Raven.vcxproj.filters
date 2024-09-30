@@ -4,18 +4,12 @@
     <ClCompile Include="C:\WorkSpace\Visual Studio Code Workspace\Forest-Raven\forest-raven\ForestRaven.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\WorkSpace\Visual Studio Code Workspace\Forest-Raven\forest-raven\utility.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="C:\WorkSpace\Visual Studio Code Workspace\Forest-Raven\forest-raven\chess.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="C:\WorkSpace\Visual Studio Code Workspace\Forest-Raven\forest-raven\utility.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\WorkSpace\Visual Studio Code Workspace\Forest-Raven\forest-raven\chess.h">
+    <ClInclude Include="C:\WorkSpace\Visual Studio Code Workspace\Forest-Raven\forest-raven\board.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
