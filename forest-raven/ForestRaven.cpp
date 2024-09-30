@@ -183,7 +183,5 @@ using namespace ForestRaven;
 
 int main() {
     Chess chess(WHITE);
-    print_BB(chess.byAttackBB[WHITE]);
-    cout << "\n";
-    print_BB(chess.byAttackBB[BLACK]);
+    chess.candidate_moves(WHITE);
 }

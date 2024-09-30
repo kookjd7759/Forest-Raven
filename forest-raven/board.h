@@ -63,13 +63,15 @@ namespace ForestRaven {
 		Square dest = Square(ori + step);
 		return is_ok(dest) && distance(ori, dest) <= 2 ? sq_bb(dest) : Bitboard(0);
 	}
-	Bitboard sliding_attacks_init(Piece_type pt, Square s) {
+	Bitboard sliding_attacks(Piece_type pt, Square s, Bitboard existBB = Bitboard(0)) {
 		Bitboard attacks(0);
 		const Direction *dir = (pt == ROOK ? dir_straight : dir_diagonal);
 		for (int i = 0; i < 4; i++) {
 			Square sq = s;
 			while (destination(sq, dir[i])) {
-				attacks |= sq_bb(sq += dir[i]);
+				Bitboard nextBB = sq_bb(sq += dir[i]);
+				attacks |= nextBB;
+				if (nextBB & existBB) break;
 			}
 		}
 
@@ -165,8 +167,8 @@ namespace ForestRaven {
 				for (int step : knight_steps)
 					attacks[KNIGHT][s] |= destination(s, step);
 
-				attacks[BISHOP][s] = sliding_attacks_init(BISHOP, s);
-				attacks[ROOK][s] = sliding_attacks_init(ROOK, s);
+				attacks[BISHOP][s] = sliding_attacks(BISHOP, s);
+				attacks[ROOK][s] = sliding_attacks(ROOK, s);
 				attacks[QUEEN][s] = attacks[BISHOP][s] | attacks[ROOK][s];
 			}
 			init_position(c);
@@ -200,8 +202,8 @@ namespace ForestRaven {
 			Color c = (byColorBB[WHITE] & byTypeBB[pt]) ? WHITE : BLACK;
 			for (int i = 0; i < 8; ++i) {
 				Square dest = Square(ori + step[i]);
-				if (is_ok(dest)) {
-					Bitboard dest_bb = Square(ori + step[i]);
+				if (destination(ori, step[i])) {
+					Bitboard dest_bb = sq_bb(dest);
 					if (dest_bb & existBB) {
 						if (byColorBB[!c] & dest_bb)
 							append(moves, Move(c, pt, CAPTURE, ori, dest, dest));
@@ -310,35 +312,20 @@ namespace ForestRaven {
 
 			cout << "Candidate Moves size = " << candidate_moves->size() << "\n";
 			for (int i = 0; i < candidate_moves->size(); i++) {
-				cout << sq_notation(candidate_moves->at(i).ori) << " -> " << sq_notation(candidate_moves->at(i).ori)
+				cout << sq_notation(candidate_moves->at(i).ori) << ' ' << pt_char[candidate_moves->at (i).piece] << " -> " << sq_notation(candidate_moves->at(i).dest)
 					<< ", " << sq_notation(candidate_moves->at(i).take) << ", " << candidate_moves->at(i).promotion << "\n";
 				
 			}
 			return candidate_moves;
 		}
 
-		Bitboard sliding_attacks(Piece_type pt, Square s) {
-			Bitboard attacks(0);
-			Color c = (byColorBB[WHITE] & byTypeBB[pt]) ? WHITE : BLACK;
-			const Direction* dir = (pt == ROOK ? dir_straight : dir_diagonal);
-			for (int i = 0; i < 4; i++) {
-				while (true) {
-					Bitboard move = destination(s, dir[i]);
-					if (!move) break;
-					attacks |= (s += dir[i]);
-					if (existBB & move) break;
-				}
-			}
-
-			return attacks;
-		}
 		Bitboard get_attacks(Color c, Square s) {
 			return board[s] == PAWN ? Pawn_attacks[c][s]
 				: board[s] == KING ? attacks[KING][s]
 				: board[s] == KNIGHT ? attacks[KNIGHT][s]
-				: board[s] == BISHOP ? sliding_attacks(BISHOP, s)
-				: board[s] == ROOK ? sliding_attacks(ROOK, s)
-				: board[s] == QUEEN ? sliding_attacks(BISHOP, s) | sliding_attacks(ROOK, s)
+				: board[s] == BISHOP ? sliding_attacks(BISHOP, s, existBB)
+				: board[s] == ROOK ? sliding_attacks(ROOK, s, existBB)
+				: board[s] == QUEEN ? sliding_attacks(BISHOP, s, existBB) | sliding_attacks(ROOK, s, existBB)
 				: 0;
 		}
 		void calAttackBB() {
@@ -346,7 +333,8 @@ namespace ForestRaven {
 			for (Square s = A1; s <= H8; ++s) {
 				if (existBB & sq_bb(s)) {
 					Color c = (byColorBB[WHITE] & sq_bb(s)) ? WHITE : BLACK;
-					byAttackBB[c] |= get_attacks(c, s);
+					Bitboard temp = get_attacks(c, s);
+					byAttackBB[c] |= temp;
 				}
 			}
 		}
