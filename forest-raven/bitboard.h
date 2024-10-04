@@ -3,6 +3,7 @@
 #include "utility.h"
 
 namespace ForestRaven {
+
 	constexpr Bitboard FileA = 0x0101010101010101ULL;
 	constexpr Bitboard FileB = FileA << 1;
 	constexpr Bitboard FileC = FileA << 2;
@@ -21,71 +22,21 @@ namespace ForestRaven {
 	constexpr Bitboard Rank7 = Rank1 << (8 * 6);
 	constexpr Bitboard Rank8 = Rank1 << (8 * 7);
 
-	uint8_t  bitCount16[1 << 16];
-	void init_bitCount16() { 
-		for (unsigned i = 0; i < (1 << 16); ++i) 
-			bitCount16[i] = uint8_t(bitset<16>(i).count());
-	}
-	int bitCount(uint64_t num) {
-		return bitCount16[num & 0xFFFF] +
-			bitCount16[(num >> 16) & 0xFFFF] +
-			bitCount16[(num >> 32) & 0xFFFF] +
-			bitCount16[(num >> 48) & 0xFFFF];
-	}
+	constexpr Bitboard centerBB = sq_bb(E4) | sq_bb(E5) | sq_bb(D4) | sq_bb(D5);
+	constexpr Bitboard semi_centerBB = sq_bb(C3) | sq_bb(D3) | sq_bb(E3) | sq_bb(F3) | sq_bb(C4) | sq_bb(F4) | sq_bb(C5) | sq_bb(F5) | sq_bb(C6) | sq_bb(D6) | sq_bb(E6) | sq_bb(F6);
+	constexpr Bitboard normalBB = ~(centerBB | semi_centerBB);
 
-	uint8_t  SquareDistance[SQUARE_NB][SQUARE_NB];
-	Bitboard attacks[PIECE_TYPE_NB - 1][SQUARE_NB];
-	Bitboard Pawn_attacks[COLOR_NB][SQUARE_NB];
+	constexpr int knight_steps[8] = { -17, -15, -10, -6, 6, 10, 15, 17 };
+	constexpr int king_steps[8] = { -9, -8, -7, -1, 1, 7, 8, 9 };
 
-	enum File : int {
-		FILE_A,
-		FILE_B,
-		FILE_C,
-		FILE_D,
-		FILE_E,
-		FILE_F,
-		FILE_G,
-		FILE_H,
-		FILE_NB
+	const static Move CASTLING_rook[COLOR_NB][CASTLING_TYPE_NB]{
+		{Move(WHITE, ROOK, MOVE, H1,  F1), Move(WHITE, ROOK, MOVE, A1,  D1)},
+		{Move(WHITE, ROOK, MOVE, H8,  F8), Move(WHITE, ROOK, MOVE, A8,  D8)}
 	};
-	constexpr File file_of(Square s) { return File(s & 7); }
-
-	enum Rank : int {
-		RANK_1,
-		RANK_2,
-		RANK_3,
-		RANK_4,
-		RANK_5,
-		RANK_6,
-		RANK_7,
-		RANK_8,
-		RANK_NB
+	constexpr Bitboard castlingMaskBB[COLOR_NB][2]{
+		{{sq_bb(B1) | sq_bb(C1) | sq_bb(D1)}, {sq_bb(F1) | sq_bb(G1)}},
+		{{sq_bb(B8) | sq_bb(C8) | sq_bb(D8)}, {sq_bb(F8) | sq_bb(G8)}}
 	};
-	constexpr Rank rank_of(Square s) { return Rank(s >> 3); }
-
-	template<typename T1 = Square> inline int distance(Square x, Square y);
-	template<> inline int distance<File>(Square x, Square y) { return abs(file_of(x) - file_of(y)); }
-	template<> inline int distance<Rank>(Square x, Square y) { return abs(rank_of(x) - rank_of(y)); }
-	template<> inline int distance<Square>(Square x, Square y) { return SquareDistance[x][y]; }
-
-	Bitboard destination(Square ori, int step) {
-		Square dest = Square(ori + step);
-		return is_ok(dest) && distance(ori, dest) <= 2 ? sq_bb(dest) : Bitboard(0);
-	}
-	Bitboard sliding_attacks(Piece_type pt, Square s, Bitboard existBB = Bitboard(0)) {
-		Bitboard attacks(0);
-		const Direction *dir = (pt == ROOK ? dir_straight : dir_diagonal);
-		for (int i = 0; i < 4; i++) {
-			Square sq = s;
-			while (destination(sq, dir[i])) {
-				Bitboard nextBB = sq_bb(sq += dir[i]);
-				attacks |= nextBB;
-				if (nextBB & existBB) break;
-			}
-		}
-
-		return attacks;
-	}
 
 	constexpr Bitboard shift(Direction Dir, Bitboard b) {
 		return Dir == U ? b << 8
@@ -104,25 +55,79 @@ namespace ForestRaven {
 	template<Color C>
 	constexpr Bitboard pawn_attacks(Bitboard b) { return C == WHITE ? shift(UL, b) | shift(UR, b) : shift(DL, b) | shift(DR, b); }
 
-	const static Move CASTLING_rook[COLOR_NB][CASTLING_TYPE_NB]{
-		{Move(WHITE, ROOK, MOVE, H1,  F1), Move(WHITE, ROOK, MOVE, A1,  D1)},
-		{Move(WHITE, ROOK, MOVE, H8,  F8), Move(WHITE, ROOK, MOVE, A8,  D8)}
-	};
+	uint8_t  bitCnt[1 << 16];
+	uint8_t  SquareDistance[SQUARE_NB][SQUARE_NB];
+	Bitboard attacks_pawn[COLOR_NB][SQUARE_NB];
+	Bitboard attacks[PIECE_TYPE_NB - 1][SQUARE_NB];
 
-	constexpr int knight_steps[8] = { -17, -15, -10, -6, 6, 10, 15, 17 };
-	constexpr int king_steps[8] = { -9, -8, -7, -1, 1, 7, 8, 9 };
-	constexpr Bitboard castlingCheck[COLOR_NB][2]{
-		{{sq_bb(B1) | sq_bb(C1) | sq_bb(D1)}, {sq_bb(F1) | sq_bb(G1)}},
-		{{sq_bb(B8) | sq_bb(C8) | sq_bb(D8)}, {sq_bb(F8) | sq_bb(G8)}}
-	};
+	template<typename T1 = Square> inline int distance(Square x, Square y);
+	template<> inline int distance<File>(Square x, Square y) { return abs(file_of(x) - file_of(y)); }
+	template<> inline int distance<Rank>(Square x, Square y) { return abs(rank_of(x) - rank_of(y)); }
+	template<> inline int distance<Square>(Square x, Square y) { return SquareDistance[x][y]; }
+
+	Bitboard destination(Square ori, int step) {
+		Square dest = Square(ori + step);
+		return is_ok(dest) && distance(ori, dest) <= 2 ? sq_bb(dest) : Bitboard(0);
+	}
+	Bitboard sliding_attacks(Piece_type pt, Square s, Bitboard existBB = Bitboard(0)) {
+		Bitboard attacks(0);
+		const Direction* dir = (pt == ROOK ? dir_straight : dir_diagonal);
+		for (int i = 0; i < 4; i++) {
+			Square sq = s;
+			while (destination(sq, dir[i])) {
+				Bitboard nextBB = sq_bb(sq += dir[i]);
+				attacks |= nextBB;
+				if (nextBB & existBB) break;
+			}
+		}
+
+		return attacks;
+	}
+
+	void init_bitCnt() {
+		for (unsigned i = 0; i < (1 << 16); ++i) bitCnt[i] = uint8_t(bitset<16>(i).count());
+	}
+	void init_squareDistance() {
+		for (Square s1 = A1; s1 <= H8; ++s1)
+			for (Square s2 = A1; s2 <= H8; ++s2)
+				SquareDistance[s1][s2] = max(distance<File>(s1, s2), distance<Rank>(s1, s2));
+	}
+	void init_attacks_pawn() {
+		for (Square s = A1; s <= H8; ++s)
+			attacks_pawn[WHITE][s] = pawn_attacks<WHITE>(sq_bb(s)),
+			attacks_pawn[BLACK][s] = pawn_attacks<BLACK>(sq_bb(s));
+	}
+	void init_attacks() {
+		for (Square s = A1; s <= H8; ++s) {
+			for (int step : king_steps) attacks[KING][s] |= destination(s, step);
+
+			for (int step : { -17, -15, -10, -6, 6, 10, 15, 17 }) attacks[KNIGHT][s] |= destination(s, step);
+
+			attacks[BISHOP][s] = sliding_attacks(BISHOP, s);
+			attacks[ROOK][s] = sliding_attacks(ROOK, s);
+			attacks[QUEEN][s] = attacks[BISHOP][s] | attacks[ROOK][s];
+		}
+	}
+	void init() { 
+		init_bitCnt(); 
+		init_squareDistance(); 
+		init_attacks_pawn(); 
+		init_attacks(); 
+	}
+
+	inline int bitCount(uint64_t b) { union { 
+		uint16_t u[4]; } v = { b }; 
+		return bitCnt[v.u[0]] + bitCnt[v.u[1]] + bitCnt[v.u[2]] + bitCnt[v.u[3]]; 
+	}
 
 	class Chess {
 	public:
-		Piece_type board[SQUARE_NB];
+		Piece      board[SQUARE_NB];
 		Bitboard   byColorBB[COLOR_NB];
 		Bitboard   byAttackBB[COLOR_NB];
 		Bitboard   byTypeBB[PIECE_TYPE_NB];
 		Bitboard   existBB;
+		int        pieceCount[PIECE_NB];
 		Color      turn, myColor;
 		Move       prevMove;
 		bool       move_king[COLOR_NB],
@@ -130,16 +135,28 @@ namespace ForestRaven {
 
 		Chess() {}
 		Chess(Color c) { init(c); }
+
 		Chess clone() const { return *this; }
 
-		void create_piece(Color c, Piece_type p, Square s) {
+		inline void create_piece(Color c, Piece p, Square s) {
 			Bitboard b = sq_bb(s);
 			board[s] = p;
 			byColorBB[c] |= b;
-			byTypeBB[p] |= b;
+			byTypeBB[type_of(p)] |= b;
 			existBB |= b;
+			pieceCount[p]++;
 		};
-		void init_position(Color c) {
+		inline void remove_piece(Square s) {
+			Bitboard b = sq_bb(s);
+			Piece take_pc = board[s];
+			board[s] = NOPIECE;
+			byColorBB[color_of(take_pc)] &= ~b;
+			byTypeBB[type_of(take_pc)] &= ~b;
+			existBB &= ~b;
+			pieceCount[take_pc]--;
+		};
+
+		void reset(Color c) {
 			byColorBB[WHITE] = byColorBB[BLACK] = Bitboard(0);
 			byTypeBB[QUEEN] = byTypeBB[ROOK] = byTypeBB[BISHOP] = byTypeBB[KNIGHT] = byTypeBB[KING] = byTypeBB[PAWN] = Bitboard(0);
 			existBB = Bitboard(0);
@@ -148,38 +165,19 @@ namespace ForestRaven {
 			move_king[WHITE] = move_king[BLACK] = false;
 			move_rook[WHITE][0] = move_rook[WHITE][1] = move_rook[BLACK][0] = move_rook[BLACK][1] = false;
 
+			for (int i = 0; i < PIECE_NB; i++) pieceCount[i] = 0;
 			for (Square s = A1; s <= H8; ++s) board[s] = NOPIECE;
 			for (int i = 0; i < 8; i++) {
-				create_piece(WHITE, init_positions[i], Square(A1 + i));
-				create_piece(BLACK, init_positions[i], Square(A8 + i));
-				create_piece(WHITE, PAWN, Square(A2 + i));
-				create_piece(BLACK, PAWN, Square(A7 + i));
+				create_piece(WHITE, pt_pc(WHITE, initPos[i]), Square(A1 + i));
+				create_piece(BLACK, pt_pc(BLACK, initPos[i]), Square(A8 + i));
+				create_piece(WHITE, W_PAWN, Square(A2 + i));
+				create_piece(BLACK, B_PAWN, Square(A7 + i));
 			}
 
 			calAttackBB();
 		}
 		void init(Color c) {
-			init_bitCount16();
-
-			for (Square s1 = A1; s1 <= H8; ++s1)
-				for (Square s2 = A1; s2 <= H8; ++s2)
-					SquareDistance[s1][s2] = max(distance<File>(s1, s2), distance<Rank>(s1, s2));
-
-			for (Square s = A1; s <= H8; ++s) {
-				Pawn_attacks[WHITE][s] = pawn_attacks<WHITE>(sq_bb(s));
-				Pawn_attacks[BLACK][s] = pawn_attacks<BLACK>(sq_bb(s));
-
-				for (int step : king_steps)
-					attacks[KING][s] |= destination(s, step);
-
-				for (int step : knight_steps)
-					attacks[KNIGHT][s] |= destination(s, step);
-
-				attacks[BISHOP][s] = sliding_attacks(BISHOP, s);
-				attacks[ROOK][s] = sliding_attacks(ROOK, s);
-				attacks[QUEEN][s] = attacks[BISHOP][s] | attacks[ROOK][s];
-			}
-			init_position(c);
+			reset(c);
 		}
 
 		bool isCheck(Color c) const { return ((byTypeBB[KING] & byColorBB[c] & byAttackBB[!c]) != 0); }
@@ -258,7 +256,7 @@ namespace ForestRaven {
 			if (~existBB & dest_bb) {
 				if (dest_bb & promotion_rank) for (Piece_type promotion : promotion_list)
 					append(moves, Move(c, PAWN, MOVE_PRO, ori, ori + dir, promotion));
-				else 
+				else
 					append(moves, Move(c, PAWN, MOVE, ori, ori + dir));
 
 				dest_bb = shift(dir, dest_bb);
@@ -288,15 +286,15 @@ namespace ForestRaven {
 		}
 		bool castling_check(Color c, int side) {
 			if (move_king[c] || move_rook[side]) return false;
-			if ((existBB | byAttackBB[!c]) & castlingCheck[c][side]) return false;
+			if ((existBB | byAttackBB[!c]) & castlingMaskBB[c][side]) return false;
 			return true;
 		}
 		int en_passant_check(Color c, Square s) {
 			Bitboard en_passant_rank = (c == WHITE ? Rank5 : Rank4);
 			if (prevMove.pieceType != PAWN || (sq_bb(s) & en_passant_rank)) return 0;
 
-			Square k_ori = s + (c == WHITE ? UUR : DDR), k_dest = s + R, 
-				q_ori = s + (c == WHITE ? UUL : DDL), q_dest = s + L;
+			Square k_ori = s + (c == WHITE ? UUR : DDR), k_dest = s + R,
+				   q_ori = s + (c == WHITE ? UUL : DDL), q_dest = s + L;
 
 			if (k_ori == prevMove.ori && k_dest == prevMove.dest) return +1;
 			else if (q_ori == prevMove.ori && q_dest == prevMove.dest) return -1;
@@ -334,21 +332,20 @@ namespace ForestRaven {
 		}
 
 		Bitboard get_attacks(Color c, Square s) {
-			return board[s] == PAWN ? Pawn_attacks[c][s]
-				: board[s] == KING ? attacks[KING][s]
-				: board[s] == KNIGHT ? attacks[KNIGHT][s]
-				: board[s] == BISHOP ? sliding_attacks(BISHOP, s, existBB)
-				: board[s] == ROOK ? sliding_attacks(ROOK, s, existBB)
-				: board[s] == QUEEN ? sliding_attacks(BISHOP, s, existBB) | sliding_attacks(ROOK, s, existBB)
-				: 0;
+			return board[s] == PAWN ? attacks_pawn[c][s]
+				 : board[s] == KING ? attacks[KING][s]
+				 : board[s] == KNIGHT ? attacks[KNIGHT][s]
+				 : board[s] == BISHOP ? sliding_attacks(BISHOP, s, existBB)
+				 : board[s] == ROOK ? sliding_attacks(ROOK, s, existBB)
+				 : board[s] == QUEEN ? sliding_attacks(BISHOP, s, existBB) | sliding_attacks(ROOK, s, existBB)
+				 : 0;
 		}
 		void calAttackBB() {
 			byAttackBB[WHITE] = byAttackBB[BLACK] = 0;
 			for (Square s = A1; s <= H8; ++s) {
 				if (existBB & sq_bb(s)) {
-					Color c = (byColorBB[WHITE] & sq_bb(s)) ? WHITE : BLACK;
-					Bitboard temp = get_attacks(c, s);
-					byAttackBB[c] |= temp;
+					Color c = color_of(board[s]);
+					byAttackBB[c] |= get_attacks(c, s);
 				}
 			}
 		}
@@ -368,11 +365,7 @@ namespace ForestRaven {
 			prevMove = move;
 		}
 		void capture(Move move) {
-			Piece_type take_pt = board[move.take];
-			board[move.take] = NOPIECE;
-			byColorBB[!move.color] &= ~move.take_bb;
-			byTypeBB[take_pt] &= ~move.take_bb;
-			existBB &= ~move.take_bb;
+			remove_piece(move.take);
 			Chess::move(move);
 		}
 		void castling(Move move) {
@@ -380,7 +373,8 @@ namespace ForestRaven {
 			Chess::move(move);
 		}
 		void promotion(Move move) {
-			create_piece(move.color, move.promotion, move.dest);
+			remove_piece(move.dest);
+			create_piece(move.color, pt_pc(move.color, move.promotion), move.dest);
 		}
 		void play(Move move) {
 			switch (move.moveType) {
@@ -396,19 +390,26 @@ namespace ForestRaven {
 		}
 
 		void print() {
-			auto get_info = [&](Square s) -> string {
-				Bitboard b = sq_bb(s);
+			auto get_info = [&](Piece pc) -> string {
 				string st = "";
-				st += byColorBB[WHITE] & b ? 'w' : 'b';
-				st += pt_char[board[s]];
+				st += color_of(pc) == WHITE ? 'w' : 'b';
+				st += pt_char[type_of(pc)];
 				return st;
 				};
 			for (Square s : {A8, A7, A6, A5, A4, A3, A2, A1}) {
 				for (int i = 0; i < 8; ++i) {
-					cout << (board[Square(s + i)] == NOPIECE ? "--" : get_info(Square(s + i))) << ' ';
+					Piece pc = board[Square(s + i)];
+					cout << (pc == NOPIECE ? "--" : get_info(pc)) << ' ';
 				}
 				cout << "\n";
 			}
 		}
+
+		inline Bitboard pieces(Piece_type pt) const { return byTypeBB[pt]; }
+
+		template<typename... Piece_types>
+		inline Bitboard pieces(Piece_type pt, Piece_types... pts) const { return pieces(pt) | pieces(pts...); }
+
+		inline Bitboard pieces(Color c) const { return byColorBB[c]; }
 	};
 }

@@ -1,8 +1,6 @@
-#ifndef UTILITY_H
-#define UTILITY_H
-
 #include <iostream>
 #include <cassert>
+#include <string>
 
 using namespace std;
 
@@ -10,10 +8,10 @@ namespace ForestRaven {
     using Bitboard = uint64_t;
 
     enum Color : int {
+        NOCOLOR = -1,
         WHITE,
         BLACK,
-        COLOR_NB,
-        NOCOLOR = -1,
+        COLOR_NB
     };
     constexpr char colorToChar[2] = { 'w', 'b' };
     inline Color operator!(Color c) { return (c == WHITE ? BLACK : WHITE); }
@@ -39,18 +37,28 @@ namespace ForestRaven {
     }
 
     enum Piece_type : int {
+        NOPIECETYPE = -1,
         QUEEN,
         ROOK,
         BISHOP,
         KNIGHT,
         KING,
         PAWN,
-        PIECE_TYPE_NB,
-        NOPIECE = -1,
+        PIECE_TYPE_NB
     };
-    constexpr Piece_type init_positions[8] = { ROOK, KNIGHT, BISHOP, QUEEN, KING, BISHOP, KNIGHT, ROOK };
+    constexpr Piece_type initPos[8] = { ROOK, KNIGHT, BISHOP, QUEEN, KING, BISHOP, KNIGHT, ROOK };
     constexpr Piece_type promotion_list[8] = { ROOK, KNIGHT, BISHOP, QUEEN };
     constexpr char pt_char[7] = { 'Q', 'R', 'B', 'N', 'K', 'P' };
+
+    enum Piece {
+        NOPIECE = -1,
+        W_QUEEN = QUEEN, W_ROOK, W_BISHOP, W_KNIGHT, W_KING, W_PAWN,
+        B_QUEEN = QUEEN + 8, B_ROOK, B_BISHOP, B_KNIGHT, B_KING, B_PAWN,
+        PIECE_NB = 14
+    };
+    inline Color color_of(Piece pc) { return Color(pc >> 3); }
+    inline Piece_type type_of(Piece pc) { return Piece_type(pc & 7); }
+    inline Piece pt_pc(Color c, Piece_type pt) { return Piece((c << 3) | pt); }
 
     enum Direction : int {
         U = 8,
@@ -70,10 +78,11 @@ namespace ForestRaven {
         DDL = D + D + L,
         DDR = D + D + R,
     };
-    inline Direction operator+(Direction& s, Direction d) { return Direction(int(s) + int(d)); }
     constexpr Direction dir_straight[4] = { U, R, D, L };
-    constexpr Direction dir_diagonal[4] = { UL, UR, DL, DR};
-    constexpr Direction all_direction[8] = { U, R, D, L, UL, UR, DL, DR};
+    constexpr Direction dir_diagonal[4] = { UL, UR, DL, DR };
+    constexpr Direction all_direction[8] = { U, R, D, L, UL, UR, DL, DR };
+
+    inline Direction operator+(Direction& s, Direction d) { return Direction(int(s) + int(d)); }
 
     enum Square : int {
         A1, B1, C1, D1, E1, F1, G1, H1,
@@ -90,12 +99,40 @@ namespace ForestRaven {
     inline static void operator++(Square& s) { s = Square(int(s) + 1); }
     inline Square operator+(Square& s, Direction d) { return Square(int(s) + int(d)); }
     inline Square& operator+=(Square& s, Direction d) { return s = s + d; }
+
     constexpr bool is_ok(Square s) { return s >= A1 && s <= H8; }
     constexpr inline Bitboard sq_bb(Square s) { assert(is_ok(s)); return Bitboard(1ULL << s); }
 
     string sq_notation(Square s) { return s == NOSQUARE ? "--" : string(1, "abcdefgh"[(s % 8)]) + string(1, "12345678"[(s / 8)]);  }
     Square notation_sq(string st) { return !st.compare("--") ? NOSQUARE : Square(((st[1] - '1') * 8) + (st[0] - 'a')); }
     
+    enum File : int {
+        FILE_A,
+        FILE_B,
+        FILE_C,
+        FILE_D,
+        FILE_E,
+        FILE_F,
+        FILE_G,
+        FILE_H,
+        FILE_NB
+    };
+    constexpr File file_of(Square s) { return File(s & 7); }
+
+    enum Rank : int {
+        RANK_1,
+        RANK_2,
+        RANK_3,
+        RANK_4,
+        RANK_5,
+        RANK_6,
+        RANK_7,
+        RANK_8,
+        RANK_NB
+    };
+    constexpr Rank rank_of(Square s) { return Rank(s >> 3); }
+
+
     // Move message format 
     // [color][pieceType][moveType][ori][dest][take][promotion]
     // [int  ][int      ][int     ][str][str ][str ]['-'/int  ]
@@ -103,15 +140,15 @@ namespace ForestRaven {
     struct Move {
         Color      color = NOCOLOR;
         Move_type  moveType = NOMOVE;
-        Piece_type pieceType = NOPIECE, promotion = NOPIECE;
+        Piece_type pieceType = NOPIECETYPE, promotion = NOPIECETYPE;
         Square     ori = NOSQUARE, dest = NOSQUARE, take = NOSQUARE;
         Bitboard   ori_bb = 0, dest_bb = 0, take_bb = 0;
 
         Move() {}
-        Move(Color c, Piece_type pt, Move_type mt, Square ori, Square dest, Piece_type pro_pt = NOPIECE)
+        Move(Color c, Piece_type pt, Move_type mt, Square ori, Square dest, Piece_type pro_pt = NOPIECETYPE)
             : color(c), pieceType(pt), moveType(mt), ori(ori), dest(dest), promotion(pro_pt),
             ori_bb(sq_bb(ori)), dest_bb(sq_bb(dest)) {}
-        Move(Color c, Piece_type pt, Move_type mt, Square ori, Square dest, Square take, Piece_type pro_pt = NOPIECE)
+        Move(Color c, Piece_type pt, Move_type mt, Square ori, Square dest, Square take, Piece_type pro_pt = NOPIECETYPE)
             : color(c), pieceType(pt), moveType(mt), ori(ori), dest(dest), take(take), promotion(pro_pt),
             ori_bb(sq_bb(ori)), dest_bb(sq_bb(dest)), take_bb(sq_bb(take)) {}
 
@@ -122,7 +159,7 @@ namespace ForestRaven {
             ori = notation_sq(line.substr(3, 2));
             dest = notation_sq(line.substr(5, 2));
             take = notation_sq(line.substr(7, 2));
-            promotion = (line[9] == '-' ? NOPIECE : Piece_type(line[9] - '0'));
+            promotion = (line[9] == '-' ? NOPIECETYPE : Piece_type(line[9] - '0'));
 
             ori_bb = sq_bb(ori), dest_bb = sq_bb(dest);
             if (take != NOSQUARE) take_bb = sq_bb(take);
@@ -134,7 +171,7 @@ namespace ForestRaven {
             return st;
         }
     };
-
+    
     void print_BB(Bitboard b) {
         int idx = 0; string rank = "87654321";
         for (Square s : {A8, A7, A6, A5, A4, A3, A2, A1}) {
@@ -151,5 +188,3 @@ namespace ForestRaven {
         cout << "\n";
     }
 }
-
-#endif // UTILITY_H

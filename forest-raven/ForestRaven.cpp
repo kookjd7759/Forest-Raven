@@ -2,24 +2,11 @@
 #include <map>
 #include <random>
 #include <cstdint>
-#include "board.h"
+#include "Bitboard.h"
 
 namespace ForestRaven {
-    constexpr Bitboard centerBB = sq_bb(E4) | sq_bb(E5) | sq_bb(D4) | sq_bb(D5);
-    constexpr Bitboard semi_centerBB = sq_bb(C3) | sq_bb(D3) | sq_bb(E3) | sq_bb(F3) | sq_bb(C4) | 
-        sq_bb(F4) | sq_bb(C5) | sq_bb(F5) | sq_bb(C6) | sq_bb(D6) | sq_bb(E6) | sq_bb(F6);
-    constexpr Bitboard normalBB = ~(centerBB | semi_centerBB);
-    constexpr int centerValue = 300, semi_centerValue = 200, normalValue = 100;
+    constexpr int centerValue = 1000, semi_centerValue = 500, normalValue = 100;
     constexpr int piece_value[7] = { 9000,   5000,   3000,   3000,   0000,   1000 };
-
-    int count_bit_temp(Bitboard num) {
-        int cnt(0);
-        while (num) {
-            cnt += num & 1ULL;  // 맨 끝 비트가 1이면 count 증가
-            num >>= 1;         // 오른쪽으로 한 비트 이동
-        }
-        return cnt;
-    }
 
     class Search {
     private:
@@ -28,10 +15,34 @@ namespace ForestRaven {
         int evaluate_piece_value(const Chess& ch) { 
             int score[COLOR_NB]{0,0};
             for (int i = 0; i < 5; i++) {
-                Piece_type pt = init_positions[i];
-                score[WHITE] += count_bit_temp(ch.byTypeBB[pt] & ch.byColorBB[WHITE]) * piece_value[pt];
-                score[BLACK] += count_bit_temp(ch.byTypeBB[pt] & ch.byColorBB[BLACK]) * piece_value[pt];
+                Piece_type pt = initPos[i];
+                score[WHITE] += bitCount(ch.byTypeBB[pt] & ch.byColorBB[WHITE]) * piece_value[pt];
+                score[BLACK] += bitCount(ch.byTypeBB[pt] & ch.byColorBB[BLACK]) * piece_value[pt];
             }
+            return (score[WHITE] - score[BLACK]);
+        }
+        int evaluate_piece_activity(const Chess& ch) {
+            int score[COLOR_NB]{ 0,0 };
+            auto cal = [&](Color c, Piece_type pt) -> void {
+                score[c] += bitCount(ch.byTypeBB[pt] & ch.byColorBB[c] & centerBB) * (piece_value[pt] + centerValue);
+                score[c] += bitCount(ch.byTypeBB[pt] & ch.byColorBB[c] & semi_centerBB) * (piece_value[pt] + semi_centerValue);
+                score[c] += bitCount(ch.byTypeBB[pt] & ch.byColorBB[c] & normalBB) * (piece_value[pt] + normalValue);
+                };
+            for (int i = 0; i < 5; i++) {
+                Piece_type pt = initPos[i];
+                cal(WHITE, pt);
+                cal(BLACK, pt);
+            }
+            return (score[WHITE] - score[BLACK]);
+        }
+        int evaluate_controlSquare(const Chess& ch) {
+            int score[COLOR_NB]{ 0,0 };
+            auto cal = [&](Color c) -> void {
+                score[WHITE] += bitCount(centerBB & ch.byColorBB[WHITE]) * centerValue;
+                score[WHITE] += bitCount(semi_centerBB & ch.byColorBB[WHITE]) * semi_centerValue;
+                score[WHITE] += bitCount(normalBB & ch.byColorBB[WHITE]) * normalValue;
+                };
+            cal(WHITE), cal(BLACK);
             return (score[WHITE] - score[BLACK]);
         }
         int evaluate_threat(const Chess& ch) {
@@ -51,25 +62,13 @@ namespace ForestRaven {
             }
             return (score[WHITE] - score[BLACK]);
         }
-        int evaluate_controlSquare(const Chess& ch) {
-            int score[COLOR_NB]{ 0,0 };
-            
-            score[WHITE] += count_bit_temp(centerBB & ch.byColorBB[WHITE]) * centerValue;
-            score[WHITE] += count_bit_temp(semi_centerBB & ch.byColorBB[WHITE]) * semi_centerValue;
-            score[WHITE] += count_bit_temp(normalBB & ch.byColorBB[WHITE]) * normalValue;
-
-            score[BLACK] += count_bit_temp(centerBB & ch.byColorBB[BLACK]) * centerValue;
-            score[BLACK] += count_bit_temp(semi_centerBB & ch.byColorBB[BLACK]) * semi_centerValue;
-            score[BLACK] += count_bit_temp(normalBB & ch.byColorBB[BLACK]) * normalValue;
-
-            return (score[WHITE] - score[BLACK]);
-        }
 
         int evaluate(const Chess& ch) {
             int score_value = evaluate_piece_value(ch);
+            int score_activity = evaluate_piece_activity(ch);
             int score_threat = evaluate_threat(ch);
             int score_controlSquare = evaluate_controlSquare(ch);
-            return score_value + score_threat + score_controlSquare;
+            return score_value + score_activity + score_threat + score_controlSquare;
         }
 
         int minimax_alpha_beta(Chess ch, int depth, int alpha, int beta) {
@@ -158,6 +157,8 @@ namespace ForestRaven {
         void start() {
             chess->print();
             while (true) {
+                cout << chess->turn << "\n";
+                cout << chess->myColor << "\n";
                 chess->turn == chess->myColor ? my_play() : opponent_play();
                 chess->print();
             }
@@ -166,6 +167,7 @@ namespace ForestRaven {
 }
 
 using namespace ForestRaven;
+
 
 int main() {
     Engine engine;
