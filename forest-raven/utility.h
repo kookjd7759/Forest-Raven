@@ -142,15 +142,12 @@ namespace ForestRaven {
         Move_type  moveType = NOMOVE;
         Piece_type pieceType = NOPIECETYPE, promotion = NOPIECETYPE;
         Square     ori = NOSQUARE, dest = NOSQUARE, take = NOSQUARE;
-        Bitboard   ori_bb = 0, dest_bb = 0, take_bb = 0;
 
         Move() {}
         Move(Color c, Piece_type pt, Move_type mt, Square ori, Square dest, Piece_type pro_pt = NOPIECETYPE)
-            : color(c), pieceType(pt), moveType(mt), ori(ori), dest(dest), promotion(pro_pt),
-            ori_bb(sq_bb(ori)), dest_bb(sq_bb(dest)) {}
+            : color(c), pieceType(pt), moveType(mt), ori(ori), dest(dest), promotion(pro_pt) {}
         Move(Color c, Piece_type pt, Move_type mt, Square ori, Square dest, Square take, Piece_type pro_pt = NOPIECETYPE)
-            : color(c), pieceType(pt), moveType(mt), ori(ori), dest(dest), take(take), promotion(pro_pt),
-            ori_bb(sq_bb(ori)), dest_bb(sq_bb(dest)), take_bb(sq_bb(take)) {}
+            : color(c), pieceType(pt), moveType(mt), ori(ori), dest(dest), take(take), promotion(pro_pt) {}
 
         void string_init(string line) {
             color = Color(line[0] - '0');
@@ -160,9 +157,6 @@ namespace ForestRaven {
             dest = notation_sq(line.substr(5, 2));
             take = notation_sq(line.substr(7, 2));
             promotion = (line[9] == '-' ? NOPIECETYPE : Piece_type(line[9] - '0'));
-
-            ori_bb = sq_bb(ori), dest_bb = sq_bb(dest);
-            if (take != NOSQUARE) take_bb = sq_bb(take);
         }
         string get_string() {
             string st = to_string(color) + to_string(pieceType) + to_string(moveType) +

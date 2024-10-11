@@ -149,10 +149,6 @@ using namespace ForestRaven;
 
 int main() {
     init();
-    Chess chess(WHITE);
-    chess.print();
-    print_BB(chess.existBB, "exist");
-
     Engine engine;
     engine.start();
 }

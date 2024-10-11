@@ -355,16 +355,18 @@ namespace ForestRaven {
 		}
 
 		void move(Move move) {
+			Bitboard ori_bb = sq_bb(move.ori);
+			Bitboard dest_bb = sq_bb(move.dest);
 			if (move.pieceType == KING) move_king[move.color] = true;
 			else if (move.pieceType == ROOK) {
-				if (FileA & move.ori_bb) move_rook[move.color][CASTLING_OOO] = true;
-				else if (FileH & move.ori_bb) move_rook[move.color][CASTLING_OO] = true;
+				if (FileA & ori_bb) move_rook[move.color][CASTLING_OOO] = true;
+				else if (FileH & ori_bb) move_rook[move.color][CASTLING_OO] = true;
 			}
 
 			board[move.dest] = board[move.ori], board[move.ori] = NOPIECE;
-			byColorBB[move.color] &= ~move.ori_bb; byColorBB[move.color] |= move.dest_bb;
-			byTypeBB[move.pieceType] &= ~move.ori_bb; byTypeBB[move.pieceType] |= move.dest_bb;
-			existBB &= ~move.ori_bb; existBB |= move.dest_bb;
+			byColorBB[move.color] &= ~ori_bb; byColorBB[move.color] |= dest_bb;
+			byTypeBB[move.pieceType] &= ~ori_bb; byTypeBB[move.pieceType] |= dest_bb;
+			existBB &= ~ori_bb; existBB |= dest_bb;
 
 			prevMove = move;
 		}
