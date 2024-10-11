@@ -172,7 +172,8 @@ namespace ForestRaven {
         }
     };
     
-    void print_BB(Bitboard b) {
+    void print_BB(Bitboard b, string text = "") {
+        if (text != "") cout << text << "\n";
         int idx = 0; string rank = "87654321";
         for (Square s : {A8, A7, A6, A5, A4, A3, A2, A1}) {
             cout << rank[idx++] << ' ';
@@ -186,5 +187,6 @@ namespace ForestRaven {
         for (char st : "ABCDEFGH")
             cout << st << ' ';
         cout << "\n";
+        if (text != "") cout << "\n";
     }
 }

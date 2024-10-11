@@ -9,7 +9,7 @@
     <ClInclude Include="C:\WorkSpace\Visual Studio Code Workspace\Forest-Raven\forest-raven\utility.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\WorkSpace\Visual Studio Code Workspace\Forest-Raven\forest-raven\board.h">
+    <ClInclude Include="C:\WorkSpace\Visual Studio Code Workspace\Forest-Raven\forest-raven\bitboard.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

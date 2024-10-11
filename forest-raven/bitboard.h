@@ -109,14 +109,16 @@ namespace ForestRaven {
 		}
 	}
 	void init() { 
+		cout << "init value . . . ";
 		init_bitCnt(); 
 		init_squareDistance(); 
 		init_attacks_pawn(); 
-		init_attacks(); 
+		init_attacks();
+		cout << "clear\n";
 	}
 
-	inline int bitCount(uint64_t b) { union { 
-		uint16_t u[4]; } v = { b }; 
+	inline int bitCount(uint64_t b) { 
+		union { uint16_t u[4]; } v = { b }; 
 		return bitCnt[v.u[0]] + bitCnt[v.u[1]] + bitCnt[v.u[2]] + bitCnt[v.u[3]]; 
 	}
 
@@ -134,26 +136,26 @@ namespace ForestRaven {
 			       move_rook[COLOR_NB][CASTLING_TYPE_NB];
 
 		Chess() {}
-		Chess(Color c) { init(c); }
+		Chess(Color c) { Chess::init(c); }
 
 		Chess clone() const { return *this; }
 
-		inline void create_piece(Color c, Piece p, Square s) {
+		inline void create_piece(Piece pc, Square s) {
 			Bitboard b = sq_bb(s);
-			board[s] = p;
-			byColorBB[c] |= b;
-			byTypeBB[type_of(p)] |= b;
+			board[s] = pc;
+			byColorBB[color_of(pc)] |= b;
+			byTypeBB[type_of(pc)] |= b;
 			existBB |= b;
-			pieceCount[p]++;
+			pieceCount[pc]++;
 		};
 		inline void remove_piece(Square s) {
 			Bitboard b = sq_bb(s);
-			Piece take_pc = board[s];
+			Piece pc = board[s];
 			board[s] = NOPIECE;
-			byColorBB[color_of(take_pc)] &= ~b;
-			byTypeBB[type_of(take_pc)] &= ~b;
+			byColorBB[color_of(pc)] &= ~b;
+			byTypeBB[type_of(pc)] &= ~b;
 			existBB &= ~b;
-			pieceCount[take_pc]--;
+			pieceCount[pc]--;
 		};
 
 		void reset(Color c) {
@@ -168,10 +170,10 @@ namespace ForestRaven {
 			for (int i = 0; i < PIECE_NB; i++) pieceCount[i] = 0;
 			for (Square s = A1; s <= H8; ++s) board[s] = NOPIECE;
 			for (int i = 0; i < 8; i++) {
-				create_piece(WHITE, pt_pc(WHITE, initPos[i]), Square(A1 + i));
-				create_piece(BLACK, pt_pc(BLACK, initPos[i]), Square(A8 + i));
-				create_piece(WHITE, W_PAWN, Square(A2 + i));
-				create_piece(BLACK, B_PAWN, Square(A7 + i));
+				create_piece(pt_pc(WHITE, initPos[i]), Square(A1 + i));
+				create_piece(pt_pc(BLACK, initPos[i]), Square(A8 + i));
+				create_piece(W_PAWN, Square(A2 + i));
+				create_piece(B_PAWN, Square(A7 + i));
 			}
 
 			calAttackBB();
@@ -181,7 +183,7 @@ namespace ForestRaven {
 		}
 
 		bool isCheck(Color c) const { return ((byTypeBB[KING] & byColorBB[c] & byAttackBB[!c]) != 0); }
-		bool isLegal(Move move) {
+		bool isLegal(Move move) const {
 			Chess next = this->clone();
 			next.play(move);
 			return !next.isCheck(!next.turn);
@@ -284,12 +286,12 @@ namespace ForestRaven {
 
 			return moves;
 		}
-		bool castling_check(Color c, int side) {
+		bool castling_check(Color c, int side) const {
 			if (move_king[c] || move_rook[side]) return false;
 			if ((existBB | byAttackBB[!c]) & castlingMaskBB[c][side]) return false;
 			return true;
 		}
-		int en_passant_check(Color c, Square s) {
+		int en_passant_check(Color c, Square s) const {
 			Bitboard en_passant_rank = (c == WHITE ? Rank5 : Rank4);
 			if (prevMove.pieceType != PAWN || (sq_bb(s) & en_passant_rank)) return 0;
 
@@ -302,13 +304,14 @@ namespace ForestRaven {
 		}
 
 		vector<Move>* legal_moves(Color c, Square s) {
-			return board[s] == QUEEN ? queen(s)
-				: board[s] == ROOK ? rook(s)
-				: board[s] == BISHOP ? bishop(s)
-				: board[s] == KNIGHT ? knight(s)
-				: board[s] == KING ? king(s)
-				: board[s] == PAWN ? pawn(c, s)
-				: new vector<Move>;
+			Piece_type pt = type_of(board[s]);
+			return pt == QUEEN ? queen(s)
+				 : pt == ROOK ? rook(s)
+				 : pt == BISHOP ? bishop(s)
+				 : pt == KNIGHT ? knight(s)
+				 : pt == KING ? king(s)
+				 : pt == PAWN ? pawn(c, s)
+				 : new vector<Move>;
 		}
 		vector<Move>* candidate_moves(Color c) {
 			vector<Move>* candidate_moves = new vector<Move>;
@@ -332,16 +335,17 @@ namespace ForestRaven {
 		}
 
 		Bitboard get_attacks(Color c, Square s) {
-			return board[s] == PAWN ? attacks_pawn[c][s]
-				 : board[s] == KING ? attacks[KING][s]
-				 : board[s] == KNIGHT ? attacks[KNIGHT][s]
-				 : board[s] == BISHOP ? sliding_attacks(BISHOP, s, existBB)
-				 : board[s] == ROOK ? sliding_attacks(ROOK, s, existBB)
-				 : board[s] == QUEEN ? sliding_attacks(BISHOP, s, existBB) | sliding_attacks(ROOK, s, existBB)
-				 : 0;
+			Piece_type pt = type_of(board[s]);
+			return pt == PAWN ? attacks_pawn[c][s]
+				 : pt == KING ? attacks[KING][s]
+				 : pt == KNIGHT ? attacks[KNIGHT][s]
+				 : pt == BISHOP ? sliding_attacks(BISHOP, s, existBB)
+				 : pt == ROOK ? sliding_attacks(ROOK, s, existBB)
+				 : pt == QUEEN ? sliding_attacks(BISHOP, s, existBB) | sliding_attacks(ROOK, s, existBB)
+				 : Bitboard(0);
 		}
 		void calAttackBB() {
-			byAttackBB[WHITE] = byAttackBB[BLACK] = 0;
+			byAttackBB[WHITE] = byAttackBB[BLACK] = Bitboard(0);
 			for (Square s = A1; s <= H8; ++s) {
 				if (existBB & sq_bb(s)) {
 					Color c = color_of(board[s]);
@@ -374,7 +378,7 @@ namespace ForestRaven {
 		}
 		void promotion(Move move) {
 			remove_piece(move.dest);
-			create_piece(move.color, pt_pc(move.color, move.promotion), move.dest);
+			create_piece(pt_pc(move.color, move.promotion), move.dest);
 		}
 		void play(Move move) {
 			switch (move.moveType) {
@@ -389,7 +393,7 @@ namespace ForestRaven {
 			calAttackBB();
 		}
 
-		void print() {
+		void print() const {
 			auto get_info = [&](Piece pc) -> string {
 				string st = "";
 				st += color_of(pc) == WHITE ? 'w' : 'b';
