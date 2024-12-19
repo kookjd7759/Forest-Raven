@@ -443,14 +443,16 @@ struct Board {
         Bitboard attackMask_Q = color == WHITE ? (sq_bb(C1) | sq_bb(D1)) : (sq_bb(C8) | sq_bb(D8));
         Bitboard existMask_Q = color == WHITE ? (sq_bb(B1) | attackMask_Q) : (sq_bb(B8) | attackMask_Q);
 
-        bool exist_K = (existMask_K & existBB) == 0;
-        bool exist_Q = (existMask_Q & existBB) == 0;
-        bool attack_K = (existMask_K & byAttackBB[!color]) == 0;
-        bool attack_Q = (attackMask_Q & byAttackBB[!color]) == 0;
-        if (castling_K[color] && exist_K && attack_K)
-            moves->push_back(Move(board[s], s, s + RR));
-        if (castling_Q[color] && exist_Q && attack_Q)
-            moves->push_back(Move(board[s], s, s + LL));
+        if (!isCheck(color)) {
+            bool exist_K = (existMask_K & existBB) == 0;
+            bool exist_Q = (existMask_Q & existBB) == 0;
+            bool attack_K = (existMask_K & byAttackBB[!color]) == 0;
+            bool attack_Q = (attackMask_Q & byAttackBB[!color]) == 0;
+            if (castling_K[color] && exist_K && attack_K)
+                moves->push_back(Move(board[s], s, s + RR));
+            if (castling_Q[color] && exist_Q && attack_Q)
+                moves->push_back(Move(board[s], s, s + LL));
+        }
 
         return moves;
     }
@@ -1016,11 +1018,18 @@ public:
 
         return score[WHITE] - score[BLACK];
     }
+    int evaluation_controlledSquare() {
+        int score[COLOR_NB]{ 0, 0 };
+        score[WHITE] += bitCount(board.byAttackBB[WHITE]);
+        score[BLACK] += bitCount(board.byAttackBB[BLACK]);
+        return score[WHITE] - score[BLACK];
+    }
     int evaluation() {
         int score(0);
         score += evaluation_pieceValue();
         score += evaluation_castling();
         score += evaluation_pawnStructure();
+        score += evaluation_controlledSquare();
         return score;
     }
 
