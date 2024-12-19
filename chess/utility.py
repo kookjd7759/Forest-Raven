@@ -86,7 +86,7 @@ class Move:
         else: 
             return Move_type.NOMOVE
     def get_string(self):
-        st = f'{self.piece.color.value}{self.piece.type.value}{self.get_move_type().value}{to_notation(self.ori)}{to_notation(self.dest)}{to_notation(self.take)}'
+        st = f'{to_notation(self.ori)}{to_notation(self.dest)}'
         if self.promotion_type == Piece_type.NOPIECE:
             st += '-'
         else:

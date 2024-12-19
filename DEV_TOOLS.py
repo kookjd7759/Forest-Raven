@@ -3,7 +3,7 @@ import shutil
 import subprocess
 
 
-src = 'C:\\Users\\kookj\\source\\repos\\Chess\\Chess'
+src = 'C:\\Users\\kookj\\source\\repos\\forest raven\\forest raven'
 dest = 'C:\\WorkSpace\\Visual Studio Code Workspace\\Forest-Raven\\forest-raven'
 
 def cpp_pull():
