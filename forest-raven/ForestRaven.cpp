@@ -997,7 +997,7 @@ public:
         }
 
         for (int i = 1; i <= 8; ++i) {
-            for (Color color : {WHITE, BLACK}) {
+            for (const Color& color : {WHITE, BLACK}) {
                 // Isolation Pawn
                 int isolation(0);
                 if (!pawnCount[color][i - 1] && pawnCount[color][i] && !pawnCount[color][i + 1])
@@ -1179,9 +1179,9 @@ public:
 };
 
 int main(void) {
-    int c; cin >> c; string t; getline(cin, t);
-    Engine engine((Color)c);
-    engine.play();
-    //Engine engine(WHITE);
-    //engine.play_test();
+    //int c; cin >> c; string t; getline(cin, t);
+    //Engine engine((Color)c);
+    //engine.play();
+    Engine engine(WHITE);
+    engine.play_test();
 }
