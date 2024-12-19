@@ -94,13 +94,13 @@ class Move:
         return st
     def string_init(self, st: str):
         self.piece = Piece(GetpieceType(int(st[1])), Getcolor(int(st[0])))
-        self.ori = to_position(st[3:5])
-        self.dest = to_position(st[5:7])
-        self.take = to_position(st[7:9])
-        if st[9] == '-':
+        self.ori = to_position(st[2:4])
+        self.dest = to_position(st[4:6])
+        self.take = to_position(st[6:8])
+        if st[8] == '-':
             self.promotion_type = Piece_type.NOPIECE
         else:
-            self.promotion_type = promotion_list[int(st[9])]
+            self.promotion_type = promotion_list[int(st[8])]
     def isEqual(self, other):
         if isinstance(other, Move):
             return self.piece.type == other.piece.type and self.piece.color == other.piece.color and \

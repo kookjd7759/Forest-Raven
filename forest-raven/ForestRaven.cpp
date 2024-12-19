@@ -5,6 +5,8 @@
 #include <random>
 #include <chrono>
 #include <sstream>
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
 #include <windows.h>
 
 static void setColor(int textColor, int bgColor) {
@@ -758,7 +760,9 @@ Move READ_move(const vector<Move>* moves) {
 }
 void SEND_move(const Move& move) {
     cout << "SEND ";
-    cout << sq_notation(move.ori) << sq_notation(move.dest);
+    cout << color_of(move.piece);
+    cout << type_of(move.piece);
+    cout << sq_notation(move.ori) << sq_notation(move.dest) << sq_notation(move.take);
     if (move.promotion == NOPIECETYPE) cout << '-';
     else cout << pt_char[move.promotion];
     cout << "\n";
@@ -954,13 +958,19 @@ public:
 
     int evaluation_pieceValue() {
         int score[COLOR_NB]{ 0, 0 };
+        int bishop[COLOR_NB]{ 0, 0 };
         for (Square sq = A1; sq < SQUARE_NB; ++sq) {
             if (sq_bb(sq) & board.existBB) {
                 Piece_type pt = type_of(board.board[sq]);
                 Color color = color_of(board.board[sq]);
+                if (pt == BISHOP) ++bishop[color];
                 score[color] += piece_value[pt] + PST[pt][color][sq];
             }
         }
+
+        if (bishop[WHITE] >= 2) score[WHITE] += 55;
+        if (bishop[BLACK] >= 2) score[BLACK] += 55;
+
         return score[WHITE] - score[BLACK];
     }
     int evaluation_castling() {
@@ -973,21 +983,22 @@ public:
     }
     int evaluation_pawnStructure() {
         int score[COLOR_NB]{ 0, 0 };
-        int pawnCount[COLOR_NB][8]{ 0, 0, 0, 0, 0, 0, 0, 0 };
-        int idx(0);
-        for (Bitboard file : {FileA_BB, FileB_BB, FileC_BB, FileD_BB, FileE_BB, FileF_BB, FileG_BB, FileH_BB}) {
+        int pawnCount[COLOR_NB][10]{ 
+            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+        };
+        int idx(1);
+        for (Bitboard fileBB : {FileA_BB, FileB_BB, FileC_BB, FileD_BB, FileE_BB, FileF_BB, FileG_BB, FileH_BB}) {
             for (Color color : {WHITE, BLACK})
-                pawnCount[color][idx] += bitCount(file & board.byColorBB[color] & board.byTypeBB[PAWN]);
+                pawnCount[color][idx] += bitCount(fileBB & board.byColorBB[color] & board.byTypeBB[PAWN]);
             ++idx;
         }
 
-        Fori(8) {
+        for (int i = 1; i <= 8; ++i) {
             for (Color color : {WHITE, BLACK}) {
                 // Isolation Pawn
                 int isolation(0);
-                if ((i == 0 && pawnCount[color][i] && !pawnCount[color][i + 1]) ||
-                    (i == 7 && !pawnCount[color][i - 1] && pawnCount[color][i]) ||
-                    (!pawnCount[color][i - 1] && pawnCount[color][i] && !pawnCount[color][i + 1]))
+                if (!pawnCount[color][i - 1] && pawnCount[color][i] && !pawnCount[color][i + 1])
                     ++isolation;
                 score[color] -= isolation * 20;
 
@@ -997,10 +1008,8 @@ public:
                 // Passed Pawns
                 // TODO -> forwarding pass pawn calculation
                 int passed(0);
-                if ((i == 0 && pawnCount[color][i] && !pawnCount[!color][i + 1]) ||
-                    (i == 7 && !pawnCount[!color][i - 1] && pawnCount[color][i]) ||
-                    (!pawnCount[!color][i - 1] && pawnCount[color][i] && !pawnCount[!color][i + 1]))
-                    ++isolation;
+                if (!pawnCount[!color][i - 1] && pawnCount[color][i] && !pawnCount[!color][i + 1])
+                    ++passed;
                 score[color] += passed * 30;
             }
         }
@@ -1057,12 +1066,20 @@ public:
     }
     double findTime = 0.0;
     pair<Move, string> findBestMove(int depth = 0) {
-        auto start = chrono::high_resolution_clock::now();
 
+        auto start = chrono::high_resolution_clock::now();
         vector<Move>* legalMoves = board.legal_moves();
         sort(legalMoves->begin(), legalMoves->end(), move_comp);
         pair<Move, string> moveData;
         current_depth = BASIC_DEPTH;
+
+        // opening e4 fix
+        if (color_AI == WHITE && board.full_move == 1) {
+            moveData.first = Move(W_PAWN, E2, E4);
+            moveData.second = "e4";
+            return moveData;
+        }
+
         while (true) {
             int bestEval = color_AI == WHITE ? -2e9 : 2e9;
             int alpha(-2e9), beta(2e9);
@@ -1160,8 +1177,9 @@ public:
 };
 
 int main(void) {
-
     int c; cin >> c; string t; getline(cin, t);
     Engine engine((Color)c);
     engine.play();
+    //Engine engine(WHITE);
+    //engine.play_test();
 }

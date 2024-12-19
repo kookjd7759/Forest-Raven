@@ -3,7 +3,7 @@ import os
 
 from utility import *
 
-EXEPATH = os.getcwd() + '\\Forest-Raven\\forest-raven\\build\\Debug\\Forest_Raven.exe'
+EXEPATH = os.getcwd() + '\\Forest-Raven\\forest-raven\\build\\Debug\\forest-raven.exe'
 forest_raven = None
 
 def START(color: Color):
