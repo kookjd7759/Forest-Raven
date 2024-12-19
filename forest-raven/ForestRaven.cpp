@@ -1018,18 +1018,11 @@ public:
 
         return score[WHITE] - score[BLACK];
     }
-    int evaluation_controlledSquare() {
-        int score[COLOR_NB]{ 0, 0 };
-        score[WHITE] += bitCount(board.byAttackBB[WHITE]);
-        score[BLACK] += bitCount(board.byAttackBB[BLACK]);
-        return score[WHITE] - score[BLACK];
-    }
     int evaluation() {
         int score(0);
         score += evaluation_pieceValue();
         score += evaluation_castling();
         score += evaluation_pawnStructure();
-        score += evaluation_controlledSquare();
         return score;
     }
 
