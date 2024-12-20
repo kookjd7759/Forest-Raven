@@ -15,7 +15,7 @@ namespace ForestRaven {
         BLACK = 1,
         COLOR_NB
     };
-    inline Color operator!(Color c) { return (c == WHITE ? BLACK : WHITE); }
+    inline Color operator!(Color& c) { return c == WHITE ? BLACK : WHITE; }
 
     enum Piece_type : int {
         NOPIECETYPE = -1,
@@ -27,19 +27,7 @@ namespace ForestRaven {
         PAWN,
         PIECE_TYPE_NB
     };
-    constexpr char pt_char[7] = { 'Q', 'R', 'B', 'N', 'K', 'P' };
-    Piece_type char_pt(char c) {
-        return c == 'Q' ? QUEEN
-            : c == 'R' ? ROOK
-            : c == 'B' ? BISHOP
-            : c == 'N' ? KNIGHT
-            : c == 'K' ? KING
-            : c == 'P' ? PAWN
-            : NOPIECETYPE;
-    }
-    bool isPieceType(char c) { return (c == 'Q' || c == 'R' || c == 'B' || c == 'N' || c == 'K'); }
-    bool isProPieceType(char c) { return (c == 'Q' || c == 'R' || c == 'B' || c == 'N'); }
-
+    
     enum Piece {
         NOPIECE = -1,
         W_QUEEN = QUEEN, W_ROOK, W_BISHOP, W_KNIGHT, W_KING, W_PAWN,
@@ -66,7 +54,6 @@ namespace ForestRaven {
     };
     inline Direction operator+(Direction& s, Direction d) { return Direction(int(s) + int(d)); }
 
-
     enum Square : int {
         A1, B1, C1, D1, E1, F1, G1, H1,
         A2, B2, C2, D2, E2, F2, G2, H2,
@@ -83,11 +70,8 @@ namespace ForestRaven {
     inline static void operator++(Square& s) { s = Square(int(s) + 1); }
     inline Square& operator+=(Square& s, int d) { return s = Square(s + d); }
     
-    constexpr bool is_ok(Square s) { return s >= A1 && s <= H8; }
+    constexpr bool is_ok(Square s) { return A1 <= s && s <= H8; }
     constexpr inline Bitboard sq_bb(Square s) { assert(is_ok(s)); return Bitboard(1ULL << s); }
-
-    string sq_notation(Square s) { return s == NOSQUARE ? "--" : string(1, "abcdefgh"[(s % 8)]) + string(1, "12345678"[(s / 8)]); }
-    Square notation_sq(string st) { return !st.compare("--") ? NOSQUARE : Square(((st[1] - '1') * 8) + (st[0] - 'a')); }
 
     enum File : int {
         FILE_A,
@@ -102,8 +86,7 @@ namespace ForestRaven {
     };
     constexpr File file_of(Square s) { return File(s & 7); }
     inline static void operator++(File& f) { f = File(int(f) + 1); }
-    bool isFile(char c) { return ('a' <= c && c <= 'h'); }
-
+    
     enum Rank : int {
         RANK_1,
         RANK_2,
@@ -116,6 +99,26 @@ namespace ForestRaven {
         RANK_NB
     };
     constexpr Rank rank_of(Square s) { return Rank(s >> 3); }
-    bool isRank(char c) { return ('1' <= c && c <= '8'); }
+
+    struct Move {
+        Piece piece;
+        Square ori, dest, take = NOSQUARE;
+        Piece_type promotion = NOPIECETYPE;
+        bool check = false;
+        bool isAttacked = false;
+
+        Move(Piece pc, Square o, Square d) : piece(pc), ori(o), dest(d) {}
+        Move(Piece pc, Square o, Square d, Square t) : piece(pc), ori(o), dest(d), take(t) {}
+        Move(Piece pc, Square o, Square d, Square t, Piece_type pt) : piece(pc), ori(o), dest(d), take(t), promotion(pt) {}
+        Move(Piece pc, Square o, Square d, Piece_type pt) : piece(pc), ori(o), dest(d), promotion(pt) {}
+
+        Move() { piece = NOPIECE, ori = NOSQUARE, dest = NOSQUARE; }
+        Move(const Move& m) : piece(m.piece), ori(m.ori), dest(m.dest), take(m.take), promotion(m.promotion), check(m.check) {}
+    };
+    bool move_comp(const Move& a, const Move& b) {
+        if (a.check != b.check) return a.check > b.check;
+        if (a.take != b.take) return a.take != NOSQUARE && b.take == NOSQUARE;
+        return a.isAttacked > b.isAttacked;
+    }
 
 }

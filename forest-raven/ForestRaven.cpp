@@ -1,7 +1,6 @@
-#include "Utility.h"
+#include "notation.h"
 #include <string>
 #include <cctype>
-#include <vector>
 #include <random>
 #include <chrono>
 #include <sstream>
@@ -22,233 +21,6 @@ static void print_BB(Bitboard b) {
         cout << ((b >> i) & 1) << ' ';
         if (i % 8 == 0) cout << "\n";
     } cout << "\n";
-}
-
-struct Move {
-    Piece piece;
-    Square ori, dest, take = NOSQUARE;
-    Piece_type promotion = NOPIECETYPE;
-    bool check = false;
-    bool isAttacked = false;
-
-    Move(Piece pc, Square o, Square d) : piece(pc), ori(o), dest(d) {}
-    Move(Piece pc, Square o, Square d, Square t) : piece(pc), ori(o), dest(d), take(t) {}
-    Move(Piece pc, Square o, Square d, Square t, Piece_type pt) : piece(pc), ori(o), dest(d), take(t), promotion(pt) {}
-    Move(Piece pc, Square o, Square d, Piece_type pt) : piece(pc), ori(o), dest(d), promotion(pt) {}
-
-    Move() { piece = NOPIECE, ori = NOSQUARE, dest = NOSQUARE; }
-    Move(const Move& m) : piece(m.piece), ori(m.ori), dest(m.dest), take(m.take), promotion(m.promotion), check(m.check) {}
-};
-bool move_comp(const Move& a, const Move& b) {
-    if (a.check != b.check) return a.check > b.check;
-    if (a.take != b.take) return a.take != NOSQUARE && b.take == NOSQUARE;
-    return a.isAttacked > b.isAttacked;
-}
-string move_notation(const vector<Move>* moves, Move move) {
-    Piece_type pt = type_of(move.piece);
-
-    if (pt == KING && abs(move.ori - move.dest) == 2)
-        return (move.ori < move.dest ? "O-O" : "O-O-O");
-
-    string notation("");
-    if (pt != PAWN) notation += pt_char[pt];
-
-    File file = file_of(move.ori);
-    Rank rank = rank_of(move.ori);
-    int file_cnt(0), rank_cnt(0);
-    for (const Move& legalMove : *moves)
-        if (legalMove.piece == move.piece && legalMove.dest == move.dest) {
-            if (file_of(legalMove.ori) == file) ++file_cnt;
-            if (rank_of(legalMove.ori) == rank) ++rank_cnt;
-        }
-
-    if (file_cnt > 1 && rank_cnt == 1) notation += (char)('a' + file);
-    if (file_cnt == 1 && rank_cnt > 1) notation += (char)('1' + rank);
-    if (file_cnt > 1 && rank_cnt > 1) notation += sq_notation(move.ori);
-
-    if (move.take != NOSQUARE) {
-        if (pt == PAWN) notation += (char)('a' + file_of(move.ori));
-        notation += 'x';
-    }
-
-    notation += sq_notation(move.dest);
-
-    if (move.promotion != NOPIECETYPE) notation += '=' + pt_char[move.promotion];
-
-    if (move.check) notation += '+';
-
-    return notation;
-}
-Move notation_move(const vector<Move>* moves, const string& notation) {
-    auto find_move = [&](Piece_type pt, Square dest, Piece_type promotion = NOPIECETYPE) -> Move {
-        Move ret;
-        bool ch(false);
-        for (const Move& move : *moves)
-            if (type_of(move.piece) == pt && move.dest == dest && move.promotion == promotion)
-                if (ch) return Move();
-                else ret = move, ch = true;
-
-        if (!ch) {
-            cout << "notation ERROR::I didn't found '" << notation << "' in legal move list \n";
-            return Move();
-        }
-
-        return ret;
-        };
-
-    auto find_move_with_file = [&](Piece_type pt, Square dest, File file) -> Move {
-        Move ret;
-        bool ch(false);
-        for (const Move& move : *moves)
-            if (type_of(move.piece) == pt && move.dest == dest && file_of(move.ori) == file)
-                if (ch) return Move();
-                else ret = move, ch = true;
-
-        if (!ch) {
-            cout << "notation ERROR::I didn't found '" << notation << "' in legal move list \n";
-            return Move();
-        }
-
-        return ret;
-        };
-
-    auto find_move_with_rank = [&](Piece_type pt, Square dest, Rank rank) -> Move {
-        Move ret;
-        bool ch(false);
-        for (const Move& move : *moves)
-            if (type_of(move.piece) == pt && move.dest == dest && rank_of(move.ori) == rank)
-                if (ch) return Move();
-                else ret = move, ch = true;
-
-        if (!ch) {
-            cout << "notation ERROR::I didn't found '" << notation << "' in legal move list \n";
-            return Move();
-        }
-
-        return ret;
-        };
-
-    auto find_move_with_ori = [&](Piece_type pt, Square dest, Square ori) -> Move {
-        Move ret;
-        bool ch(false);
-        for (const Move& move : *moves)
-            if (type_of(move.piece) == pt && move.dest == dest && move.ori == ori)
-                if (ch) return Move();
-                else ret = move, ch = true;
-
-        if (!ch) {
-            cout << "notation ERROR::I didn't found '" << notation << "' in legal move list \n";
-            return Move();
-        }
-
-        return ret;
-        };
-
-
-    if (moves->size() == 0) {
-        cout << "notation ERROR::moves vector is empty\n";
-        return  Move();
-    }
-
-    Color color = color_of(moves->at(0).piece);
-
-    Piece_type pt;
-    Square dest;
-    if (notation == "O-O") { // king side castling
-        dest = (color == WHITE ? G1 : G8);
-        return find_move(KING, dest);
-    }
-    else if (notation == "O-O-O") { // queen side castling
-        dest = (color == WHITE ? C1 : C8);
-        return find_move(KING, dest);
-    }
-    if (notation.size() == 2) { // pawn, move
-        if (!isFile(notation[0]) || !isRank(notation[1])) return Move();
-
-        dest = notation_sq(notation);
-        return find_move(PAWN, dest);
-    }
-    else if (notation.size() == 3) { // other piece, move
-        if (!isPieceType(notation[0]) || !isFile(notation[1]) || !isRank(notation[2])) return Move();
-
-        pt = char_pt(notation[0]);
-        dest = notation_sq(notation.substr(1, 2));
-        return find_move(pt, dest);
-    }
-    else if (notation.size() == 4) {
-        if (isFile(notation[0])) {
-            if (notation[1] == 'x') { // pawn, takes
-                if (!isFile(notation[2]) || !isRank(notation[3])) return Move();
-
-                dest = notation_sq(notation.substr(2, 2));
-                return find_move(PAWN, dest);
-            }
-            else if (isRank(notation[1])) { // pawn, move promotion
-                if (notation[2] != '=' || !isProPieceType(notation[3])) return Move();
-
-                dest = notation_sq(notation.substr(0, 2));
-                Piece_type pt_pro = char_pt(notation[3]);
-                return find_move(PAWN, dest, pt_pro);
-            }
-            else return Move();
-        }
-        else if (isPieceType(notation[0])) {
-            pt = char_pt(notation[0]);
-            dest = notation_sq(notation.substr(2, 2));
-            if (notation[1] == 'x') { // other piece, takes
-                return find_move(pt, dest);
-            }
-            else if (isFile(notation[1])) { // other piece, move but specify FILE
-                File file = (File)(notation[1] - 'a');
-                return find_move_with_file(pt, dest, file);
-            }
-            else if (isRank(notation[1])) { // other piece, move but specify RANK
-                Rank rank = (Rank)(notation[1] - '1');
-                return find_move_with_rank(pt, dest, rank);
-            }
-            else return Move();
-        }
-    }
-    else if (notation.size() == 5) {
-        if (!isPieceType(notation[0]) || !isFile(notation[3]) || !isRank(notation[4])) return Move();
-        pt = char_pt(notation[0]);
-        dest = notation_sq(notation.substr(3, 2));
-
-        if (isFile(notation[1]) && notation[2] == 'x') { // other piece, takes but specify FILE
-            File file = (File)(notation[1] - 'a');
-            return find_move_with_file(pt, dest, file);
-        }
-        else if (isRank(notation[1]) && notation[2] == 'x') { // other piece, takes but specify RANK
-            Rank rank = (Rank)(notation[1] - '1');
-            return find_move_with_rank(pt, dest, rank);
-        }
-        else if (isFile(notation[1]) && isRank(notation[2])) {  // other piece, move but specify FILE and RANK
-            Square ori = notation_sq(notation.substr(1, 2));
-            return find_move_with_ori(pt, dest, ori);
-        }
-        else return Move();
-    }
-    else if (notation.size() == 6) {
-        if (isFile(notation[0])) { // pawn, takes and promotion 
-            if (notation[1] != 'x' || !isFile(notation[2]) || !isRank(notation[3]) ||
-                notation[4] != '=' || !isProPieceType(notation[5])) return Move();
-
-            dest = notation_sq(notation.substr(2, 2));
-            Piece_type pt_pro = char_pt(notation[5]);
-            return find_move(PAWN, dest, pt_pro);
-        }
-        else if (isPieceType(notation[0])) {
-            if (!isFile(notation[1]) || !isRank(notation[2]) || notation[3] != 'x' ||
-                !isFile(notation[4]) || !isRank(notation[5])) return Move();
-
-            pt = char_pt(notation[0]);
-            Square ori = notation_sq(notation.substr(1, 2));
-            dest = notation_sq(notation.substr(4, 2));
-            return find_move_with_ori(pt, dest, ori);
-        }
-
-    }
-    else return Move();
 }
 
 constexpr Bitboard FileA_BB = 0x0101010101010101ULL;
@@ -278,6 +50,7 @@ constexpr int king_steps[8] = { -9, -8, -7, -1, 1, 7, 8, 9 };
 
 constexpr Piece_type promotion_list[4] = { ROOK, KNIGHT, BISHOP, QUEEN };
 
+uint8_t  bit16cnt[1 << 16];
 uint8_t  SquareDistance[SQUARE_NB][SQUARE_NB];
 Bitboard attacks_pawn[COLOR_NB][SQUARE_NB];
 Bitboard attacks_night[SQUARE_NB];
@@ -669,7 +442,7 @@ struct Board {
             c == 'K' ? castling_K[color] = true : castling_Q[color] = true;
         }
 
-        en_passant = (words[3][0] == '-' ? NOSQUARE : notation_sq(words[3]));
+        en_passant = (words[3][0] == '-' ? NOSQUARE : nt_sq(words[3]));
 
         half_move = stoi(words[4]);
         full_move = stoi(words[5]);
@@ -721,7 +494,7 @@ struct Board {
                 cout << ' ';
             }
             else if (rank == RANK_6) {
-                cout << " [En Passant] " << sq_notation(en_passant) << " ";
+                cout << " [En Passant] " << sq_nt(en_passant) << " ";
             }
             else if (rank == RANK_5) {
                 cout << " [Half Move] " << add_sp(half_move);
@@ -738,8 +511,8 @@ struct Board {
             vector<Move>* legalMoves = legal_moves();
             cout << "[Candidate moves] (" << legalMoves->size() << ")\n";
             Fori(legalMoves->size()) {
-                cout << i << ". " << sq_notation(legalMoves->at(i).ori) << " -> " << sq_notation(legalMoves->at(i).dest);
-                if (legalMoves->at(i).take != NOSQUARE) cout << " Takes " << sq_notation(legalMoves->at(i).take);
+                cout << i << ". " << sq_nt(legalMoves->at(i).ori) << " -> " << sq_nt(legalMoves->at(i).dest);
+                if (legalMoves->at(i).take != NOSQUARE) cout << " Takes " << sq_nt(legalMoves->at(i).take);
                 if (legalMoves->at(i).promotion != NOPIECETYPE) cout << " Promotion to " << pt_char[legalMoves->at(i).promotion];
                 cout << " \n";
             }
@@ -750,8 +523,8 @@ struct Board {
 Move READ_move(const vector<Move>* moves) {
     string notation; cin >> notation;
 
-    Square ori(notation_sq(notation.substr(0, 2)));
-    Square dest(notation_sq(notation.substr(2, 2)));
+    Square ori(nt_sq(notation.substr(0, 2)));
+    Square dest(nt_sq(notation.substr(2, 2)));
     Piece_type promotion = char_pt(notation[4]);
 
     for (const Move& move : *moves)
@@ -764,7 +537,7 @@ void SEND_move(const Move& move) {
     cout << "SEND ";
     cout << color_of(move.piece);
     cout << type_of(move.piece);
-    cout << sq_notation(move.ori) << sq_notation(move.dest) << sq_notation(move.take);
+    cout << sq_nt(move.ori) << sq_nt(move.dest) << sq_nt(move.take);
     if (move.promotion == NOPIECETYPE) cout << '-';
     else cout << pt_char[move.promotion];
     cout << "\n";
@@ -1092,7 +865,7 @@ public:
                     (color_AI == BLACK && bestEval > nextEval)) {
                     bestEval = nextEval;
                     moveData.first = move;
-                    moveData.second = move_notation(legalMoves, move);
+                    moveData.second = move_nt(legalMoves, move);
                 }
 
                 color_AI == WHITE ? alpha = max(alpha, bestEval) : beta = min(beta, bestEval);
@@ -1131,7 +904,7 @@ public:
                     cout << "input >> ";
                     string st; cin >> st;
                     if (st == "RESTART") return 1;
-                    move = notation_move(legalMoves, st);
+                    move = nt_move(legalMoves, st);
                 }
 
                 board.play(move);
@@ -1182,6 +955,6 @@ int main(void) {
     //int c; cin >> c; string t; getline(cin, t);
     //Engine engine((Color)c);
     //engine.play();
-    Engine engine(WHITE);
+    Engine engine(BLACK);
     engine.play_test();
 }
