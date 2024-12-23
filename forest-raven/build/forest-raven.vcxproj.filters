@@ -4,6 +4,9 @@
     <ClCompile Include="C:\WorkSpace\Visual Studio Code Workspace\Forest-Raven\forest-raven\ForestRaven.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="C:\WorkSpace\Visual Studio Code Workspace\Forest-Raven\forest-raven\notation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="C:\WorkSpace\Visual Studio Code Workspace\Forest-Raven\forest-raven\CMakeLists.txt" />

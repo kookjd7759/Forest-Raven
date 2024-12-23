@@ -5,6 +5,8 @@
 #include <chrono>
 #include <algorithm>
 
+#define INF int(2e9)
+
 namespace ForestRaven {
     class Engine {
     public:
@@ -264,7 +266,7 @@ namespace ForestRaven {
 
         int alpha_beta(int alpha, int beta, int depth) {
             if (board.isEnd())
-                return (!board.isCheck(board.turn) ? 0 : board.turn == BLACK ? 1e9 - depth : -1e9 + depth);
+                return (!board.isCheck(board.turn) ? 0 : board.turn == BLACK ? int(1e9) - depth : int(-1e9) + depth);
 
             if (depth == current_depth) return evaluation();
 
@@ -272,7 +274,7 @@ namespace ForestRaven {
             vector<Move>* legalMoves = board.legal_moves();
             sort(legalMoves->begin(), legalMoves->end(), move_comp);
             if (board.turn == WHITE) {
-                resultEval = -2e9;
+                resultEval = -INF;
                 for (const Move& move : *legalMoves) {
                     int nextEval = search(move, alpha, beta, depth);
                     resultEval = max(resultEval, nextEval);
@@ -281,7 +283,7 @@ namespace ForestRaven {
                 }
             }
             else {
-                resultEval = 2e9;
+                resultEval = INF;
                 for (const Move& move : *legalMoves) {
                     int nextEval = search(move, alpha, beta, depth);
                     resultEval = min(resultEval, nextEval);
@@ -319,8 +321,8 @@ namespace ForestRaven {
             }
 
             while (true) {
-                int bestEval = color_AI == WHITE ? -2e9 : 2e9;
-                int alpha(-2e9), beta(2e9);
+                int bestEval = color_AI == WHITE ? -INF : INF;
+                int alpha(-INF), beta(INF);
                 for (const Move& move : *legalMoves) {
                     // cout << move_notation(legalMoves, move) << "\n";
                     int nextEval = search(move, alpha, beta, depth);

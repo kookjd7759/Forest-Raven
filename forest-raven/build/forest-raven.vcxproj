@@ -325,6 +325,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="C:\WorkSpace\Visual Studio Code Workspace\Forest-Raven\forest-raven\ForestRaven.cpp" />
+    <ClCompile Include="C:\WorkSpace\Visual Studio Code Workspace\Forest-Raven\forest-raven\notation.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="C:\WorkSpace\Visual Studio Code Workspace\Forest-Raven\forest-raven\build\ZERO_CHECK.vcxproj">
