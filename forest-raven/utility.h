@@ -1,3 +1,6 @@
+#ifndef UTILITY_H_INCLUDED
+#define UTILITY_H_INCLUDED
+
 #include <iostream>
 #include <cassert>
 
@@ -15,7 +18,7 @@ namespace ForestRaven {
         BLACK = 1,
         COLOR_NB
     };
-    inline Color operator!(Color& c) { return c == WHITE ? BLACK : WHITE; }
+    inline Color operator~(Color& c) { return Color(c ^ BLACK); }
 
     enum Piece_type : int {
         NOPIECETYPE = -1,
@@ -27,6 +30,8 @@ namespace ForestRaven {
         PAWN,
         PIECE_TYPE_NB
     };
+    constexpr Piece_type promotion_list[4] = { ROOK, KNIGHT, BISHOP, QUEEN };
+
     
     enum Piece {
         NOPIECE = -1,
@@ -115,10 +120,12 @@ namespace ForestRaven {
         Move() { piece = NOPIECE, ori = NOSQUARE, dest = NOSQUARE; }
         Move(const Move& m) : piece(m.piece), ori(m.ori), dest(m.dest), take(m.take), promotion(m.promotion), check(m.check) {}
     };
-    bool move_comp(const Move& a, const Move& b) {
+    inline bool move_comp(const Move& a, const Move& b) {
         if (a.check != b.check) return a.check > b.check;
         if (a.take != b.take) return a.take != NOSQUARE && b.take == NOSQUARE;
         return a.isAttacked > b.isAttacked;
     }
 
 }
+
+#endif  // #ifndef UTILITY_H_INCLUDED
