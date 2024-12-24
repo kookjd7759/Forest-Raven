@@ -2,8 +2,6 @@
 #define ENGINE_H_INCLUDED
 
 #include "board.h"
-#include <chrono>
-#include <algorithm>
 
 #define INF int(2e9)
 
@@ -187,14 +185,6 @@ namespace ForestRaven {
             color_AI = board.turn;
             play();
         }
-        int bitCount(Bitboard b) {
-            int cnt(0);
-            while (b) {
-                b = b & (b - 1);
-                ++cnt;
-            }
-            return cnt;
-        }
 
         int evaluation_pieceValue() {
             int score[COLOR_NB]{ 0, 0 };
@@ -257,10 +247,17 @@ namespace ForestRaven {
             return score[WHITE] - score[BLACK];
         }
         int evaluation() {
+            auto start = chrono::high_resolution_clock::now();
+
             int score(0);
             score += evaluation_pieceValue();
             score += evaluation_castling();
             score += evaluation_pawnStructure();
+
+            auto end = chrono::high_resolution_clock::now();
+            auto duration = chrono::duration_cast<chrono::nanoseconds>(end - start).count();
+            ++Eval_ct.first; Eval_ct.second += duration;
+
             return score;
         }
 
@@ -272,7 +269,7 @@ namespace ForestRaven {
 
             int resultEval;
             vector<Move>* legalMoves = board.legal_moves();
-            sort(legalMoves->begin(), legalMoves->end(), move_comp);
+
             if (board.turn == WHITE) {
                 resultEval = -INF;
                 for (const Move& move : *legalMoves) {
@@ -306,10 +303,15 @@ namespace ForestRaven {
         }
         double findTime = 0.0;
         pair<Move, string> findBestMove(int depth = 0) {
+            LegalMove_ct = make_pair(0, 0);
+            Eval_ct = make_pair(0, 0);
+            IsEnd_ct = make_pair(0, 0);
+            calAttackBB_ct = make_pair(0, 0);
 
             auto start = chrono::high_resolution_clock::now();
+
             vector<Move>* legalMoves = board.legal_moves();
-            sort(legalMoves->begin(), legalMoves->end(), move_comp);
+
             pair<Move, string> moveData;
             current_depth = BASIC_DEPTH;
 
@@ -324,8 +326,8 @@ namespace ForestRaven {
                 int bestEval = color_AI == WHITE ? -INF : INF;
                 int alpha(-INF), beta(INF);
                 for (const Move& move : *legalMoves) {
-                    // cout << move_notation(legalMoves, move) << "\n";
                     int nextEval = search(move, alpha, beta, depth);
+                    cout << move_nt(legalMoves, move) << " : " << nextEval << "\n";
                     if ((color_AI == WHITE && bestEval < nextEval) ||
                         (color_AI == BLACK && bestEval > nextEval)) {
                         bestEval = nextEval;
@@ -336,9 +338,9 @@ namespace ForestRaven {
                     color_AI == WHITE ? alpha = max(alpha, bestEval) : beta = min(beta, bestEval);
                 }
                 auto end = chrono::high_resolution_clock::now();
-                auto duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
-                findTime = duration / 1000.0;
-                if (findTime < 2.0) {
+                auto duration = chrono::duration_cast<chrono::nanoseconds>(end - start).count();
+                findTime = (double)duration / 1e9;
+                if (findTime < 1.0) {
                     ++current_depth;
                     // cout << "++current_depth\n";
                 }
@@ -348,58 +350,42 @@ namespace ForestRaven {
             return moveData;
         }
 
-        int play_test() {
+        int play(bool isTest = false) {
             cout << fixed; cout.precision(2);
+            if (!isTest) {
+                int c; cin >> c; string t; getline(cin, t);
+                color_AI = (Color)c;
+            }
             while (true) {
                 if (board.turn == color_AI) {
                     board.print(false);
                     cout << "Current evaluation : " << evaluation() << "\n\n";
                     pair<Move, string> moveData = findBestMove();
                     Move bestMove = moveData.first;
-                    board.play(bestMove);
                     cout << "[ " << findTime << " sec / Depth : " << current_depth << " ]\n";
+                    cout << " - calAttack function " << calAttackBB_ct.first << ", " << (double)calAttackBB_ct.second / 1e9 << " sec\n";
+                    cout << " - LegalMove function " << LegalMove_ct.first << ", " << (double)LegalMove_ct.second / 1e9 << " sec\n";
+                    cout << " - Evaluation function " << Eval_ct.first << ", " << (double)Eval_ct.second / 1e9 << " sec\n";
+                    cout << " - IsEnd function " << IsEnd_ct.first << ", " << (double)IsEnd_ct.second / 1e9 << " sec\n";
                     cout << "Forest Raven >> " << moveData.second << "\n\n";
+                    if (!isTest) SEND_move(bestMove);
+                    board.play(bestMove);
                 }
                 else {
-                    board.print(false);
+                    board.print(true);
                     cout << "Current evaluation : " << evaluation() << "\n\n";
                     vector<Move>* legalMoves = board.legal_moves();
                     Move move;
-                    while (move.piece == NOPIECE) {
-                        cout << "input >> ";
-                        string st; cin >> st;
-                        if (st == "RESTART") return 1;
-                        move = nt_move(legalMoves, st);
+                    if (!isTest) move = READ_move(legalMoves);
+                    else {
+                        while (move.piece == NOPIECE) {
+                            cout << "input >> ";
+                            string st; cin >> st;
+                            if (st == "RESTART") return 1;
+                            move = nt_move(legalMoves, st);
+                        }
                     }
 
-                    board.play(move);
-                    cout << "\n";
-                }
-
-                if (board.isEnd()) {
-                    cout << "GAME OVER\n";
-                    if (!board.isCheck(board.turn)) cout << "DRAW";
-                    else cout << (board.turn == BLACK ? "WHITE " : "BLACK ") << "WIN\n";
-                    board.print(true);
-                    break;
-                }
-            }
-            return 0;
-        }
-        int play() {
-            cout << fixed; cout.precision(2);
-            while (true) {
-                if (board.turn == color_AI) {
-                    pair<Move, string> moveData = findBestMove();
-                    Move bestMove = moveData.first;
-                    SEND_move(bestMove);
-                    board.play(bestMove);
-                    cout << "[ " << findTime << " sec / Depth : " << current_depth << " ]\n";
-                    cout << "Forest Raven >> " << moveData.second << "\n\n";
-                }
-                else {
-                    vector<Move>* legalMoves = board.legal_moves();
-                    Move move = READ_move(legalMoves);
                     board.play(move);
                     cout << "\n";
                 }
@@ -416,6 +402,5 @@ namespace ForestRaven {
         }
     };
 }
-
 
 #endif  // #ifndef ENGINE_H_INCLUDED

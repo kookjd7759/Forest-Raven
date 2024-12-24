@@ -12,7 +12,7 @@ namespace ForestRaven {
             : NOPIECETYPE;
     }
 
-    string sq_nt(Square s)  { return is_ok(s) ? string(1, "abcdefgh"[s % 8]) + "12345678"[s / 8] : "--"; }
+    string sq_nt(Square s) { return is_ok(s) ? string(1, "abcdefgh"[s % 8]) + "12345678"[s / 8] : "--"; }
     Square nt_sq(string st) { return !st.compare("--") ? NOSQUARE : Square(((st[1] - '1') * 8) + (st[0] - 'a')); }
 
     string move_nt(const vector<Move>* moves, Move move) {
@@ -45,8 +45,6 @@ namespace ForestRaven {
         notation += sq_nt(move.dest);
 
         if (move.promotion != NOPIECETYPE) notation += '=' + pt_char[move.promotion];
-
-        if (move.check) notation += '+';
 
         return notation;
     }

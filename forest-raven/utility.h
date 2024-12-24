@@ -9,7 +9,26 @@
 
 using namespace	std;
 
+#if defined(USE_PEXT)
+#include <immintrin.h>  // Header for _pext_u64() intrinsic
+#define pext(b, m) _pext_u64(b, m)
+#else
+#define pext(b, m) 0
+#endif
+
+
 namespace ForestRaven {
+#ifdef USE_PEXT
+    constexpr bool HasPext = true;
+#else
+    constexpr bool HasPext = false;
+#endif
+#ifdef IS_64BIT
+    constexpr bool Is64Bit = true;
+#else
+    constexpr bool Is64Bit = false;
+#endif
+
     using Bitboard = uint64_t;
 
     enum Color : int {
@@ -32,7 +51,7 @@ namespace ForestRaven {
     };
     constexpr Piece_type promotion_list[4] = { ROOK, KNIGHT, BISHOP, QUEEN };
 
-    
+
     enum Piece {
         NOPIECE = -1,
         W_QUEEN = QUEEN, W_ROOK, W_BISHOP, W_KNIGHT, W_KING, W_PAWN,
@@ -74,7 +93,7 @@ namespace ForestRaven {
     inline Square operator+(Square& s, Direction d) { return Square(int(s) + int(d)); }
     inline static void operator++(Square& s) { s = Square(int(s) + 1); }
     inline Square& operator+=(Square& s, int d) { return s = Square(s + d); }
-    
+
     constexpr bool is_ok(Square s) { return A1 <= s && s <= H8; }
     constexpr inline Bitboard sq_bb(Square s) { assert(is_ok(s)); return Bitboard(1ULL << s); }
 
@@ -91,7 +110,7 @@ namespace ForestRaven {
     };
     constexpr File file_of(Square s) { return File(s & 7); }
     inline static void operator++(File& f) { f = File(int(f) + 1); }
-    
+
     enum Rank : int {
         RANK_1,
         RANK_2,
@@ -109,7 +128,6 @@ namespace ForestRaven {
         Piece piece;
         Square ori, dest, take = NOSQUARE;
         Piece_type promotion = NOPIECETYPE;
-        bool check = false;
         bool isAttacked = false;
 
         Move(Piece pc, Square o, Square d) : piece(pc), ori(o), dest(d) {}
@@ -118,14 +136,12 @@ namespace ForestRaven {
         Move(Piece pc, Square o, Square d, Piece_type pt) : piece(pc), ori(o), dest(d), promotion(pt) {}
 
         Move() { piece = NOPIECE, ori = NOSQUARE, dest = NOSQUARE; }
-        Move(const Move& m) : piece(m.piece), ori(m.ori), dest(m.dest), take(m.take), promotion(m.promotion), check(m.check) {}
+        Move(const Move& m) : piece(m.piece), ori(m.ori), dest(m.dest), take(m.take), promotion(m.promotion) {}
     };
     inline bool move_comp(const Move& a, const Move& b) {
-        if (a.check != b.check) return a.check > b.check;
         if (a.take != b.take) return a.take != NOSQUARE && b.take == NOSQUARE;
         return a.isAttacked > b.isAttacked;
     }
-
 }
 
 #endif  // #ifndef UTILITY_H_INCLUDED

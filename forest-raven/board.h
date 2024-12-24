@@ -2,7 +2,10 @@
 #define BOARD_H_INCLUDED
 
 #include "connector.h"
+#include <algorithm>
 #include <sstream>
+#include <chrono>
+#include <bitset>
 
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
@@ -14,12 +17,22 @@ static void setColor(int textColor, int bgColor) {
     SetConsoleTextAttribute(hConsole, colorAttribute);
 }
 
+pair<int, int> LegalMove_ct{ 0, 0 };
+pair<int, int> Eval_ct{ 0, 0 };
+pair<int, int> IsEnd_ct{ 0, 0 };
+pair<int, int> calAttackBB_ct{ 0, 0 };
+
 namespace ForestRaven {
     static void print_BB(Bitboard b) {
-        for (int i = 63; i >= 0; --i) {
-            cout << ((b >> i) & 1) << ' ';
-            if (i % 8 == 0) cout << "\n";
-        } cout << "\n";
+        for (Square A : {A8, A7, A6, A5, A4, A3, A2, A1 }) {
+            Rank rank = rank_of(A);
+            Fori(8) {
+                Square sq = (Square)(A + i);
+                if (sq_bb(sq) & b) cout << "1 ";
+                else cout << "0 ";
+            }
+            cout << "\n";
+        }
     }
 
     constexpr Bitboard FileA_BB = 0x0101010101010101ULL;
@@ -40,6 +53,12 @@ namespace ForestRaven {
     constexpr Bitboard Rank7_BB = Rank1_BB << (8 * 6);
     constexpr Bitboard Rank8_BB = Rank1_BB << (8 * 7);
 
+    constexpr Bitboard rank_bb(Rank r) { return Rank1_BB << (8 * r); }
+    constexpr Bitboard rank_bb(Square s) { return rank_bb(rank_of(s)); }
+
+    constexpr Bitboard file_bb(File f) { return FileA_BB << f; }
+    constexpr Bitboard file_bb(Square s) { return file_bb(file_of(s)); }
+
     constexpr Direction dir_straight[4] = { U, R, D, L };
     constexpr Direction dir_diagonal[4] = { UL, UR, DL, DR };
     constexpr Direction all_direction[8] = { U, R, D, L, UL, UR, DL, DR };
@@ -49,9 +68,19 @@ namespace ForestRaven {
 
     uint8_t  bit16cnt[1 << 16];
     uint8_t  SquareDistance[SQUARE_NB][SQUARE_NB];
+
+    Bitboard LineBB[SQUARE_NB][SQUARE_NB];
+    Bitboard BetweenBB[SQUARE_NB][SQUARE_NB];
+    Bitboard attacks_pseudo[PIECE_TYPE_NB][SQUARE_NB];
     Bitboard attacks_pawn[COLOR_NB][SQUARE_NB];
-    Bitboard attacks_night[SQUARE_NB];
-    Bitboard attacks_king[SQUARE_NB];
+
+    inline int bitCount(Bitboard b) {
+        union {
+            Bitboard bb;
+            uint16_t u[4];
+        } v = { b };
+        return bit16cnt[v.u[0]] + bit16cnt[v.u[1]] + bit16cnt[v.u[2]] + bit16cnt[v.u[3]];
+    }
 
     constexpr Bitboard shift(Direction Dir, Bitboard b) {
         return Dir == U ? b << 8
@@ -78,19 +107,194 @@ namespace ForestRaven {
         return is_ok(dest) && distance(ori, dest) <= 2 ? sq_bb(dest) : Bitboard(0);
     }
 
+    Bitboard RookTable[0x19000];
+    Bitboard BishopTable[0x1480];
+
+    struct Magic {
+        Bitboard  mask;
+        Bitboard* attacks;
+#ifndef USE_PEXT
+        Bitboard magic;
+        unsigned shift;
+#endif
+
+        // Compute the attack's index using the 'magic bitboards' approach
+        unsigned index(Bitboard occupied) const {
+
+#ifdef USE_PEXT
+            return unsigned(pext(occupied, mask));
+#else
+            if (Is64Bit)
+                return unsigned(((occupied & mask) * magic) >> shift);
+
+            unsigned lo = unsigned(occupied) & unsigned(mask);
+            unsigned hi = unsigned(occupied >> 32) & unsigned(mask >> 32);
+            return (lo * unsigned(magic) ^ hi * unsigned(magic >> 32)) >> shift;
+#endif
+        }
+
+        Bitboard attacks_bb(Bitboard occupied) const { return attacks[index(occupied)]; }
+    };
+
+    alignas(64) Magic Magics[SQUARE_NB][2];
+
+    class PRNG {
+        uint64_t s;
+        uint64_t rand64() {
+            s ^= s >> 12, s ^= s << 25, s ^= s >> 27;
+            return s * 2685821657736338717LL;
+        }
+
+    public:
+        PRNG(uint64_t seed) : s(seed) { assert(seed); }
+
+        template<typename T>
+        T rand() { return T(rand64());  }
+
+        template<typename T>
+        T sparse_rand() {  return T(rand64() & rand64() & rand64()); }
+    };
+
+    Bitboard sliding_attacks(Piece_type pt, Square s, Bitboard existBB = Bitboard(0)) {
+        Bitboard attacks(0);
+        const Direction* dir = (pt == ROOK ? dir_straight : dir_diagonal);
+        Fori(4) {
+            Square sq = s;
+            while (destination(sq, dir[i])) {
+                Bitboard nextBB = sq_bb(sq += dir[i]);
+                attacks |= nextBB;
+                if (nextBB & existBB) break;
+            }
+        }
+        return attacks;
+    }
+
+    void init_magics(Piece_type pt, Bitboard table[], Magic magics[][2]) {
+#ifndef USE_PEXT
+        int seeds[][RANK_NB] = { {8977, 44560, 54343, 38998, 5731, 95205, 104912, 17020},
+                                {728, 10316, 55013, 32803, 12281, 15100, 16645, 255} };
+
+        Bitboard* occupancy = new Bitboard[4096];
+        int* epoch = new int[4096] {}, cnt(0);
+#endif
+        Bitboard* reference = new Bitboard[4096];
+        int      size = 0;
+
+        for (Square s = A1; s <= H8; ++s) {
+            Bitboard edges = ((Rank1_BB | Rank8_BB) & ~rank_bb(s)) | ((FileA_BB | FileH_BB) & ~file_bb(s));
+
+            Magic& m = magics[s][BISHOP - pt];
+            m.mask = sliding_attacks(pt, s, 0) & ~edges;
+#ifndef USE_PEXT
+            m.shift = (Is64Bit ? 64 : 32) - bitCount(m.mask);
+#endif
+            m.attacks = s == A1 ? table : magics[s - 1][BISHOP - pt].attacks + size;
+            size = 0;
+
+            Bitboard b = 0;
+            do {
+#ifndef USE_PEXT
+                occupancy[size] = b;
+#endif
+                reference[size] = sliding_attacks(pt, s, b);
+
+                if (HasPext)
+                    m.attacks[pext(b, m.mask)] = reference[size];
+
+                size++;
+                b = (b - m.mask) & m.mask;
+            } while (b);
+
+#ifndef USE_PEXT
+            PRNG rng(seeds[Is64Bit][rank_of(s)]);
+
+            for (int i = 0; i < size;) {
+                for (m.magic = 0; bitCount((m.magic * m.mask) >> 56) < 6;) {
+                    m.magic = rng.sparse_rand<Bitboard>();
+                }
+
+                for (++cnt, i = 0; i < size; ++i) {
+                    unsigned idx = m.index(occupancy[i]);
+
+                    if (epoch[idx] < cnt) {
+                        epoch[idx] = cnt;
+                        m.attacks[idx] = reference[i];
+                    }
+                    else if (m.attacks[idx] != reference[i])
+                        break;
+                }
+            }
+#endif
+        }
+    }
+
+    template<Piece_type Pt>
+    inline Bitboard attacks_bb(Square s) {
+        assert((Pt != PAWN) && (is_ok(s)));
+        return attacks_pseudo[Pt][s];
+    }
+    template<Piece_type Pt>
+    inline Bitboard attacks_bb(Square s, Bitboard occupied) {
+        assert((Pt != PAWN) && (is_ok(s)));
+
+        switch (Pt) {
+        case BISHOP:
+        case ROOK:
+            return Magics[s][BISHOP - Pt].attacks_bb(occupied);
+        case QUEEN:
+            return attacks_bb<BISHOP>(s, occupied) | attacks_bb<ROOK>(s, occupied);
+        default:
+            return attacks_pseudo[Pt][s];
+        }
+    }
+    inline Bitboard attacks_bb(Piece_type pt, Square s, Bitboard occupied) {
+        assert((pt != PAWN) && (is_ok(s)));
+
+        switch (pt) {
+        case BISHOP:
+            return attacks_bb<BISHOP>(s, occupied);
+        case ROOK:
+            return attacks_bb<ROOK>(s, occupied);
+        case QUEEN:
+            return attacks_bb<BISHOP>(s, occupied) | attacks_bb<ROOK>(s, occupied);
+        default:
+            return attacks_pseudo[pt][s];
+        }
+    }
+
     static void init() {
+        for (unsigned i = 0; i < (1 << 16); ++i)
+            bit16cnt[i] = uint8_t(std::bitset<16>(i).count());
+
         for (Square s1 = A1; s1 <= H8; ++s1)
             for (Square s2 = A1; s2 <= H8; ++s2)
                 SquareDistance[s1][s2] = max(distance<File>(s1, s2), distance<Rank>(s1, s2));
 
-        for (Square s = A1; s <= H8; ++s)
-            attacks_pawn[WHITE][s] = pawn_attacks<WHITE>(sq_bb(s)),
-            attacks_pawn[BLACK][s] = pawn_attacks<BLACK>(sq_bb(s));
+        init_magics(ROOK, RookTable, Magics);
+        init_magics(BISHOP, BishopTable, Magics);
 
-        for (Square s = A1; s <= H8; ++s) {
-            for (int step : king_steps) attacks_king[s] |= destination(s, step);
-            for (int step : knight_steps) attacks_night[s] |= destination(s, step);
+        for (Square s1 = A1; s1 <= H8; ++s1) {
+            attacks_pawn[BLACK][s1] = pawn_attacks<BLACK>(sq_bb(s1));
+            attacks_pawn[WHITE][s1] = pawn_attacks<WHITE>(sq_bb(s1));
+
+            for (int step : king_steps) attacks_pseudo[KING][s1] |= destination(s1, step);
+            for (int step : knight_steps) attacks_pseudo[KNIGHT][s1] |= destination(s1, step);
+
+            attacks_pseudo[QUEEN][s1] = attacks_pseudo[BISHOP][s1] = attacks_bb<BISHOP>(s1, 0);
+            attacks_pseudo[QUEEN][s1] |= attacks_pseudo[ROOK][s1] = attacks_bb<ROOK>(s1, 0);
         }
+
+        for (Square s1 = A1; s1 <= H8; ++s1) {
+            for (Square s2 = A1; s2 <= H8; ++s2) {
+                if (attacks_pseudo[ROOK][s1] & sq_bb(s2)) {
+                    LineBB[s1][s2] = (attacks_bb(ROOK, s1, sq_bb(s2)) & attacks_bb(ROOK, s2, sq_bb(s1)));
+                }
+                if (attacks_pseudo[BISHOP][s1] & sq_bb(s2)) {
+                    BetweenBB[s1][s2] = (attacks_bb(BISHOP, s1, sq_bb(s2)) & attacks_bb(BISHOP, s2, sq_bb(s1)));
+                }
+            }
+        }
+
     }
 
     struct Board {
@@ -106,112 +310,90 @@ namespace ForestRaven {
         Bitboard byAttackBB[COLOR_NB];
         Bitboard existBB;
 
-        Bitboard sliding_attacks(Piece_type pt, Square s, Bitboard existBB = Bitboard(0)) {
-            Bitboard attacks(0);
-            const Direction* dir = (pt == ROOK ? dir_straight : dir_diagonal);
-            Fori(4) {
-                Square sq = s;
-                while (destination(sq, dir[i])) {
-                    Bitboard nextBB = sq_bb(sq += dir[i]);
-                    attacks |= nextBB;
-                    if (nextBB & existBB) break;
-                }
-            }
+        Bitboard pinned;
 
-            return attacks;
+        inline Square lsb(Bitboard b) {
+            unsigned long idx;
+            _BitScanForward64(&idx, b);
+            return Square(idx);
         }
-        Bitboard get_attacks(Color c, Square s) {
-            Piece_type pt = type_of(board[s]);
-            return pt == PAWN ? attacks_pawn[c][s]
-                : pt == KING ? attacks_king[s]
-                : pt == KNIGHT ? attacks_night[s]
-                : pt == BISHOP ? sliding_attacks(BISHOP, s, existBB)
-                : pt == ROOK ? sliding_attacks(ROOK, s, existBB)
-                : pt == QUEEN ? sliding_attacks(BISHOP, s, existBB) | sliding_attacks(ROOK, s, existBB)
-                : Bitboard(0);
+        inline Square pop_lsb(Bitboard& b) {
+            assert(b);
+            const Square s = lsb(b);
+            b &= b - 1;
+            return s;
         }
         void calAttackBB() {
-            byAttackBB[WHITE] = byAttackBB[BLACK] = Bitboard(0);
-            for (Square s = A1; s <= H8; ++s) {
-                if (existBB & sq_bb(s)) {
-                    Color c = color_of(board[s]);
-                    byAttackBB[c] |= get_attacks(c, s);
-                }
+            auto start = chrono::high_resolution_clock::now();
+
+            byAttackBB[WHITE] = byAttackBB[BLACK] = pinned = Bitboard(0);
+            Bitboard temp(existBB);
+
+            while (temp) {
+                Square s = pop_lsb(temp);
+                Piece_type pt = type_of(board[s]);
+                Color c = color_of(board[s]);
+                byAttackBB[c] |= (pt == PAWN ? attacks_pawn[c][s] : attacks_bb(pt, s, existBB));
+                
+                if (pt == BISHOP || pt == pt == ROOK || pt == QUEEN) { // process to find pinned pieces 
+                    Square ksq = lsb(byTypeBB[KING] & byColorBB[~c]); // opponent king's position
+                    if (pt == BISHOP || pt == QUEEN) {
+                        Bitboard mid = BetweenBB[s][ksq] & existBB;
+                        if (bitCount(mid) == 1 && mid & byColorBB[~c]) pinned |= mid;
+                    }
+                    if (pt == ROOK || pt == QUEEN) {
+                        Bitboard mid = LineBB[s][ksq] & existBB;
+                        if (bitCount(mid) == 1 && mid & byColorBB[~c]) pinned |= mid;
+                    }
+                }   
             }
+
+            auto end = chrono::high_resolution_clock::now();
+            auto duration = chrono::duration_cast<chrono::nanoseconds>(end - start).count();
+            ++calAttackBB_ct.first; calAttackBB_ct.second += duration;
         }
 
         bool isCheck(Color c) const { return (byTypeBB[KING] & byColorBB[c] & byAttackBB[~c]); }
         void append(vector<Move>* moves, Move m) {
-            Board next; next.copy(*this);
-            next.play(m);
-            if (next.isCheck(turn)) return;
+            if (isCheck(turn)) {
+                Board next; next.copy(*this);
+                next.play(m);
 
-            m.check = next.isCheck(~turn);
+                if (next.isCheck(turn)) return;
+            }
+            else if (sq_bb(m.ori) & pinned) {
+                if (m.take == NOSQUARE) return;
+
+                Board next; next.copy(*this);
+                next.play(m);
+
+                if (next.isCheck(turn)) return;
+            }
+
             if (sq_bb(m.ori) & byAttackBB[~turn]) m.isAttacked = true;
 
             Move move = Move(m);
             moves->push_back(move);
         }
-        void sliding_moves(vector<Move>* moves, Square ori, const Direction* dir, int size = 4) {
-            Color c = (byColorBB[WHITE] & sq_bb(ori)) ? WHITE : BLACK;
-            for (int i = 0; i < size; i++) {
-                Square dest = ori;
-                while (true) {
-                    Bitboard dest_bb = destination(dest, dir[i]);
-                    dest += dir[i];
-                    if (!dest_bb) break;
-                    if ((existBB & dest_bb)) {
-                        if (byColorBB[~c] & dest_bb) append(moves, Move(board[ori], ori, dest, dest));
-                        break;
-                    }
-                    append(moves, Move(board[ori], ori, dest));
-                }
+        void moves(vector<Move>* moves, Piece_type pt, Square ori) {
+            assert((pt != PAWN) && (is_ok(ori)));
+
+            Bitboard destBB(attacks_bb(pt, ori, existBB));
+            destBB &= ~byColorBB[turn];
+
+            while (destBB) {
+                Square dest = pop_lsb(destBB);
+                if (existBB & sq_bb(dest)) append(moves, Move(board[ori], ori, dest, dest));
+                else append(moves, Move(board[ori], ori, dest));
             }
         }
-        void one_moves(vector<Move>* moves, Square ori, const int* step) {
-            Color c = (byColorBB[WHITE] & sq_bb(ori)) ? WHITE : BLACK;
-            for (int i = 0; i < 8; ++i) {
-                Square dest = Square(ori + step[i]);
-                if (destination(ori, step[i])) {
-                    Bitboard dest_bb = sq_bb(dest);
-                    if (dest_bb & existBB) {
-                        if (dest_bb & byColorBB[~c])
-                            append(moves, Move(board[ori], ori, dest, dest));
-                    }
-                    else {
-                        append(moves, Move(board[ori], ori, dest));
-                    }
-                }
-            }
-        }
-        vector<Move>* queen(Square s) {
-            vector<Move>* moves = new vector<Move>;
-            sliding_moves(moves, s, all_direction, 8);
-            return moves;
-        }
-        vector<Move>* rook(Square s) {
-            vector<Move>* moves = new vector<Move>;
-            sliding_moves(moves, s, dir_straight);
-            return moves;
-        }
-        vector<Move>* bishop(Square s) {
-            vector<Move>* moves = new vector<Move>;
-            sliding_moves(moves, s, dir_diagonal);
-            return moves;
-        }
-        vector<Move>* knight(Square s) {
-            vector<Move>* moves = new vector<Move>;
-            one_moves(moves, s, knight_steps);
-            return moves;
-        }
-        vector<Move>* king(Square s) {
-            vector<Move>* moves = new vector<Move>;
-            one_moves(moves, s, king_steps);
+        void king_moves(vector<Move>* legalMoves, Square s) {
+            moves(legalMoves, KING, s);
 
             Color color = color_of(board[s]);
-            Bitboard existMask_K = color == WHITE ? (sq_bb(F1) | sq_bb(G1)) : (sq_bb(F8) | sq_bb(G8));
-            Bitboard attackMask_Q = color == WHITE ? (sq_bb(C1) | sq_bb(D1)) : (sq_bb(C8) | sq_bb(D8));
-            Bitboard existMask_Q = color == WHITE ? (sq_bb(B1) | attackMask_Q) : (sq_bb(B8) | attackMask_Q);
+            Bitboard existMask_K(color == WHITE ? (sq_bb(F1) | sq_bb(G1)) : (sq_bb(F8) | sq_bb(G8)));
+            Bitboard attackMask_Q(color == WHITE ? (sq_bb(C1) | sq_bb(D1)) : (sq_bb(C8) | sq_bb(D8)));
+            Bitboard existMask_Q(color == WHITE ? (sq_bb(B1) | attackMask_Q) : (sq_bb(B8) | attackMask_Q));
 
             if (!isCheck(color)) {
                 bool exist_K = (existMask_K & existBB) == 0;
@@ -219,69 +401,63 @@ namespace ForestRaven {
                 bool attack_K = (existMask_K & byAttackBB[~color]) == 0;
                 bool attack_Q = (attackMask_Q & byAttackBB[~color]) == 0;
                 if (castling_K[color] && exist_K && attack_K)
-                    moves->push_back(Move(board[s], s, s + RR));
+                    legalMoves->push_back(Move(board[s], s, s + RR));
                 if (castling_Q[color] && exist_Q && attack_Q)
-                    moves->push_back(Move(board[s], s, s + LL));
+                    legalMoves->push_back(Move(board[s], s, s + LL));
             }
-
-            return moves;
         }
-        vector<Move>* pawn(Color c, Square ori) {
-            vector<Move>* moves = new vector<Move>;
-            Direction dir = (c == WHITE ? U : D);
+        void pawn_moves(vector<Move>* legalMoves, Color c, Square ori) {
+            Direction dir(c == WHITE ? U : D);
             Bitboard ori_bb = sq_bb(ori);
             Bitboard dest_bb = shift(dir, ori_bb);
-            Bitboard promotion_rank = (c == WHITE ? Rank8_BB : Rank1_BB);
-            Bitboard firstMove_rank = (c == WHITE ? Rank2_BB : Rank7_BB);
+            Bitboard promotion_rank_bb(c == WHITE ? Rank8_BB : Rank1_BB);
+            Bitboard firstMove_rank_bb(c == WHITE ? Rank2_BB : Rank7_BB);
 
             // Normal move
             if (~existBB & dest_bb) {
-                if (dest_bb & promotion_rank) for (Piece_type promotion : promotion_list)
-                    append(moves, Move(board[ori], ori, ori + dir, promotion));
-                else append(moves, Move(board[ori], ori, ori + dir));
+                if (dest_bb & promotion_rank_bb) for (Piece_type promotion : promotion_list)
+                    append(legalMoves, Move(board[ori], ori, ori + dir, promotion));
+                else append(legalMoves, Move(board[ori], ori, ori + dir));
 
-                dest_bb = shift(dir, dest_bb);
-                if ((firstMove_rank & ori_bb) && (~existBB & dest_bb))
-                    append(moves, Move(board[ori], ori, ori + (dir + dir)));
+                if ((firstMove_rank_bb & ori_bb) && (~existBB & shift(dir, dest_bb)))
+                    append(legalMoves, Move(board[ori], ori, ori + (dir + dir)));
             }
 
             // Attack move 
-            auto attack = [&](Direction dir) -> void {
-                dest_bb = destination(ori, dir);
-                if (dest_bb & byColorBB[~c]) {
-                    Square take_sq = ori + dir;
-                    if (dest_bb & promotion_rank) for (Piece_type promotion : promotion_list)
-                        append(moves, Move(board[ori], ori, take_sq, take_sq, promotion));
-                    else
-                        append(moves, Move(board[ori], ori, take_sq, take_sq));
-                }
-                };
-            attack(Direction(dir + R)); attack(Direction(dir + L));
+            Bitboard attackBB = attacks_pawn[c][ori] & byColorBB[~c];
+            while (attackBB) {
+                Square take = pop_lsb(attackBB);
+                if (sq_bb(take) & promotion_rank_bb) for (Piece_type promotion : promotion_list)
+                    append(legalMoves, Move(board[ori], ori, take, take, promotion));
+                else
+                    append(legalMoves, Move(board[ori], ori, take, take));
+            }
 
             // En_passant attack
             if (en_passant != NOSQUARE && sq_bb(en_passant) & attacks_pawn[c][ori])
-                append(moves, Move(board[ori], ori, en_passant, en_passant + (Direction)(-dir)));
-
-            return moves;
+                append(legalMoves, Move(board[ori], ori, en_passant, en_passant + Direction(-dir)));
         }
-        vector<Move>* GetLegal_moves(Square s) {
+        void GetLegal_moves(vector<Move>* legalMoves, Square s) {
             Piece_type pt = type_of(board[s]);
-            return pt == QUEEN ? queen(s)
-                : pt == ROOK ? rook(s)
-                : pt == BISHOP ? bishop(s)
-                : pt == KNIGHT ? knight(s)
-                : pt == KING ? king(s)
-                : pt == PAWN ? pawn(color_of(board[s]), s)
-                : new vector<Move>;
+            if (pt == PAWN) pawn_moves(legalMoves, color_of(board[s]), s);
+            else if (pt == KING) king_moves(legalMoves, s);
+            else moves(legalMoves, pt, s);
         }
         vector<Move>* legal_moves() {
+            auto start = chrono::high_resolution_clock::now();
+
             vector<Move>* legalMoves = new vector<Move>;
-            for (Square s = A1; s <= H8; ++s) {
-                if (sq_bb(s) & byColorBB[turn]) {
-                    vector<Move>* moves = GetLegal_moves(s);
-                    legalMoves->insert(legalMoves->end(), moves->begin(), moves->end());
-                }
+            Bitboard teamBB = byColorBB[turn];
+            while (teamBB) {
+                Square s = pop_lsb(teamBB);
+                GetLegal_moves(legalMoves, s);
             }
+            sort(legalMoves->begin(), legalMoves->end(), move_comp);
+
+            auto end = chrono::high_resolution_clock::now();
+            auto duration = chrono::duration_cast<chrono::nanoseconds>(end - start).count();
+            ++LegalMove_ct.first; LegalMove_ct.second += duration;
+
             return legalMoves;
         }
 
@@ -370,12 +546,26 @@ namespace ForestRaven {
         }
 
         bool isEnd() {
-            for (Square s = A1; s <= H8; ++s) {
-                if (sq_bb(s) & byColorBB[turn]) {
-                    vector<Move>* moves = GetLegal_moves(s);
-                    if (moves->size() != 0) return false;
+            auto start = chrono::high_resolution_clock::now();
+
+            vector<Move>* legalMoves = new vector<Move>;
+            Bitboard teamBB = byColorBB[turn];
+            while (teamBB) {
+                Square s = pop_lsb(teamBB);
+                GetLegal_moves(legalMoves, s);
+                if (legalMoves->size() != 0) {
+                    auto end = chrono::high_resolution_clock::now();
+                    auto duration = chrono::duration_cast<chrono::nanoseconds>(end - start).count();
+                    ++IsEnd_ct.first; IsEnd_ct.second += duration;
+                    
+                    return false;
                 }
             }
+
+            auto end = chrono::high_resolution_clock::now();
+            auto duration = chrono::duration_cast<chrono::nanoseconds>(end - start).count();
+            ++IsEnd_ct.first; IsEnd_ct.second += duration;
+
             return true;
         }
 
@@ -459,6 +649,7 @@ namespace ForestRaven {
             memcpy(byColorBB, other.byColorBB, sizeof(byColorBB));
             memcpy(byAttackBB, other.byAttackBB, sizeof(byAttackBB));
             existBB = other.existBB;
+            pinned = other.pinned;
         }
 
         void print(bool showLegalMoveList = false) {
@@ -508,15 +699,11 @@ namespace ForestRaven {
                 vector<Move>* legalMoves = legal_moves();
                 cout << "[Candidate moves] (" << legalMoves->size() << ")\n";
                 Fori(legalMoves->size()) {
-                    cout << i << ". " << sq_nt(legalMoves->at(i).ori) << " -> " << sq_nt(legalMoves->at(i).dest);
-                    if (legalMoves->at(i).take != NOSQUARE) cout << " Takes " << sq_nt(legalMoves->at(i).take);
-                    if (legalMoves->at(i).promotion != NOPIECETYPE) cout << " Promotion to " << pt_char[legalMoves->at(i).promotion];
-                    cout << " \n";
+                    cout << move_nt(legalMoves, legalMoves->at(i)) << "\n";
                 }
             }
         }
     };
-
 }
 
 #endif  // #ifndef BOARD_H_INCLUDED
