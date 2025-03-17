@@ -206,8 +206,8 @@ namespace ForestRaven {
         int evaluation_castling() {
             int score[COLOR_NB]{ 0, 0 };
             for (Color color : {WHITE, BLACK}) {
-                if (board.castling_K[color]) score[color] += 50;
-                if (board.castling_Q[color]) score[color] += 50;
+                if (board.castling_K[color]) score[color] += 40;
+                if (board.castling_Q[color]) score[color] += 40;
             }
             return score[WHITE] - score[BLACK];
         }
