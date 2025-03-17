@@ -7,3 +7,7 @@
 [Chess.com](https://www.chess.com/stats/overview/forest-raven)
 
 10 0 rapid Rating : 620
+
+
+## Bug
+ - Promotion ERROR at GUI
