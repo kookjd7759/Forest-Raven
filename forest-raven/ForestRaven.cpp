@@ -4,5 +4,5 @@ using namespace ForestRaven;
 
 int main(void) {
     Engine engine(BLACK);
-    engine.play();
+    engine.play(true);
 }

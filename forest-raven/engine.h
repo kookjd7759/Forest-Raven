@@ -349,6 +349,13 @@ namespace ForestRaven {
 
             return moveData;
         }
+        pair<Move, string> firstMove() {
+            vector<Move>* legalMoves = board.legal_moves();
+            pair<Move, string> moveData;
+            moveData.first = legalMoves->at(0);
+            moveData.second = move_nt(legalMoves, legalMoves->at(0));
+            return moveData;
+        }
 
         int play(bool isTest = false) {
             cout << fixed; cout.precision(2);
