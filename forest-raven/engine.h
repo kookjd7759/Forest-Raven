@@ -361,13 +361,13 @@ namespace ForestRaven {
             cout << fixed; cout.precision(2);
             if (!isTest) {
                 int c; cin >> c; string t; getline(cin, t);
-                color_AI = (Color)c;c
+                color_AI = (Color)c;
             }
             while (true) {
                 if (board.turn == color_AI) {
                     board.print(false);
                     cout << "Current evaluation : " << evaluation() << "\n\n";
-                    pair<Move, string> moveData = firstMove();
+                    pair<Move, string> moveData = findBestMove();
                     Move bestMove = moveData.first;
                     cout << "[ " << findTime << " sec / Depth : " << current_depth << " ]\n";
                     cout << " - calAttack function " << calAttackBB_ct.first << ", " << (double)calAttackBB_ct.second / 1e9 << " sec\n";
