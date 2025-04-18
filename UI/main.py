@@ -193,7 +193,7 @@ class Window(QWidget):
             self.create_piece(Piece(Piece_type.PAWN, Color.BLACK), Position(i, 6)) # Black pawns
             self.create_piece(Piece(initPos_type[i], Color.BLACK), Position(i, 7)) # Black other pieces
     def UIinit(self):
-        self.setFixedSize(BOARD_SIZE, 560) # size of the windows
+        self.setFixedSize(BOARD_SIZE, 480) # size of the windows
         self.setWindowTitle('Chess')
         vbox = QVBoxLayout()
 
@@ -203,39 +203,39 @@ class Window(QWidget):
         lbl_board.setScaledContents(True)
 
         # Player
-        hbox_player = QHBoxLayout()
-        lbl_player = QLabel('<b>[Player]</b>', self)
-        line_player = QLineEdit('White', self)
-        line_player.setReadOnly(True)
-        btn_changePlayer = QPushButton('Change my color', self)
-        btn_changePlayer.clicked.connect(self.btn_changeColor_function)
-        btn_restart = QPushButton('Game Restart', self)
-        btn_restart.clicked.connect(self.btn_restart_function)
-        hbox_player.addWidget(lbl_player)
-        hbox_player.addWidget(line_player)
-        hbox_player.addWidget(btn_changePlayer)
-        hbox_player.addWidget(btn_restart)
+        #hbox_player = QHBoxLayout()
+        #lbl_player = QLabel('<b>[Player]</b>', self)
+        #line_player = QLineEdit('White', self)
+        #line_player.setReadOnly(True)
+        #btn_changePlayer = QPushButton('Change my color', self)
+        #btn_changePlayer.clicked.connect(self.btn_changeColor_function)
+        #btn_restart = QPushButton('Game Restart', self)
+        #btn_restart.clicked.connect(self.btn_restart_function)
+        #hbox_player.addWidget(lbl_player)
+        #hbox_player.addWidget(line_player)
+        #hbox_player.addWidget(btn_changePlayer)
+        #hbox_player.addWidget(btn_restart)
 
         # Selected
-        hbox_selected = QHBoxLayout()
-        lbl_selected = QLabel('<b>[Selected Piece]</b>', self)
-        self.line_selected = QLineEdit('None', self)
-        self.line_selected.setReadOnly(True)
-        hbox_selected.addWidget(lbl_selected)
-        hbox_selected.addWidget(self.line_selected)
+        #hbox_selected = QHBoxLayout()
+        #lbl_selected = QLabel('<b>[Selected Piece]</b>', self)
+        #self.line_selected = QLineEdit('None', self)
+        #self.line_selected.setReadOnly(True)
+        #hbox_selected.addWidget(lbl_selected)
+        #hbox_selected.addWidget(self.line_selected)
 
         # TestButton
-        hbox_test = QHBoxLayout()
-        lbl_test = QLabel('<b>[test]</b>', self)
-        btn_test= QPushButton('test btn', self)
-        btn_test.clicked.connect(self.btn_test_function)
-        hbox_test.addWidget(lbl_test)
-        hbox_test.addWidget(btn_test)
+        #hbox_test = QHBoxLayout()
+        #lbl_test = QLabel('<b>[test]</b>', self)
+        #btn_test= QPushButton('test btn', self)
+        #btn_test.clicked.connect(self.btn_test_function)
+        #hbox_test.addWidget(lbl_test)
+        #hbox_test.addWidget(btn_test)
 
         vbox.addWidget(lbl_board)
-        vbox.addLayout(hbox_player)
-        vbox.addLayout(hbox_selected)
-        vbox.addLayout(hbox_test)
+        #vbox.addLayout(hbox_player)
+        #vbox.addLayout(hbox_selected)
+        #vbox.addLayout(hbox_test)
         vbox.setContentsMargins(0,0,0,0)
 
         self.setLayout(vbox)
