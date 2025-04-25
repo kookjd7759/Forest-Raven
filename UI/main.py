@@ -193,7 +193,7 @@ class Window(QWidget):
             self.create_piece(Piece(Piece_type.PAWN, Color.BLACK), Position(i, 6)) # Black pawns
             self.create_piece(Piece(initPos_type[i], Color.BLACK), Position(i, 7)) # Black other pieces
     def UIinit(self):
-        self.setFixedSize(BOARD_SIZE, 480) # size of the windows
+        self.setFixedSize(BOARD_SIZE, 560) # size of the windows
         self.setWindowTitle('Chess')
         vbox = QVBoxLayout()
 
