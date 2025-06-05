@@ -111,7 +111,7 @@ class Window(QWidget):
             self.__move(move, smooth)
         elif move_type == Move_type.CAPTURE:
             self.__capture(move, smooth)
-        elif move_type == Move_type.CASTLING_OO or Move_type.CASTLING_OOO:
+        elif move_type in (Move_type.CASTLING_OO, Move_type.CASTLING_OOO):
             self.__castling(move, smooth)
         elif move_type == Move_type.MOVE_PRO:
             if not self.__get_promotion(move):
