@@ -335,7 +335,7 @@ namespace ForestRaven {
                 Color c = color_of(board[s]);
                 byAttackBB[c] |= (pt == PAWN ? attacks_pawn[c][s] : attacks_bb(pt, s, existBB));
                 
-                if (pt == BISHOP || pt == pt == ROOK || pt == QUEEN) { // process to find pinned pieces 
+                if (pt == BISHOP || pt == ROOK || pt == QUEEN) { // process to find pinned pieces 
                     Square ksq = lsb(byTypeBB[KING] & byColorBB[~c]); // opponent king's position
                     if (pt == BISHOP || pt == QUEEN) {
                         Bitboard mid = BetweenBB[s][ksq] & existBB;

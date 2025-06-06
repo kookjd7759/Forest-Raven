@@ -11,8 +11,11 @@ from chess.chess import *
 
 class Window(QWidget):
 ### Utility
-    def convert_position(self, pos: Position): # UI to Board / Board to UI position converting
-        return Position(pos.x, 7 - pos.y) if self.chess.player == Color.WHITE else Position(7 - pos.x, pos.y)
+    def convert_position(self, pos: Position):  # UI to Board / Board to UI position converting
+        if self.chess.player == Color.WHITE:
+            return Position(pos.x, 7 - pos.y)
+        else:
+            return Position(7 - pos.x, 7 - pos.y)
 
 ### Selected piece
     def isSelected(self):
