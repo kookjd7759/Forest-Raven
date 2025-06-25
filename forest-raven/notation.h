@@ -16,8 +16,8 @@ namespace ForestRaven {
     string sq_nt(Square s);
     Square nt_sq(string st);
 
-    string move_nt(const vector<Move>* moves, Move move);
-    Move   nt_move(const vector<Move>* moves, const string& notation);
+    string move_nt(const vector<Move>& moves, Move move);
+    Move   nt_move(const vector<Move>& moves, const string& notation);
 }
 
 #endif  // #ifndef NOTATION_H_INCLUDED

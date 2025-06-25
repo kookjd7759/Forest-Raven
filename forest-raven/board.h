@@ -443,16 +443,16 @@ namespace ForestRaven {
             else if (pt == KING) king_moves(legalMoves, s);
             else moves(legalMoves, pt, s);
         }
-        vector<Move>* legal_moves(bool test = false) {
+        vector<Move> legal_moves(bool test = false) {
             auto start = chrono::high_resolution_clock::now();
 
-            vector<Move>* legalMoves = new vector<Move>;
+            vector<Move> legalMoves;
             Bitboard teamBB = byColorBB[turn];
             while (teamBB) {
                 Square s = pop_lsb(teamBB);
-                GetLegal_moves(legalMoves, s);
+                GetLegal_moves(&legalMoves, s);
             }
-            if (!test) sort(legalMoves->begin(), legalMoves->end(), move_comp);
+            if (!test) sort(legalMoves.begin(), legalMoves.end(), move_comp);
 
             auto end = chrono::high_resolution_clock::now();
             auto duration = chrono::duration_cast<chrono::nanoseconds>(end - start).count();
@@ -548,16 +548,16 @@ namespace ForestRaven {
         bool isEnd() {
             auto start = chrono::high_resolution_clock::now();
 
-            vector<Move>* legalMoves = new vector<Move>;
+            vector<Move> legalMoves;
             Bitboard teamBB = byColorBB[turn];
             while (teamBB) {
                 Square s = pop_lsb(teamBB);
-                GetLegal_moves(legalMoves, s);
-                if (legalMoves->size() != 0) {
+                GetLegal_moves(&legalMoves, s);
+                if (!legalMoves.empty()) {
                     auto end = chrono::high_resolution_clock::now();
                     auto duration = chrono::duration_cast<chrono::nanoseconds>(end - start).count();
                     ++IsEnd_ct.first; IsEnd_ct.second += duration;
-                    
+
                     return false;
                 }
             }
@@ -696,10 +696,10 @@ namespace ForestRaven {
             cout << "\n";
 
             if (showLegalMoveList) {
-                vector<Move>* legalMoves = legal_moves();
-                cout << "[Candidate moves] (" << legalMoves->size() << ")\n";
-                Fori(legalMoves->size()) {
-                    cout << "( " << move_nt(legalMoves, legalMoves->at(i)) << " ) ";
+                vector<Move> legalMoves = legal_moves();
+                cout << "[Candidate moves] (" << legalMoves.size() << ")\n";
+                Fori(legalMoves.size()) {
+                    cout << "( " << move_nt(legalMoves, legalMoves.at(i)) << " ) ";
                 }
                 cout << "\n";
             }

@@ -15,7 +15,7 @@ namespace ForestRaven {
     string sq_nt(Square s) { return is_ok(s) ? string(1, "abcdefgh"[s % 8]) + "12345678"[s / 8] : "--"; }
     Square nt_sq(string st) { return !st.compare("--") ? NOSQUARE : Square(((st[1] - '1') * 8) + (st[0] - 'a')); }
 
-    string move_nt(const vector<Move>* moves, Move move) {
+    string move_nt(const vector<Move>& moves, Move move) {
         Piece_type pt = type_of(move.piece);
 
         if (pt == KING && abs(move.ori - move.dest) == 2)
@@ -27,7 +27,7 @@ namespace ForestRaven {
         File file = file_of(move.ori);
         Rank rank = rank_of(move.ori);
         int file_cnt(0), rank_cnt(0);
-        for (const Move& legalMove : *moves)
+        for (const Move& legalMove : moves)
             if (legalMove.piece == move.piece && legalMove.dest == move.dest) {
                 if (file_of(legalMove.ori) == file) ++file_cnt;
                 if (rank_of(legalMove.ori) == rank) ++rank_cnt;
@@ -48,11 +48,11 @@ namespace ForestRaven {
 
         return notation;
     }
-    Move   nt_move(const vector<Move>* moves, const string& notation) {
+    Move   nt_move(const vector<Move>& moves, const string& notation) {
         auto find_move = [&](Piece_type pt, Square dest, Piece_type promotion = NOPIECETYPE) -> Move {
             Move ret;
             bool ch(false);
-            for (const Move& move : *moves)
+        for (const Move& move : moves)
                 if (type_of(move.piece) == pt && move.dest == dest && move.promotion == promotion)
                     if (ch) return Move();
                     else ret = move, ch = true;
@@ -68,7 +68,7 @@ namespace ForestRaven {
         auto find_move_with_file = [&](Piece_type pt, Square dest, File file) -> Move {
             Move ret;
             bool ch(false);
-            for (const Move& move : *moves)
+            for (const Move& move : moves)
                 if (type_of(move.piece) == pt && move.dest == dest && file_of(move.ori) == file)
                     if (ch) return Move();
                     else ret = move, ch = true;
@@ -84,7 +84,7 @@ namespace ForestRaven {
         auto find_move_with_rank = [&](Piece_type pt, Square dest, Rank rank) -> Move {
             Move ret;
             bool ch(false);
-            for (const Move& move : *moves)
+            for (const Move& move : moves)
                 if (type_of(move.piece) == pt && move.dest == dest && rank_of(move.ori) == rank)
                     if (ch) return Move();
                     else ret = move, ch = true;
@@ -100,7 +100,7 @@ namespace ForestRaven {
         auto find_move_with_ori = [&](Piece_type pt, Square dest, Square ori) -> Move {
             Move ret;
             bool ch(false);
-            for (const Move& move : *moves)
+            for (const Move& move : moves)
                 if (type_of(move.piece) == pt && move.dest == dest && move.ori == ori)
                     if (ch) return Move();
                     else ret = move, ch = true;
@@ -114,9 +114,9 @@ namespace ForestRaven {
             };
 
 
-        if (moves->size() == 0) { cout << "notation ERROR::moves vector is empty\n"; return  Move(); }
+        if (moves.size() == 0) { cout << "notation ERROR::moves vector is empty\n"; return  Move(); }
 
-        Color color = color_of(moves->at(0).piece);
+        Color color = color_of(moves.at(0).piece);
         Piece_type pt;
         Square dest;
         if (notation == "O-O") { // king side castling
