@@ -40,6 +40,15 @@ def GetpieceType(value: int):
     elif value == Piece_type.PAWN.value:
         return Piece_type.PAWN
 
+# Mapping between promotion piece types and engine characters
+promotion_to_char = {
+    Piece_type.QUEEN: 'Q',
+    Piece_type.ROOK: 'R',
+    Piece_type.BISHOP: 'B',
+    Piece_type.KNIGHT: 'N'
+}
+char_to_promotion = {v: k for k, v in promotion_to_char.items()}
+
 class Gameover_type(Enum):
     NOGAMEOVER = -1
     CHECKMATE_BLACK = 0
@@ -90,7 +99,7 @@ class Move:
         if self.promotion_type == Piece_type.NOPIECE:
             st += '-'
         else:
-            st += f'{self.promotion_type.value}'
+            st += promotion_to_char[self.promotion_type]
         return st
     def string_init(self, st: str):
         self.piece = Piece(GetpieceType(int(st[1])), Getcolor(int(st[0])))
@@ -100,7 +109,7 @@ class Move:
         if st[8] == '-':
             self.promotion_type = Piece_type.NOPIECE
         else:
-            self.promotion_type = promotion_list[int(st[8])]
+            self.promotion_type = char_to_promotion.get(st[8], Piece_type.NOPIECE)
     def isEqual(self, other):
         if isinstance(other, Move):
             return self.piece.type == other.piece.type and self.piece.color == other.piece.color and \
