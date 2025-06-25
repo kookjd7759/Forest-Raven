@@ -52,7 +52,7 @@ namespace ForestRaven {
         auto find_move = [&](Piece_type pt, Square dest, Piece_type promotion = NOPIECETYPE) -> Move {
             Move ret;
             bool ch(false);
-        for (const Move& move : moves)
+            for (const Move& move : moves)
                 if (type_of(move.piece) == pt && move.dest == dest && move.promotion == promotion)
                     if (ch) return Move();
                     else ret = move, ch = true;
