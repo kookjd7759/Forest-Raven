@@ -4,14 +4,14 @@
 #include "notation.h"
 
 namespace ForestRaven {
-    Move READ_move(const vector<Move>* moves) {
+    Move READ_move(const vector<Move>& moves) {
         string notation; cin >> notation;
 
         Square ori(nt_sq(notation.substr(0, 2)));
         Square dest(nt_sq(notation.substr(2, 2)));
         Piece_type promotion = char_pt(notation[4]);
 
-        for (const Move& move : *moves)
+        for (const Move& move : moves)
             if (move.ori == ori && move.dest == dest && move.promotion == promotion)
                 return move;
 

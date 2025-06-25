@@ -268,11 +268,11 @@ namespace ForestRaven {
             if (depth == current_depth) return evaluation();
 
             int resultEval;
-            vector<Move>* legalMoves = board.legal_moves();
+            vector<Move> legalMoves = board.legal_moves();
 
             if (board.turn == WHITE) {
                 resultEval = -INF;
-                for (const Move& move : *legalMoves) {
+                for (const Move& move : legalMoves) {
                     int nextEval = search(move, alpha, beta, depth);
                     resultEval = max(resultEval, nextEval);
                     alpha = max(alpha, nextEval);
@@ -281,7 +281,7 @@ namespace ForestRaven {
             }
             else {
                 resultEval = INF;
-                for (const Move& move : *legalMoves) {
+                for (const Move& move : legalMoves) {
                     int nextEval = search(move, alpha, beta, depth);
                     resultEval = min(resultEval, nextEval);
                     beta = min(beta, nextEval);
@@ -310,7 +310,7 @@ namespace ForestRaven {
 
             auto start = chrono::high_resolution_clock::now();
 
-            vector<Move>* legalMoves = board.legal_moves();
+            vector<Move> legalMoves = board.legal_moves();
 
             pair<Move, string> moveData;
             current_depth = BASIC_DEPTH;
@@ -325,7 +325,7 @@ namespace ForestRaven {
             while (true) {
                 int bestEval = color_AI == WHITE ? -INF : INF;
                 int alpha(-INF), beta(INF);
-                for (const Move& move : *legalMoves) {
+                for (const Move& move : legalMoves) {
                     int nextEval = search(move, alpha, beta, depth);
                     cout << move_nt(legalMoves, move) << " : " << nextEval << "\n";
                     if ((color_AI == WHITE && bestEval < nextEval) ||
@@ -350,10 +350,10 @@ namespace ForestRaven {
             return moveData;
         }
         pair<Move, string> firstMove() {
-            vector<Move>* legalMoves = board.legal_moves();
+            vector<Move> legalMoves = board.legal_moves();
             pair<Move, string> moveData;
-            moveData.first = legalMoves->at(0);
-            moveData.second = move_nt(legalMoves, legalMoves->at(0));
+            moveData.first = legalMoves.at(0);
+            moveData.second = move_nt(legalMoves, legalMoves.at(0));
             return moveData;
         }
 
@@ -381,7 +381,7 @@ namespace ForestRaven {
                 else {
                     board.print(true);
                     cout << "Current evaluation : " << evaluation() << "\n\n";
-                    vector<Move>* legalMoves = board.legal_moves();
+                    vector<Move> legalMoves = board.legal_moves();
                     Move move;
                     if (!isTest) move = READ_move(legalMoves);
                     else {
