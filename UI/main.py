@@ -15,7 +15,7 @@ class Window(QWidget):
         if self.chess.player == Color.WHITE:
             return Position(pos.x, 7 - pos.y)
         else:
-            return Position(7 - pos.x, 7 - pos.y)
+            return Position(7 - pos.x, pos.y)
 
 ### Selected piece
     def isSelected(self):
@@ -208,14 +208,14 @@ class Window(QWidget):
         # Player
         hbox_player = QHBoxLayout()
         lbl_player = QLabel('<b>[Player]</b>', self)
-        line_player = QLineEdit('White', self)
-        line_player.setReadOnly(True)
+        self.line_player = QLineEdit('White', self)
+        self.line_player.setReadOnly(True)
         btn_changePlayer = QPushButton('Change my color', self)
         btn_changePlayer.clicked.connect(self.btn_changeColor_function)
         btn_restart = QPushButton('Game Restart', self)
         btn_restart.clicked.connect(self.btn_restart_function)
         hbox_player.addWidget(lbl_player)
-        hbox_player.addWidget(line_player)
+        hbox_player.addWidget(self.line_player)
         hbox_player.addWidget(btn_changePlayer)
         hbox_player.addWidget(btn_restart)
 
@@ -246,6 +246,7 @@ class Window(QWidget):
         self.init_value()
         self.off_all_light()
         self.chess.player = color
+        self.line_player.setText('White' if color == Color.WHITE else 'Black')
         self.init_pieces()
         self.chess.RESTART(color)
 
